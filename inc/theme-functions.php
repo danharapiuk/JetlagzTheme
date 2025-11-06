@@ -147,13 +147,14 @@ function universal_theme_remove_customizer_support()
     // Blokada link color
     remove_theme_support('link-color');
 }
-// WYŁĄCZONE - pozwalamy na rejestrację, ale usuwamy później
-// add_action('after_setup_theme', 'universal_theme_remove_customizer_support', 11);
+// Uruchom po wszystkich innych inicjalizacjach
+add_action('wp_loaded', 'universal_theme_remove_customizer_support');
 
 /**
  * Przekierowanie z customizer
  */
-function universal_theme_redirect_customizer() {
+function universal_theme_redirect_customizer()
+{
     global $pagenow;
     if ($pagenow === 'customize.php') {
         wp_redirect(admin_url('themes.php'));
