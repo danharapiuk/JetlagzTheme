@@ -147,39 +147,74 @@ function universal_theme_remove_customizer_support()
     // Blokada link color
     remove_theme_support('link-color');
 }
-add_action('after_setup_theme', 'universal_theme_remove_customizer_support', 11); // AKTYWNE - blokuje wszystkie edycje
+// WYŁĄCZONE - pozwalamy na rejestrację, ale usuwamy później
+// add_action('after_setup_theme', 'universal_theme_remove_customizer_support', 11);
 
 /**
- * Usunięcie sekcji z customizer WordPress
+ * Usunięcie sekcji z customizer WordPress i Storefront
  */
-function universal_theme_remove_customizer_sections($wp_customize) {
-    // Usuń sekcje z customizer
+function universal_theme_remove_customizer_sections($wp_customize)
+{
+    // Usuń sekcje WordPress
     $wp_customize->remove_section('background_image');
     $wp_customize->remove_section('colors');
     $wp_customize->remove_section('header_image');
     $wp_customize->remove_section('static_front_page');
+
+    // Usuń sekcje Storefront
+    $wp_customize->remove_section('storefront_typography');
+    $wp_customize->remove_section('storefront_buttons');
+    $wp_customize->remove_section('storefront_layout');
+    $wp_customize->remove_section('storefront_more');
+    $wp_customize->remove_section('storefront_header');
+    $wp_customize->remove_section('storefront_footer');
+    $wp_customize->remove_section('storefront_homepage');
+    $wp_customize->remove_section('storefront_product_catalog');
+    $wp_customize->remove_section('storefront_single_product');
     
-    // Usuń panele
+    // Usuń panele WordPress
     $wp_customize->remove_panel('widgets');
     $wp_customize->remove_panel('nav_menus');
     
-    // Usuń kontrolki
+    // Usuń panele Storefront
+    $wp_customize->remove_panel('storefront_styling');
+
+    // Usuń kontrolki WordPress
     $wp_customize->remove_control('background_color');
     $wp_customize->remove_control('header_textcolor');
     $wp_customize->remove_control('display_header_text');
+    
+    // Usuń wszystkie ustawienia Storefront
+    $wp_customize->remove_setting('storefront_heading_color');
+    $wp_customize->remove_setting('storefront_text_color');
+    $wp_customize->remove_setting('storefront_accent_color');
+    $wp_customize->remove_setting('storefront_hero_heading_color');
+    $wp_customize->remove_setting('storefront_hero_text_color');
+    $wp_customize->remove_setting('storefront_header_background_color');
+    $wp_customize->remove_setting('storefront_header_text_color');
+    $wp_customize->remove_setting('storefront_header_link_color');
+    $wp_customize->remove_setting('storefront_footer_background_color');
+    $wp_customize->remove_setting('storefront_footer_link_color');
+    $wp_customize->remove_setting('storefront_footer_heading_color');
+    $wp_customize->remove_setting('storefront_footer_text_color');
+    $wp_customize->remove_setting('storefront_button_background_color');
+    $wp_customize->remove_setting('storefront_button_text_color');
+    $wp_customize->remove_setting('storefront_button_alt_background_color');
+    $wp_customize->remove_setting('storefront_button_alt_text_color');
 }
-add_action('customize_register', 'universal_theme_remove_customizer_sections');
+add_action('customize_register', 'universal_theme_remove_customizer_sections', 30);
 
 /**
  * Usunięcie opcji "Wygląd" z menu WordPress dla zwykłych użytkowników
  */
-function universal_theme_remove_appearance_menu() {
+function universal_theme_remove_appearance_menu()
+{
     // Usuń menu "Wygląd" dla wszystkich oprócz administratorów
     if (!current_user_can('administrator')) {
         remove_menu_page('themes.php');
         remove_menu_page('customize.php');
     }
-    
+
     // Usuń submenu z "Wygląd" nawet dla administratorów
     remove_submenu_page('themes.php', 'customize.php');
     remove_submenu_page('themes.php', 'themes.php');
@@ -190,7 +225,8 @@ add_action('admin_menu', 'universal_theme_remove_appearance_menu');
 /**
  * Blokada dostępu do customizer przez URL
  */
-function universal_theme_block_customizer_access() {
+function universal_theme_block_customizer_access()
+{
     global $pagenow;
     if ($pagenow == 'customize.php' && !current_user_can('administrator')) {
         wp_die(__('Nie masz uprawnień do tej strony.'));
@@ -409,19 +445,20 @@ add_action('wp_head', 'universal_theme_body_background_css');
 /**
  * Layout CSS z konfiguracji motywu
  */
-function universal_theme_layout_css() {
+function universal_theme_layout_css()
+{
     $layout_config = get_theme_option('layout');
-    
+
     echo '<style type="text/css">';
-    
+
     // Container główny
     $container_width = $layout_config['container_width'] ?? '1200px';
     echo '.container, .site-content, .woocommerce .col2-set { max-width: ' . esc_attr($container_width) . '; margin: 0 auto; }';
-    
+
     // Content width
     $content_width = $layout_config['content_width'] ?? '800px';
     echo '.content-area { max-width: ' . esc_attr($content_width) . '; }';
-    
+
     // Sidebar
     $sidebar_width = $layout_config['sidebar_width'] ?? '300px';
     $enable_sidebar = $layout_config['enable_sidebar'] ?? false;
@@ -431,25 +468,25 @@ function universal_theme_layout_css() {
     } else {
         echo '.widget-area { width: ' . esc_attr($sidebar_width) . '; }';
     }
-    
+
     // Spacing
     $spacing_small = $layout_config['spacing_small'] ?? '0.5rem';
     $spacing_medium = $layout_config['spacing_medium'] ?? '1rem';
     $spacing_large = $layout_config['spacing_large'] ?? '2rem';
     $spacing_xlarge = $layout_config['spacing_xlarge'] ?? '3rem';
-    
+
     echo ':root {';
     echo '--spacing-small: ' . esc_attr($spacing_small) . ';';
     echo '--spacing-medium: ' . esc_attr($spacing_medium) . ';';
     echo '--spacing-large: ' . esc_attr($spacing_large) . ';';
     echo '--spacing-xlarge: ' . esc_attr($spacing_xlarge) . ';';
     echo '}';
-    
+
     // Grid gap
     $grid_gap = $layout_config['grid_gap'] ?? '1.5rem';
     echo '.woocommerce ul.products { gap: ' . esc_attr($grid_gap) . '; }';
     echo '.wp-block-columns { gap: ' . esc_attr($grid_gap) . '; }';
-    
+
     // Content alignment
     $content_alignment = $layout_config['content_alignment'] ?? 'left';
     if ($content_alignment === 'center') {
@@ -457,13 +494,13 @@ function universal_theme_layout_css() {
     } elseif ($content_alignment === 'right') {
         echo '.site-content, .entry-content { text-align: right; }';
     }
-    
+
     // Wide alignment disable
     $enable_wide = $layout_config['enable_wide_alignment'] ?? false;
     if (!$enable_wide) {
         echo '.alignwide, .alignfull { width: 100% !important; max-width: 100% !important; }';
     }
-    
+
     echo '</style>';
 }
 add_action('wp_head', 'universal_theme_layout_css');
