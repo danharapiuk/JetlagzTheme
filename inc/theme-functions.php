@@ -44,7 +44,7 @@ function universal_theme_preloader()
                 <div class="bounce3"></div>
             </div>
         </div>
-    <?php
+<?php
     }
 }
 add_action('wp_body_open', 'universal_theme_preloader');
@@ -84,8 +84,8 @@ function universal_theme_setup()
         'flex-width'  => true,
     ));
 
-    // Dodaj wsparcie dla niestandardowego tła
-    add_theme_support('custom-background');
+    // Custom background został wyłączony - brak edycji w panelu WordPress
+    // add_theme_support('custom-background'); // WYŁĄCZONE
 
     // Custom header został wyłączony - brak edycji w panelu WordPress
     // add_theme_support('custom-header', array(...)); // WYŁĄCZONE
@@ -108,13 +108,26 @@ function universal_theme_setup()
 add_action('after_setup_theme', 'universal_theme_setup');
 
 /**
- * Usunięcie wsparcia dla custom header (blokada edycji w panelu WordPress)
+ * Usunięcie wsparcia dla opcji edycji w panelu WordPress
  */
-function universal_theme_remove_header_support()
+function universal_theme_remove_customizer_support()
 {
+    // Blokada custom header
     remove_theme_support('custom-header');
+    
+    // Blokada custom background  
+    remove_theme_support('custom-background');
+    
+    // Blokada custom colors (kolory motywu)
+    remove_theme_support('custom-colors');
+    
+    // Blokada editor color palette
+    remove_theme_support('editor-color-palette');
+    
+    // Blokada custom font sizes
+    remove_theme_support('custom-font-sizes');
 }
-add_action('after_setup_theme', 'universal_theme_remove_header_support', 11); // AKTYWNE - blokuje edycję
+add_action('after_setup_theme', 'universal_theme_remove_customizer_support', 11); // AKTYWNE - blokuje wszystkie edycje
 
 /**
  * Funkcja do generowania inline CSS
@@ -195,30 +208,131 @@ add_action('wp_head', function () {
 /**
  * Header background CSS z konfiguracji motywu
  */
-function universal_theme_header_background_css() {
+function universal_theme_header_background_css()
+{
     $header_config = get_theme_option('header');
     $background_image = $header_config['background_image'] ?? '';
     $background_color = $header_config['background_color'] ?? '';
     $overlay_opacity = $header_config['overlay_opacity'] ?? 0.3;
-    
+
     if (!empty($background_image) || !empty($background_color)) {
         echo '<style type="text/css">';
-        
+
         if (!empty($background_image)) {
             $image_url = get_stylesheet_directory_uri() . '/' . ltrim($background_image, '/');
             echo '.site-header { background-image: url(' . esc_url($image_url) . '); }';
             echo '.site-header.has-background-image::before { background: rgba(0,0,0,' . floatval($overlay_opacity) . '); }';
             echo '.site-header { } /* Dodaj klasę has-background-image przez JS lub PHP */';
         }
-        
+
         if (!empty($background_color)) {
             echo '.site-header { background-color: ' . esc_attr($background_color) . '; }';
         }
-        
+
         echo '</style>';
     }
 }
 add_action('wp_head', 'universal_theme_header_background_css');
+
+/**
+ * Footer background CSS z konfiguracji motywu
+ */
+function universal_theme_footer_background_css() {
+    $footer_config = get_theme_option('footer');
+    $background_image = $footer_config['background_image'] ?? '';
+    $background_color = $footer_config['background_color'] ?? '#2c3e50';
+    $text_color = $footer_config['text_color'] ?? '#ffffff';
+    $overlay_opacity = $footer_config['overlay_opacity'] ?? 0.2;
+    
+    echo '<style type="text/css">';
+    
+    // Footer background
+    echo '.site-footer { background-color: ' . esc_attr($background_color) . '; color: ' . esc_attr($text_color) . '; }';
+    
+    if (!empty($background_image)) {
+        $image_url = get_stylesheet_directory_uri() . '/' . ltrim($background_image, '/');
+        echo '.site-footer { background-image: url(' . esc_url($image_url) . '); background-size: cover; background-position: center; }';
+        echo '.site-footer::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,' . floatval($overlay_opacity) . '); z-index: 1; }';
+        echo '.site-footer > * { position: relative; z-index: 2; }';
+    }
+    
+    echo '</style>';
+}
+add_action('wp_head', 'universal_theme_footer_background_css');
+
+/**
+ * Buttons CSS z konfiguracji motywu
+ */
+function universal_theme_buttons_css() {
+    $buttons_config = get_theme_option('buttons');
+    $primary_bg = $buttons_config['primary_bg'] ?? '#e74c3c';
+    $primary_text = $buttons_config['primary_text'] ?? '#ffffff';
+    $primary_hover = $buttons_config['primary_hover'] ?? '#c0392b';
+    $secondary_bg = $buttons_config['secondary_bg'] ?? '#3498db';
+    $secondary_text = $buttons_config['secondary_text'] ?? '#ffffff';
+    $secondary_hover = $buttons_config['secondary_hover'] ?? '#2980b9';
+    $border_radius = $buttons_config['border_radius'] ?? '8px';
+    $padding = $buttons_config['padding'] ?? '12px 24px';
+    
+    echo '<style type="text/css">';
+    
+    // Główne przyciski
+    echo '.button, .woocommerce .button, input[type="submit"], .wp-block-button__link {';
+    echo 'background-color: ' . esc_attr($primary_bg) . ';';
+    echo 'color: ' . esc_attr($primary_text) . ';';
+    echo 'border-radius: ' . esc_attr($border_radius) . ';';
+    echo 'padding: ' . esc_attr($padding) . ';';
+    echo 'border: none; text-decoration: none; display: inline-block; cursor: pointer;';
+    echo '}';
+    
+    // Hover głównych przycisków
+    echo '.button:hover, .woocommerce .button:hover, input[type="submit"]:hover, .wp-block-button__link:hover {';
+    echo 'background-color: ' . esc_attr($primary_hover) . ';';
+    echo '}';
+    
+    // Drugorzędne przyciski
+    echo '.button.secondary, .woocommerce .button.alt {';
+    echo 'background-color: ' . esc_attr($secondary_bg) . ';';
+    echo 'color: ' . esc_attr($secondary_text) . ';';
+    echo '}';
+    
+    // Hover drugorzędnych przycisków
+    echo '.button.secondary:hover, .woocommerce .button.alt:hover {';
+    echo 'background-color: ' . esc_attr($secondary_hover) . ';';
+    echo '}';
+    
+    echo '</style>';
+}
+add_action('wp_head', 'universal_theme_buttons_css');
+
+/**
+ * Background strony CSS z konfiguracji motywu
+ */
+function universal_theme_body_background_css() {
+    $bg_config = get_theme_option('background');
+    $body_bg = $bg_config['body_bg'] ?? '#ffffff';
+    $body_image = $bg_config['body_image'] ?? '';
+    $body_repeat = $bg_config['body_repeat'] ?? 'no-repeat';
+    $body_position = $bg_config['body_position'] ?? 'center';
+    $body_size = $bg_config['body_size'] ?? 'cover';
+    
+    echo '<style type="text/css">';
+    
+    echo 'body { background-color: ' . esc_attr($body_bg) . '; }';
+    
+    if (!empty($body_image)) {
+        $image_url = get_stylesheet_directory_uri() . '/' . ltrim($body_image, '/');
+        echo 'body {';
+        echo 'background-image: url(' . esc_url($image_url) . ');';
+        echo 'background-repeat: ' . esc_attr($body_repeat) . ';';
+        echo 'background-position: ' . esc_attr($body_position) . ';';
+        echo 'background-size: ' . esc_attr($body_size) . ';';
+        echo '}';
+    }
+    
+    echo '</style>';
+}
+add_action('wp_head', 'universal_theme_body_background_css');
 
 /**
  * Funkcja CSS dla custom header została usunięta

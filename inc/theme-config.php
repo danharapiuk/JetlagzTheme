@@ -46,6 +46,35 @@ function get_theme_config()
             'overlay_opacity' => 0.3, // Przezroczystość nakładki na obraz (0-1)
         ),
 
+        // Footer
+        'footer' => array(
+            'background_image' => '',     // Ścieżka do obrazu tła footer
+            'background_color' => '#2c3e50', // Kolor tła footer
+            'text_color' => '#ffffff',    // Kolor tekstu w footer
+            'overlay_opacity' => 0.2,     // Przezroczystość nakładki na obraz
+        ),
+
+        // Buttons & Forms
+        'buttons' => array(
+            'primary_bg' => '#e74c3c',    // Kolor tła głównych przycisków
+            'primary_text' => '#ffffff',  // Kolor tekstu głównych przycisków
+            'primary_hover' => '#c0392b', // Kolor hover głównych przycisków
+            'secondary_bg' => '#3498db',  // Kolor tła drugorzędnych przycisków
+            'secondary_text' => '#ffffff',// Kolor tekstu drugorzędnych przycisków
+            'secondary_hover' => '#2980b9', // Kolor hover drugorzędnych przycisków
+            'border_radius' => '8px',     // Zaokrąglenie rogów przycisków
+            'padding' => '12px 24px',     // Padding przycisków
+        ),
+
+        // Background (strona)
+        'background' => array(
+            'body_bg' => '#ffffff',       // Kolor tła strony
+            'body_image' => '',           // Obraz tła strony (jeśli potrzebny)
+            'body_repeat' => 'no-repeat', // Powtarzanie obrazu tła
+            'body_position' => 'center',  // Pozycja obrazu tła
+            'body_size' => 'cover',       // Rozmiar obrazu tła
+        ),
+
         // WooCommerce
         'woocommerce' => array(
             'products_per_page' => 12,
