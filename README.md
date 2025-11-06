@@ -6,10 +6,10 @@ Uniwersalny motyw potomny Storefront do szybkiego wdrażania w różnych sklepac
 
 ### 🎯 Perfect for:
 - **Mass deployment** z jednego repozytorium
-- **Blueprint approach** - jeden kod, wiele wystąpień  
-- **Quick customization** via WordPress Customizer
-- **Consistent branding** z łatwą zmianą kolorów/fontów
-- **Client-friendly** - klienci mogą sami dostosowywać wygląd
+- **Hardcoded approach** - wszystko w kodzie, bez panelu WP
+- **Developer-friendly** - pełna kontrola nad kodem
+- **Consistent branding** z łatwą zmianą przez config
+- **Version control** - zmiany trackowane w Git
 - **Responsywny design** - Działa na wszystkich urządzeniach
 - **Optymalizacja WooCommerce** - Dedykowane style i funkcje dla sklepu
 - **Szybkość ładowania** - Zoptymalizowane CSS i JS
@@ -50,22 +50,32 @@ git clone https://github.com/danharapiuk/woocommerce-starter.git
 ### 2. Aktywuj motyw w WordPress
 **Wygląd > Motywy > Aktywuj "Universal Storefront Theme"**
 
-### 3. Personalizacja przez Customizer
-Przejdź do **Wygląd > Dostosuj** i ustaw:
-- **Kolory motywu** - główny, drugorzędny, akcent
-- **Typografia** - wybierz czcionki
-- **Ustawienia sklepu** - produkty na stronę, layout
-- **Tożsamość witryny** - logo, tytuł, favicon
+### 3. Personalizacja przez kod
+Edytuj kolory, czcionki i ustawienia w pliku:
+**`inc/theme-config.php`**
+```php
+'colors' => array(
+    'primary' => '#twój-kolor-główny',
+    'secondary' => '#twój-kolor-drugorzędny', 
+    'accent' => '#twój-kolor-akcji',
+    // ...
+),
+```
 
 ### 4. Gotowe!
-Jeden motyw bazowy + personalizacja = unikalny sklep
+Jeden motyw bazowy + edycja konfiguracji = unikalny sklep
 
 ## 🎨 Dostosowywanie kolorów
 
-### Przez Customizer (zalecane)
-1. **Wygląd > Dostosuj > Kolory motywu**
-2. Wybierz kolory dla swojego sklepu
-3. Zapisz zmiany
+### Przez konfigurację (zalecane)
+Edytuj plik **`inc/theme-config.php`**:
+```php
+'colors' => array(
+    'primary' => '#twój-kolor',
+    'secondary' => '#twój-drugi-kolor',
+    'accent' => '#twój-kolor-akcji',
+),
+```
 
 ### Przez CSS (dla zaawansowanych)
 Edytuj zmienne CSS w `assets/css/custom.css`:

@@ -70,6 +70,5 @@ add_action('wp_enqueue_scripts', 'universal_theme_enqueue_assets');
 /**
  * Ładowanie pozostałych plików motywu
  */
-require_once THEME_DIR . '/inc/customizer.php';
 require_once THEME_DIR . '/inc/woocommerce-functions.php';
 require_once THEME_DIR . '/inc/theme-functions.php';

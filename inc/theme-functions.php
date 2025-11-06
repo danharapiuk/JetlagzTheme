@@ -15,11 +15,6 @@ if (!defined('ABSPATH')) {
 function get_theme_color($color_name, $default = '#000000')
 {
     $colors = get_theme_option('colors');
-    $custom_color = get_theme_mod('universal_' . $color_name . '_color');
-
-    if ($custom_color) {
-        return $custom_color;
-    }
 
     return isset($colors[$color_name]) ? $colors[$color_name] : $default;
 }
@@ -158,7 +153,7 @@ function universal_theme_breadcrumbs()
  */
 function universal_theme_google_fonts()
 {
-    $primary_font = get_theme_mod('universal_primary_font', get_theme_option('typography.primary_font'));
+    $primary_font = get_theme_option('typography.primary_font');
 
     if (strpos($primary_font, 'Google') !== false || in_array($primary_font, [
         'Inter, sans-serif',

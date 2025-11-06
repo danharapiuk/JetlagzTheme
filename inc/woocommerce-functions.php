@@ -26,8 +26,7 @@ add_action('after_setup_theme', 'universal_theme_woocommerce_setup');
  */
 function universal_theme_products_per_page()
 {
-    $products_per_page = get_theme_mod('universal_products_per_page', get_theme_option('woocommerce.products_per_page'));
-    return $products_per_page;
+    return get_theme_option('woocommerce.products_per_page');
 }
 add_filter('loop_shop_per_page', 'universal_theme_products_per_page', 20);
 
@@ -36,8 +35,7 @@ add_filter('loop_shop_per_page', 'universal_theme_products_per_page', 20);
  */
 function universal_theme_products_per_row()
 {
-    $products_per_row = get_theme_mod('universal_products_per_row', get_theme_option('woocommerce.products_per_row'));
-    return $products_per_row;
+    return get_theme_option('woocommerce.products_per_row');
 }
 add_filter('storefront_loop_columns', 'universal_theme_products_per_row');
 
