@@ -36,6 +36,17 @@ function get_theme_config()
             'container_width' => '1200px',
             'border_radius' => '8px',
             'box_shadow' => '0 2px 10px rgba(0,0,0,0.1)',
+            'content_width' => '800px',         // Szerokość treści
+            'sidebar_width' => '300px',         // Szerokość sidebar
+            'spacing_small' => '0.5rem',        // Małe odstępy
+            'spacing_medium' => '1rem',         // Średnie odstępy  
+            'spacing_large' => '2rem',          // Duże odstępy
+            'spacing_xlarge' => '3rem',         // Bardzo duże odstępy
+            'grid_gap' => '1.5rem',             // Odstęp w grid
+            'enable_sidebar' => false,          // Czy włączyć sidebar
+            'content_alignment' => 'left',      // Wyrównanie treści: left, center, right
+            'max_width_full' => '100%',         // Maksymalna szerokość pełnej zawartości
+            'enable_wide_alignment' => false,   // Czy włączyć szerokie wyrównanie
         ),
 
         // Header
@@ -60,7 +71,7 @@ function get_theme_config()
             'primary_text' => '#ffffff',  // Kolor tekstu głównych przycisków
             'primary_hover' => '#c0392b', // Kolor hover głównych przycisków
             'secondary_bg' => '#3498db',  // Kolor tła drugorzędnych przycisków
-            'secondary_text' => '#ffffff',// Kolor tekstu drugorzędnych przycisków
+            'secondary_text' => '#ffffff', // Kolor tekstu drugorzędnych przycisków
             'secondary_hover' => '#2980b9', // Kolor hover drugorzędnych przycisków
             'border_radius' => '8px',     // Zaokrąglenie rogów przycisków
             'padding' => '12px 24px',     // Padding przycisków
