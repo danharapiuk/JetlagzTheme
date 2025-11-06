@@ -44,7 +44,7 @@ function universal_theme_preloader()
                 <div class="bounce3"></div>
             </div>
         </div>
-<?php
+    <?php
     }
 }
 add_action('wp_body_open', 'universal_theme_preloader');
@@ -87,17 +87,8 @@ function universal_theme_setup()
     // Dodaj wsparcie dla niestandardowego tła
     add_theme_support('custom-background');
 
-    // Dodaj wsparcie dla custom header
-    add_theme_support('custom-header', array(
-        'default-color' => 'ffffff',
-        'default-image' => '',
-        'width'         => 1920,
-        'height'        => 400,
-        'flex-height'   => true,
-        'flex-width'    => true,
-        'header-text'   => true,
-        'default-text-color' => '000000',
-    ));
+    // Custom header został wyłączony - brak edycji w panelu WordPress
+    // add_theme_support('custom-header', array(...)); // WYŁĄCZONE
 
     // Dodaj wsparcie dla miniaturek postów
     add_theme_support('post-thumbnails');
@@ -117,12 +108,13 @@ function universal_theme_setup()
 add_action('after_setup_theme', 'universal_theme_setup');
 
 /**
- * Usunięcie wsparcia dla custom header (jeśli nie chcesz tej opcji)
+ * Usunięcie wsparcia dla custom header (blokada edycji w panelu WordPress)
  */
-function universal_theme_remove_header_support() {
+function universal_theme_remove_header_support()
+{
     remove_theme_support('custom-header');
 }
-// add_action('after_setup_theme', 'universal_theme_remove_header_support', 11); // Odkomentuj aby wyłączyć
+add_action('after_setup_theme', 'universal_theme_remove_header_support', 11); // AKTYWNE - blokuje edycję
 
 /**
  * Funkcja do generowania inline CSS
@@ -201,21 +193,35 @@ add_action('wp_head', function () {
 }, 1);
 
 /**
- * Dodanie CSS dla custom header
+ * Header background CSS z konfiguracji motywu
  */
-function universal_theme_header_css() {
-    $header_image = get_header_image();
-    if ($header_image) {
-        ?>
-        <style type="text/css">
-            .site-header {
-                background-image: url(<?php echo esc_url($header_image); ?>);
-                background-size: cover;
-                background-position: center;
-                background-repeat: no-repeat;
-            }
-        </style>
-        <?php
+function universal_theme_header_background_css() {
+    $header_config = get_theme_option('header');
+    $background_image = $header_config['background_image'] ?? '';
+    $background_color = $header_config['background_color'] ?? '';
+    $overlay_opacity = $header_config['overlay_opacity'] ?? 0.3;
+    
+    if (!empty($background_image) || !empty($background_color)) {
+        echo '<style type="text/css">';
+        
+        if (!empty($background_image)) {
+            $image_url = get_stylesheet_directory_uri() . '/' . ltrim($background_image, '/');
+            echo '.site-header { background-image: url(' . esc_url($image_url) . '); }';
+            echo '.site-header.has-background-image::before { background: rgba(0,0,0,' . floatval($overlay_opacity) . '); }';
+            echo '.site-header { } /* Dodaj klasę has-background-image przez JS lub PHP */';
+        }
+        
+        if (!empty($background_color)) {
+            echo '.site-header { background-color: ' . esc_attr($background_color) . '; }';
+        }
+        
+        echo '</style>';
     }
 }
-add_action('wp_head', 'universal_theme_header_css');
+add_action('wp_head', 'universal_theme_header_background_css');
+
+/**
+ * Funkcja CSS dla custom header została usunięta
+ * - custom header jest zablokowany w panelu WordPress
+ * - obrazy tła header należy ustawiać przez CSS lub theme-config.php
+ */

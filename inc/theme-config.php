@@ -38,6 +38,14 @@ function get_theme_config()
             'box_shadow' => '0 2px 10px rgba(0,0,0,0.1)',
         ),
 
+        // Header
+        'header' => array(
+            'background_image' => '', // Ścieżka do obrazu tła header (np. 'assets/images/header-bg.jpg')
+            'background_color' => '', // Kolor tła header (jeśli nie ma obrazu)
+            'height' => 'auto',       // Wysokość header
+            'overlay_opacity' => 0.3, // Przezroczystość nakładki na obraz (0-1)
+        ),
+
         // WooCommerce
         'woocommerce' => array(
             'products_per_page' => 12,
