@@ -87,6 +87,18 @@ function universal_theme_setup()
     // Dodaj wsparcie dla niestandardowego tła
     add_theme_support('custom-background');
 
+    // Dodaj wsparcie dla custom header
+    add_theme_support('custom-header', array(
+        'default-color' => 'ffffff',
+        'default-image' => '',
+        'width'         => 1920,
+        'height'        => 400,
+        'flex-height'   => true,
+        'flex-width'    => true,
+        'header-text'   => true,
+        'default-text-color' => '000000',
+    ));
+
     // Dodaj wsparcie dla miniaturek postów
     add_theme_support('post-thumbnails');
 
@@ -103,6 +115,14 @@ function universal_theme_setup()
     ));
 }
 add_action('after_setup_theme', 'universal_theme_setup');
+
+/**
+ * Usunięcie wsparcia dla custom header (jeśli nie chcesz tej opcji)
+ */
+function universal_theme_remove_header_support() {
+    remove_theme_support('custom-header');
+}
+// add_action('after_setup_theme', 'universal_theme_remove_header_support', 11); // Odkomentuj aby wyłączyć
 
 /**
  * Funkcja do generowania inline CSS
@@ -179,3 +199,23 @@ add_action('wp_head', function () {
         universal_theme_google_fonts();
     }
 }, 1);
+
+/**
+ * Dodanie CSS dla custom header
+ */
+function universal_theme_header_css() {
+    $header_image = get_header_image();
+    if ($header_image) {
+        ?>
+        <style type="text/css">
+            .site-header {
+                background-image: url(<?php echo esc_url($header_image); ?>);
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+            }
+        </style>
+        <?php
+    }
+}
+add_action('wp_head', 'universal_theme_header_css');
