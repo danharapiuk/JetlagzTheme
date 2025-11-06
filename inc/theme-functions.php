@@ -151,58 +151,16 @@ function universal_theme_remove_customizer_support()
 // add_action('after_setup_theme', 'universal_theme_remove_customizer_support', 11);
 
 /**
- * Usunięcie sekcji z customizer WordPress i Storefront
+ * Przekierowanie z customizer
  */
-function universal_theme_remove_customizer_sections($wp_customize)
-{
-    // Usuń sekcje WordPress
-    $wp_customize->remove_section('background_image');
-    $wp_customize->remove_section('colors');
-    $wp_customize->remove_section('header_image');
-    $wp_customize->remove_section('static_front_page');
-
-    // Usuń sekcje Storefront
-    $wp_customize->remove_section('storefront_typography');
-    $wp_customize->remove_section('storefront_buttons');
-    $wp_customize->remove_section('storefront_layout');
-    $wp_customize->remove_section('storefront_more');
-    $wp_customize->remove_section('storefront_header');
-    $wp_customize->remove_section('storefront_footer');
-    $wp_customize->remove_section('storefront_homepage');
-    $wp_customize->remove_section('storefront_product_catalog');
-    $wp_customize->remove_section('storefront_single_product');
-    
-    // Usuń panele WordPress
-    $wp_customize->remove_panel('widgets');
-    $wp_customize->remove_panel('nav_menus');
-    
-    // Usuń panele Storefront
-    $wp_customize->remove_panel('storefront_styling');
-
-    // Usuń kontrolki WordPress
-    $wp_customize->remove_control('background_color');
-    $wp_customize->remove_control('header_textcolor');
-    $wp_customize->remove_control('display_header_text');
-    
-    // Usuń wszystkie ustawienia Storefront
-    $wp_customize->remove_setting('storefront_heading_color');
-    $wp_customize->remove_setting('storefront_text_color');
-    $wp_customize->remove_setting('storefront_accent_color');
-    $wp_customize->remove_setting('storefront_hero_heading_color');
-    $wp_customize->remove_setting('storefront_hero_text_color');
-    $wp_customize->remove_setting('storefront_header_background_color');
-    $wp_customize->remove_setting('storefront_header_text_color');
-    $wp_customize->remove_setting('storefront_header_link_color');
-    $wp_customize->remove_setting('storefront_footer_background_color');
-    $wp_customize->remove_setting('storefront_footer_link_color');
-    $wp_customize->remove_setting('storefront_footer_heading_color');
-    $wp_customize->remove_setting('storefront_footer_text_color');
-    $wp_customize->remove_setting('storefront_button_background_color');
-    $wp_customize->remove_setting('storefront_button_text_color');
-    $wp_customize->remove_setting('storefront_button_alt_background_color');
-    $wp_customize->remove_setting('storefront_button_alt_text_color');
+function universal_theme_redirect_customizer() {
+    global $pagenow;
+    if ($pagenow === 'customize.php') {
+        wp_redirect(admin_url('themes.php'));
+        exit;
+    }
 }
-add_action('customize_register', 'universal_theme_remove_customizer_sections', 30);
+add_action('admin_init', 'universal_theme_redirect_customizer', 1);
 
 /**
  * Usunięcie opcji "Wygląd" z menu WordPress dla zwykłych użytkowników
