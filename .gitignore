@@ -1,0 +1,52 @@
+# WordPress
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/advanced-cache.php
+wp-content/wp-cache-config.php
+
+# Local development
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Node modules (jeśli używasz npm/yarn)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build files
+/dist/
+/build/
+
+# Sass cache
+.sass-cache/
+
+# Temporary files
+*.temp
+*.bak
+
+# OS generated files
+Icon?
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Screenshot może być większy
+screenshot.png
+
+# Pliki konfiguracyjne środowiska lokalnego
+local-config.php
+.env
+.env.local
