@@ -4,7 +4,12 @@ Uniwersalny motyw potomny Storefront do szybkiego wdrażania w różnych sklepac
 
 ## 🚀 Funkcje
 
-- **Łatwa personalizacja** - Customizer WordPress z opcjami kolorów, czcionek i układu
+### 🎯 Perfect for:
+- **Mass deployment** z jednego repozytorium
+- **Blueprint approach** - jeden kod, wiele wystąpień  
+- **Quick customization** via WordPress Customizer
+- **Consistent branding** z łatwą zmianą kolorów/fontów
+- **Client-friendly** - klienci mogą sami dostosowywać wygląd
 - **Responsywny design** - Działa na wszystkich urządzeniach
 - **Optymalizacja WooCommerce** - Dedykowane style i funkcje dla sklepu
 - **Szybkość ładowania** - Zoptymalizowane CSS i JS
@@ -34,36 +39,26 @@ themes/universal-theme/
 └── woocommerce/            # Nadpisania szablonów WooCommerce
 ```
 
-## ⚙️ Konfiguracja dla nowego sklepu
+## ⚙️ Wdrożenie w nowym sklepie
 
-### 1. Skopiuj motyw
+### 1. Zainstaluj motyw
 ```bash
-cp -r universal-theme nazwa-nowego-sklepu-theme
+git clone https://github.com/danharapiuk/woocommerce-starter.git
+# Skopiuj do /wp-content/themes/ w swoim WordPressie
 ```
 
-### 2. Edytuj informacje motywu w `style.css`:
-```css
-Theme Name: Nazwa Nowego Sklepu Theme
-Description: Motyw dla sklepu [Nazwa]
-Author: Twoja Nazwa
-```
+### 2. Aktywuj motyw w WordPress
+**Wygląd > Motywy > Aktywuj "Universal Storefront Theme"**
 
-### 3. Dostosuj konfigurację w `inc/theme-config.php`:
-```php
-'colors' => array(
-    'primary' => '#twoj-kolor-glowny',
-    'secondary' => '#twoj-kolor-drugorzedny',
-    'accent' => '#twoj-kolor-akcentu',
-    // ...
-),
-```
-
-### 4. Customizer WordPress
+### 3. Personalizacja przez Customizer
 Przejdź do **Wygląd > Dostosuj** i ustaw:
-- Kolory motywu
-- Czcionki
-- Ustawienia sklepu
-- Logo i tło
+- **Kolory motywu** - główny, drugorzędny, akcent
+- **Typografia** - wybierz czcionki
+- **Ustawienia sklepu** - produkty na stronę, layout
+- **Tożsamość witryny** - logo, tytuł, favicon
+
+### 4. Gotowe!
+Jeden motyw bazowy + personalizacja = unikalny sklep
 
 ## 🎨 Dostosowywanie kolorów
 
@@ -187,5 +182,7 @@ W przypadku problemów:
 GPL v2 lub nowsza - zgodnie z licencją WordPress
 
 ---
+
+**🎯 Blueprint Strategy:** Jeden motyw bazowy + WordPress Customizer = nieskończone możliwości personalizacji! 
 
 **Pamiętaj:** Zawsze testuj zmiany na środowisku testowym przed wdrożeniem na produkcji!# woocommerce-starter
