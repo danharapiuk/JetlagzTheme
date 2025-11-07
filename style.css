@@ -39,41 +39,75 @@
 }
 
 /* === MENU NAVIGATION FIX === */
-/* Ukryj hamburger menu na desktop */
-@media (min-width: 768px) {
-	.menu-toggle, 
-	.handheld-navigation {
+/* Ukryj hamburger menu na desktop - zgodnie ze Storefront */
+@media(min-width: 768px) {
+	.menu-toggle,
+	.handheld-navigation,
+	.universal-mobile-toggle,
+	.mobile-menu-toggle,
+	button[aria-expanded] {
 		display: none !important;
+	}
+	
+	.primary-navigation {
+		display: block !important;
 	}
 	
 	.main-navigation {
 		display: block !important;
+		clear: both;
+		width: 100%;
 	}
 	
 	.main-navigation ul {
-		display: flex !important;
+		display: block !important;
 		position: static !important;
 		background: transparent !important;
 		box-shadow: none !important;
+		max-height: none !important;
+		overflow: visible !important;
+		margin-left: -1em;
+		transition: none;
 	}
 	
-	.main-navigation li {
+	.main-navigation ul li {
 		display: inline-block !important;
+		position: relative;
+		text-align: left;
+	}
+	
+	.main-navigation ul li a {
+		display: block !important;
+		padding: 1.618em 1em;
+	}
+	
+	/* Ukryj wszystkie mobile-specific elementy */
+	.main-navigation.toggled .handheld-navigation,
+	.main-navigation.toggled div.menu {
+		display: none !important;
 	}
 }
 
 /* Mobile: pokaż hamburger tylko na małych ekranach */
-@media (max-width: 767px) {
-	.main-navigation ul {
+@media(max-width: 767px) {
+	.primary-navigation {
 		display: none;
 	}
 	
 	.menu-toggle {
 		display: block;
 	}
-}
-
-/* Podstawowe zmienne - będą nadpisane przez customizer */
+	
+	.main-navigation ul {
+		display: none;
+		max-height: 0;
+	}
+	
+	.main-navigation.toggled ul {
+		display: block;
+		max-height: 9999px;
+	}
+}/* Podstawowe zmienne - będą nadpisane przez customizer */
 :root {
 	--primary-color: #e74c3c;
 	--secondary-color: #3498db;
