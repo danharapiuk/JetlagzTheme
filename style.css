@@ -20,6 +20,24 @@
 /* Import Google Fonts - zmień na potrzebne */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* === UKRYCIE SIDEBAR === */
+.widget-area,
+.sidebar,
+#secondary {
+    display: none !important;
+}
+
+/* Rozszerzenie content area gdy sidebar ukryty */
+.no-wc-breadcrumb:not(.page-template-template-fullwidth) #primary {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.content-area {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 /* Podstawowe zmienne - będą nadpisane przez customizer */
 :root {
 	--primary-color: #e74c3c;

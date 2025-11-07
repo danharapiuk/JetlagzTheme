@@ -86,6 +86,21 @@ function get_theme_config()
             'body_size' => 'cover',       // Rozmiar obrazu tła
         ),
 
+        // Layout
+        'layout' => array(
+            'container_width' => '1200px',   // Szerokość głównego kontenera
+            'content_width' => '800px',      // Szerokość obszaru treści
+            'sidebar_width' => '300px',      // Szerokość sidebar
+            'enable_sidebar' => false,       // ← SIDEBAR WYŁĄCZONY
+            'spacing_small' => '0.5rem',     // Małe odstępy
+            'spacing_medium' => '1rem',      // Średnie odstępy
+            'spacing_large' => '2rem',       // Duże odstępy
+            'spacing_xlarge' => '3rem',      // Bardzo duże odstępy
+            'grid_gap' => '1.5rem',          // Odstępy między elementami grid
+            'content_alignment' => 'left',   // Wyrównanie treści (left, center, right)
+            'enable_wide_alignment' => false, // Czy włączyć szerokie wyrównanie
+        ),
+
         // WooCommerce
         'woocommerce' => array(
             'products_per_page' => 12,
