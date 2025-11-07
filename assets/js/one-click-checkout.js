@@ -61,13 +61,59 @@
                 return false;
             }
 
-            if (action === 'open-modal') {
-                // Otwórz modal checkout
+            if (action === 'add-and-redirect') {
+                // Dodaj do koszyka i przekieruj na checkout
+                UniversalOneClick.addToCartAndRedirect($button, productId, quantity);
+            } else if (action === 'open-modal') {
+                // Otwórz modal checkout (stara opcja)
                 UniversalOneClick.openCheckoutModal(productId, quantity);
             } else {
                 // Klasyczny one-click (fallback)
                 UniversalOneClick.processOneClickOrder($button, productId, quantity);
             }
+        },
+
+        addToCartAndRedirect: function($button, productId, quantity) {
+            // Ustaw loading state
+            this.setButtonState($button, 'loading');
+
+            // AJAX request
+            $.ajax({
+                url: universalOneClick.ajax_url,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'universal_add_to_cart_redirect',
+                    nonce: universalOneClick.nonce,
+                    product_id: productId,
+                    quantity: quantity
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Pokazuje sukces
+                        UniversalOneClick.showNotification(response.data.message, 'success');
+                        
+                        // Aktualizuj licznik koszyka
+                        UniversalOneClick.updateCartCount(response.data.cart_count);
+                        
+                        // Przekieruj na checkout po krótkim opóźnieniu
+                        setTimeout(function() {
+                            window.location.href = response.data.redirect_url;
+                        }, 1000);
+                        
+                        // Trigger event
+                        $(document).trigger('universalAddToCartSuccess', [response.data, $button]);
+                        
+                    } else {
+                        UniversalOneClick.handleError($button, response.data.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', error);
+                    UniversalOneClick.handleError($button, 'Wystąpił błąd podczas dodawania do koszyka');
+                },
+                timeout: 15000
+            });
         },
 
         openCheckoutModal: function(productId, quantity) {
@@ -410,16 +456,19 @@
             });
         },
 
-        updateCartCount: function() {
+        updateCartCount: function(newCount) {
             var $cartCount = $('.cart-contents-count, .count');
-            if ($cartCount.length) {
+            if ($cartCount.length && typeof newCount !== 'undefined') {
+                $cartCount.text(newCount).addClass('bounce');
+            } else {
+                // Fallback - zwiększ o 1
                 var currentCount = parseInt($cartCount.text()) || 0;
                 $cartCount.text(currentCount + 1).addClass('bounce');
-                
-                setTimeout(function() {
-                    $cartCount.removeClass('bounce');
-                }, 600);
             }
+            
+            setTimeout(function() {
+                $cartCount.removeClass('bounce');
+            }, 600);
 
             $(document.body).trigger('wc_fragment_refresh');
         },

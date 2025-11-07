@@ -113,7 +113,8 @@ function get_theme_config()
         'checkout' => array(
             'enable_one_click' => true,           // Włącz/wyłącz one-click checkout
             'require_login' => false,             // Nie wymagaj logowania - pokaż dla wszystkich
-            'modal_checkout' => true,             // Użyj modalnego okna checkout
+            'modal_checkout' => false,            // Używaj strony checkout zamiast modala
+            'redirect_to_checkout' => true,       // Przekieruj na stronę checkout
             'allowed_payment_methods' => array(   // Dozwolone metody płatności
                 'bacs',    // Przelew bankowy
                 'cheque',  // Czek
@@ -134,10 +135,29 @@ function get_theme_config()
             'default_payment_method' => 'bacs',   // Domyślna metoda płatności
             'show_on_shop_loop' => true,          // Pokaż na liście produktów
             'show_on_single_product' => true,     // Pokaż na stronie produktu
-            'button_text' => 'Dodaj do koszyka i zamów',  // Nowy tekst przycisku
-            'modal_title' => 'Finalizuj zamówienie',      // Tytuł modala
+            'button_text' => 'Dodaj do koszyka i przejdź do płatności',  // Tekst przycisku
+            'checkout_title' => 'Finalizuj zamówienie',    // Tytuł strony checkout
             'enable_guest_checkout' => true,      // Pozwól gościom na checkout
-            'auto_add_to_cart' => true,          // Automatycznie dodaj do koszyka przed modalem
+            'auto_add_to_cart' => true,          // Automatycznie dodaj do koszyka
+        ),
+
+        // Cross-sell Configuration
+        'crosssell' => array(
+            'enable' => true,                     // Włącz/wyłącz cross-sell na checkout
+            'max_products' => 4,                  // Maksymalna liczba produktów cross-sell
+            'free_shipping_threshold' => 100,    // Próg darmowej dostawy (PLN)
+            'free_shipping_enable' => true,      // Czy pokazywać pasek postępu darmowej dostawy
+            'product_sources' => array(          // Źródła produktów cross-sell (w kolejności)
+                'cross_sells',   // Produkty cross-sell przypisane do produktów w koszyku
+                'related',       // Produkty powiązane
+                'popular',       // Popularne produkty (best sellers)
+                'recent',        // Ostatnio dodane produkty
+            ),
+            'exclude_categories' => array(),      // Kategorie do wykluczenia z cross-sell
+            'min_price_diff' => 0,               // Minimalna różnica ceny (0 = bez ograniczeń)
+            'max_price_diff' => 0,               // Maksymalna różnica ceny (0 = bez ograniczeń)
+            'show_sale_badge' => true,           // Pokazuj badge "SALE" dla produktów w promocji
+            'auto_refresh_on_add' => true,       // Automatycznie odśwież po dodaniu produktu
         ),
 
         // Funkcje

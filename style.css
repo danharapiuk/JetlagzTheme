@@ -422,9 +422,23 @@ input[type='submit']:hover {
 }
 
 @keyframes shake {
-	0%, 100% { transform: translateX(0); }
-	10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-	20%, 40%, 60%, 80% { transform: translateX(5px); }
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	10%,
+	30%,
+	50%,
+	70%,
+	90% {
+		transform: translateX(-5px);
+	}
+	20%,
+	40%,
+	60%,
+	80% {
+		transform: translateX(5px);
+	}
 }
 
 /* Przycisk one-click w loop produktów */
@@ -471,8 +485,12 @@ input[type='submit']:hover {
 }
 
 @keyframes spin {
-	from { transform: rotate(0deg); }
-	to { transform: rotate(360deg); }
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 /* Responsywność dla przycisków one-click */
@@ -482,7 +500,7 @@ input[type='submit']:hover {
 		font-size: 14px !important;
 		max-width: 100%;
 	}
-	
+
 	.universal-one-click-wrapper {
 		margin: 0.8rem 0;
 	}
@@ -574,18 +592,22 @@ input[type='submit']:hover {
 }
 
 @keyframes fadeIn {
-	from { opacity: 0; }
-	to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 @keyframes slideUp {
-	from { 
+	from {
 		opacity: 0;
-		transform: translateY(50px); 
+		transform: translateY(50px);
 	}
-	to { 
+	to {
 		opacity: 1;
-		transform: translateY(0); 
+		transform: translateY(0);
 	}
 }
 
@@ -790,7 +812,7 @@ input[type='submit']:hover {
 	margin: 0;
 }
 
-.payment-method input[type="radio"] {
+.payment-method input[type='radio'] {
 	margin-right: 12px;
 	transform: scale(1.2);
 	accent-color: var(--accent-color);
@@ -939,4 +961,894 @@ input[type='submit']:hover {
 .success-checkmark {
 	color: #27ae60;
 	animation: checkmark 0.6s ease;
+}
+
+/* === CUSTOM CHECKOUT PAGE LAYOUT === */
+
+.universal-checkout-container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 2rem;
+}
+
+.universal-checkout-header {
+	text-align: center;
+	margin-bottom: 3rem;
+}
+
+.checkout-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	color: var(--text-dark);
+	margin-bottom: 1rem;
+}
+
+.checkout-progress {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 2rem;
+}
+
+.progress-step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	position: relative;
+}
+
+.progress-step::after {
+	content: '';
+	position: absolute;
+	top: 15px;
+	left: 100%;
+	width: 2rem;
+	height: 2px;
+	background: #e9ecef;
+	z-index: 1;
+}
+
+.progress-step:last-child::after {
+	display: none;
+}
+
+.progress-step.active::after {
+	background: var(--accent-color);
+}
+
+.step-number {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: #e9ecef;
+	color: var(--text-light);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	font-size: 0.9rem;
+	position: relative;
+	z-index: 2;
+}
+
+.progress-step.active .step-number {
+	background: var(--accent-color);
+	color: white;
+}
+
+.step-title {
+	font-size: 0.85rem;
+	color: var(--text-light);
+	font-weight: 500;
+}
+
+.progress-step.active .step-title {
+	color: var(--accent-color);
+}
+
+/* Checkout Layout */
+.universal-checkout-layout {
+	display: grid;
+	grid-template-columns: 1fr 400px;
+	gap: 3rem;
+	align-items: start;
+}
+
+.checkout-form-column {
+	background: white;
+}
+
+.checkout-review-column {
+	background: #f8f9fa;
+	border-radius: var(--border-radius);
+	padding: 0;
+	position: sticky;
+	top: 2rem;
+}
+
+.order-review-wrapper {
+	padding: 0;
+}
+
+/* Checkout Sections */
+.checkout-section {
+	background: white;
+	border: 1px solid #e9ecef;
+	border-radius: var(--border-radius);
+	padding: 2rem;
+	margin-bottom: 1.5rem;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.checkout-section h3 {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	margin: 0 0 1.5rem 0;
+	font-size: 1.3rem;
+	font-weight: 600;
+	color: var(--text-dark);
+	border-bottom: 2px solid var(--accent-color);
+	padding-bottom: 0.75rem;
+}
+
+.checkout-icon {
+	font-size: 1.2rem;
+	opacity: 0.8;
+}
+
+/* Form Styles */
+.checkout-section .form-row {
+	margin-bottom: 1rem;
+}
+
+.checkout-section .form-row-wide {
+	width: 100%;
+}
+
+.checkout-section .form-row-first,
+.checkout-section .form-row-last {
+	width: 48%;
+	float: left;
+}
+
+.checkout-section .form-row-last {
+	float: right;
+}
+
+.checkout-section label {
+	display: block;
+	margin-bottom: 0.5rem;
+	font-weight: 500;
+	color: var(--text-dark);
+}
+
+.checkout-section .required {
+	color: #e74c3c;
+}
+
+.checkout-section input[type='text'],
+.checkout-section input[type='email'],
+.checkout-section input[type='tel'],
+.checkout-section select,
+.checkout-section textarea {
+	width: 100%;
+	padding: 12px 16px;
+	border: 2px solid #e9ecef;
+	border-radius: var(--border-radius);
+	font-size: 1rem;
+	transition: all 0.3s ease;
+	box-sizing: border-box;
+}
+
+.checkout-section input:focus,
+.checkout-section select:focus,
+.checkout-section textarea:focus {
+	border-color: var(--accent-color);
+	box-shadow: 0 0 0 3px rgba(127, 84, 179, 0.1);
+	outline: none;
+}
+
+/* Logged in info */
+.logged-in-info {
+	background: #e8f5e8;
+	border: 1px solid #c3e6c3;
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	margin-bottom: 1rem;
+}
+
+.logout-link {
+	color: var(--accent-color);
+	text-decoration: none;
+	font-weight: 500;
+	margin-left: 1rem;
+}
+
+.logout-link:hover {
+	text-decoration: underline;
+}
+
+/* Shipping Different Address */
+.shipping-different {
+	margin-bottom: 1rem;
+}
+
+.shipping-different label {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	font-weight: normal;
+}
+
+/* Payment Methods */
+.wc_payment_methods {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.wc_payment_method {
+	margin-bottom: 1rem;
+	border: 2px solid #e9ecef;
+	border-radius: var(--border-radius);
+	overflow: hidden;
+	transition: all 0.3s ease;
+}
+
+.wc_payment_method:hover {
+	border-color: var(--accent-color);
+}
+
+.wc_payment_method label {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 1rem;
+	margin: 0;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.wc_payment_method input[type='radio'] {
+	margin: 0;
+	transform: scale(1.2);
+	accent-color: var(--accent-color);
+}
+
+.payment_box {
+	background: #f8f9fa;
+	border-top: 1px solid #e9ecef;
+	padding: 1rem;
+}
+
+/* Order Review Column */
+.checkout-review-column .checkout-section {
+	background: white;
+	margin-bottom: 1rem;
+}
+
+.checkout-review-column .checkout-section:last-child {
+	margin-bottom: 0;
+}
+
+/* Security Badges */
+.checkout-security-badges {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	padding: 1.5rem;
+	background: white;
+	border: 1px solid #e9ecef;
+	border-radius: var(--border-radius);
+	margin-bottom: 1rem;
+}
+
+.security-badge {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.9rem;
+	color: var(--text-dark);
+}
+
+.security-icon {
+	font-size: 1.1rem;
+}
+
+/* Place Order Button */
+.place-order-button {
+	padding: 1.5rem;
+	background: white;
+	border: 1px solid #e9ecef;
+	border-radius: var(--border-radius);
+}
+
+.place-order-button button {
+	width: 100% !important;
+	background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%) !important;
+	color: white !important;
+	border: none !important;
+	padding: 18px 24px !important;
+	font-size: 1.1rem !important;
+	font-weight: 600 !important;
+	border-radius: var(--border-radius) !important;
+	cursor: pointer;
+	transition: all 0.3s ease !important;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.place-order-button button:hover {
+	transform: translateY(-2px) !important;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+.button-total {
+	background: rgba(255, 255, 255, 0.2);
+	padding: 0.3rem 0.8rem;
+	border-radius: 20px;
+	font-weight: 700;
+}
+
+/* Order Summary Styles */
+.woocommerce-checkout-review-order table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.woocommerce-checkout-review-order th,
+.woocommerce-checkout-review-order td {
+	padding: 1rem;
+	border-bottom: 1px solid #e9ecef;
+	text-align: left;
+}
+
+.woocommerce-checkout-review-order .cart_item {
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.woocommerce-checkout-review-order .cart_item:last-child {
+	border-bottom: 2px solid var(--accent-color);
+}
+
+.woocommerce-checkout-review-order .order-total {
+	font-weight: 700;
+	font-size: 1.2rem;
+	color: var(--primary-color);
+}
+
+.woocommerce-checkout-review-order .order-total td {
+	border-bottom: none;
+	padding-top: 1.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+	.universal-checkout-layout {
+		grid-template-columns: 1fr 350px;
+		gap: 2rem;
+	}
+
+	.checkout-review-column {
+		position: static;
+	}
+}
+
+@media (max-width: 768px) {
+	.universal-checkout-container {
+		padding: 1rem;
+	}
+
+	.checkout-title {
+		font-size: 2rem;
+	}
+
+	.checkout-progress {
+		gap: 1rem;
+	}
+
+	.progress-step::after {
+		width: 1rem;
+	}
+
+	.universal-checkout-layout {
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+	}
+
+	.checkout-section {
+		padding: 1.5rem;
+	}
+
+	.checkout-section .form-row-first,
+	.checkout-section .form-row-last {
+		width: 100%;
+		float: none;
+		margin-bottom: 1rem;
+	}
+
+	.checkout-security-badges {
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: space-around;
+	}
+
+	.security-badge {
+		flex-direction: column;
+		text-align: center;
+		gap: 0.3rem;
+		flex-basis: 30%;
+	}
+}
+
+@media (max-width: 480px) {
+	.checkout-progress {
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.progress-step::after {
+		display: none;
+	}
+
+	.checkout-section h3 {
+		font-size: 1.1rem;
+		flex-direction: column;
+		gap: 0.5rem;
+		text-align: center;
+	}
+
+	.place-order-button button {
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 15px 20px !important;
+		font-size: 1rem !important;
+	}
+}
+
+/* Loading States for Checkout */
+.checkout-section.processing {
+	opacity: 0.7;
+	pointer-events: none;
+	position: relative;
+}
+
+.checkout-section.processing::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 30px;
+	height: 30px;
+	border: 3px solid var(--accent-color);
+	border-radius: 50%;
+	border-top: 3px solid transparent;
+	animation: spin 1s linear infinite;
+	z-index: 10;
+}
+
+.place-order-button button.loading {
+	opacity: 0.8;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.place-order-button button.loading::after {
+	content: '';
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 2px solid currentColor;
+	border-radius: 50%;
+	border-top: 2px solid transparent;
+	animation: spin 1s linear infinite;
+	margin-left: 10px;
+}
+
+/* === CHECKOUT CROSS-SELL SECTION === */
+
+.checkout-crosssell-section {
+    margin-top: 1.5rem;
+}
+
+/* Free Shipping Progress */
+.free-shipping-progress,
+.free-shipping-achieved {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+.shipping-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.shipping-progress-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.shipping-icon {
+    font-size: 1.3rem;
+}
+
+.remaining-amount {
+    font-size: 0.95rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+}
+
+.shipping-progress-bar {
+    margin-top: 1rem;
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+    border-radius: 4px;
+    transition: width 0.8s ease;
+    position: relative;
+}
+
+.progress-fill.updating {
+    animation: progressPulse 0.8s ease;
+}
+
+@keyframes progressPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.free-shipping-achieved h3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Cross-sell Products */
+.crosssell-products {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.crosssell-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.crosssell-header h3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.products-icon {
+    font-size: 1.2rem;
+}
+
+.crosssell-subtitle {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 0.95rem;
+}
+
+.crosssell-products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.crosssell-product-item {
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.crosssell-product-item:hover {
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.crosssell-product-item.product-added {
+    opacity: 0.7;
+    transform: scale(0.98);
+    border-color: #27ae60;
+}
+
+.crosssell-product-image {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.crosssell-product-image img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+    margin: 0 auto;
+    display: block;
+}
+
+.crosssell-sale-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e74c3c;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    text-transform: uppercase;
+}
+
+.crosssell-product-info {
+    margin-bottom: 1rem;
+}
+
+.crosssell-product-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-dark);
+    line-height: 1.3;
+}
+
+.crosssell-product-price {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.crosssell-product-description {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.crosssell-product-actions {
+    margin-top: 1rem;
+}
+
+.crosssell-add-btn {
+    background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: var(--border-radius) !important;
+    padding: 8px 12px !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    transition: all 0.3s ease !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    width: 100%;
+    min-height: 36px;
+}
+
+.crosssell-add-btn:hover:not(.disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+.crosssell-add-btn.adding {
+    background: #95a5a6 !important;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.crosssell-add-btn.added {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+    animation: addedSuccess 0.6s ease;
+}
+
+@keyframes addedSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.crosssell-add-btn.disabled {
+    background: #bdc3c7 !important;
+    color: #7f8c8d !important;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-icon {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.btn-text {
+    font-weight: 500;
+}
+
+.btn-price {
+    font-weight: 600;
+    opacity: 0.9;
+    font-size: 0.8rem;
+}
+
+/* Cross-sell Benefits */
+.crosssell-benefits {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+.benefit-icon {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* Notifications */
+.crosssell-notification {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transform: translateY(-10px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.crosssell-notification.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.crosssell-notification-success {
+    border-color: #27ae60;
+    background: linear-gradient(135deg, #d5f4e6 0%, #f0fdf4 100%);
+    color: #1e7e34;
+}
+
+.crosssell-notification-error {
+    border-color: #e74c3c;
+    background: linear-gradient(135deg, #fdeaea 0%, #fdf2f2 100%);
+    color: #c62d42;
+}
+
+.crosssell-notification-info {
+    border-color: #3498db;
+    background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%);
+    color: #1976d2;
+}
+
+.notification-icon {
+    font-size: 1.1rem;
+}
+
+.notification-message {
+    font-weight: 500;
+    flex-grow: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .crosssell-products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .crosssell-product-item {
+        padding: 0.75rem;
+    }
+    
+    .crosssell-product-image img {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .crosssell-product-name {
+        font-size: 0.85rem;
+    }
+    
+    .crosssell-benefits {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+    }
+    
+    .shipping-progress-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .progress-labels {
+        flex-direction: column;
+        gap: 0.25rem;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .crosssell-products-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .crosssell-product-item {
+        padding: 1rem;
+    }
+    
+    .crosssell-product-image img {
+        width: 70px;
+        height: 70px;
+    }
 }

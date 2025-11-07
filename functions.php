@@ -58,6 +58,41 @@ function universal_theme_enqueue_assets()
     true
   );
 
+  // Enhanced Checkout Script (tylko na stronie checkout)
+  if (is_checkout() && !is_wc_endpoint_url()) {
+    wp_enqueue_script(
+      'universal-checkout-enhanced',
+      get_stylesheet_directory_uri() . '/assets/js/checkout-enhanced.js',
+      array('jquery', 'wc-checkout'),
+      $theme_version,
+      true
+    );
+
+    // Cross-sell Script dla checkout
+    wp_enqueue_script(
+      'universal-checkout-crosssell',
+      get_stylesheet_directory_uri() . '/assets/js/checkout-crosssell.js',
+      array('jquery', 'universal-checkout-enhanced'),
+      $theme_version,
+      true
+    );
+
+    // Lokalizacja dla cross-sell script
+    wp_localize_script('universal-checkout-crosssell', 'crosssellConfig', array(
+      'ajaxUrl' => admin_url('admin-ajax.php'),
+      'nonce' => wp_create_nonce('crosssell_nonce'),
+      'freeShippingThreshold' => get_theme_option('free_shipping_threshold'),
+      'currency' => get_woocommerce_currency_symbol(),
+      'currencyPosition' => get_option('woocommerce_currency_pos', 'left'),
+      'messages' => array(
+        'addedToCart' => __('Produkt dodany do koszyka!', 'textdomain'),
+        'errorOccurred' => __('Wystąpił błąd. Spróbuj ponownie.', 'textdomain'),
+        'alreadyInCart' => __('Produkt już jest w koszyku.', 'textdomain'),
+        'freeShippingUnlocked' => __('Gratulacje! Odblokowano darmową dostawę!', 'textdomain')
+      )
+    ));
+  }
+
   // Przekazanie danych do JS
   wp_localize_script('universal-theme-script', 'themeConfig', array(
     'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -73,3 +108,4 @@ add_action('wp_enqueue_scripts', 'universal_theme_enqueue_assets');
 require_once THEME_DIR . '/inc/woocommerce-functions.php';
 require_once THEME_DIR . '/inc/theme-functions.php';
 require_once THEME_DIR . '/inc/woocommerce-checkout-functions.php';
+require_once THEME_DIR . '/inc/checkout-crosssell-functions.php';
