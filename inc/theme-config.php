@@ -112,7 +112,8 @@ function get_theme_config()
         // One-Click Checkout
         'checkout' => array(
             'enable_one_click' => true,           // Włącz/wyłącz one-click checkout
-            'require_login' => true,              // Czy wymagać logowania
+            'require_login' => false,             // Nie wymagaj logowania - pokaż dla wszystkich
+            'modal_checkout' => true,             // Użyj modalnego okna checkout
             'allowed_payment_methods' => array(   // Dozwolone metody płatności
                 'bacs',    // Przelew bankowy
                 'cheque',  // Czek
@@ -120,22 +121,23 @@ function get_theme_config()
                 'paypal',  // PayPal
                 'stripe',  // Stripe (jeśli zainstalowany)
             ),
-            'skip_fields' => array(               // Pola do pominięcia (użyj danych z profilu)
-                'billing_phone' => false,         // false = wymagane, true = pomiń
-                'billing_email' => false,
-                'billing_first_name' => true,     // true = użyj z profilu
+            'guest_required_fields' => array(     // Wymagane pola dla gości
+                'billing_email' => true,
+                'billing_first_name' => true,
                 'billing_last_name' => true,
-                'billing_address_1' => false,     // false = wymagane w one-click
-                'billing_city' => false,
-                'billing_postcode' => false,
-                'billing_country' => true,        // true = użyj domyślnego
+                'billing_address_1' => true,
+                'billing_city' => true,
+                'billing_postcode' => true,
+                'billing_country' => true,
+                'billing_phone' => false,         // Opcjonalne
             ),
             'default_payment_method' => 'bacs',   // Domyślna metoda płatności
             'show_on_shop_loop' => true,          // Pokaż na liście produktów
             'show_on_single_product' => true,     // Pokaż na stronie produktu
-            'button_text' => 'Kup w 1 klik',      // Tekst przycisku
-            'success_redirect' => 'order_received', // order_received lub custom URL
-            'enable_guest_checkout' => false,     // Czy pozwolić gościom na one-click
+            'button_text' => 'Dodaj do koszyka i zamów',  // Nowy tekst przycisku
+            'modal_title' => 'Finalizuj zamówienie',      // Tytuł modala
+            'enable_guest_checkout' => true,      // Pozwól gościom na checkout
+            'auto_add_to_cart' => true,          // Automatycznie dodaj do koszyka przed modalem
         ),
 
         // Funkcje

@@ -23,6 +23,14 @@ function universal_theme_init_one_click_checkout()
     add_action('wp_ajax_universal_one_click_checkout', 'universal_handle_one_click_checkout');
     add_action('wp_ajax_nopriv_universal_one_click_checkout', 'universal_handle_one_click_checkout_guest');
 
+    // Modal checkout endpoints
+    add_action('wp_ajax_universal_modal_checkout', 'universal_handle_modal_checkout');
+    add_action('wp_ajax_nopriv_universal_modal_checkout', 'universal_handle_modal_checkout');
+    
+    // Product data endpoint
+    add_action('wp_ajax_universal_get_product_data', 'universal_get_product_data');
+    add_action('wp_ajax_nopriv_universal_get_product_data', 'universal_get_product_data');
+
     // Dodaj przyciski na stronie produktu
     if (get_theme_option('checkout.show_on_single_product', true)) {
         add_action('woocommerce_after_single_product_summary', 'universal_display_one_click_button', 25);
@@ -83,14 +91,16 @@ function universal_display_one_click_button()
         return;
     }
 
-    $button_text = get_theme_option('checkout.button_text', 'Kup w 1 klik');
+    $button_text = get_theme_option('checkout.button_text', 'Dodaj do koszyka i zamów');
+    $modal_mode = get_theme_option('checkout.modal_checkout', false);
     ?>
     <div class="universal-one-click-wrapper">
         <button 
             type="button" 
-            class="universal-one-click-btn button alt" 
+            class="universal-one-click-btn button alt <?php echo $modal_mode ? 'modal-trigger' : ''; ?>" 
             data-product-id="<?php echo esc_attr($product->get_id()); ?>"
             data-quantity="1"
+            data-action="<?php echo $modal_mode ? 'open-modal' : 'direct-order'; ?>"
         >
             <span class="btn-text"><?php echo esc_html($button_text); ?></span>
             <span class="btn-loading" style="display: none;">
@@ -148,7 +158,12 @@ function universal_can_show_one_click_button($product)
         return false;
     }
 
-    // Sprawdź czy wymagane logowanie
+    // W trybie modal checkout - pokaż dla wszystkich
+    if (get_theme_option('checkout.modal_checkout', false)) {
+        return true;
+    }
+
+    // Klasyczna logika - sprawdź czy wymagane logowanie
     if (get_theme_option('checkout.require_login', true) && !is_user_logged_in()) {
         return false;
     }
@@ -330,3 +345,290 @@ function universal_display_one_click_order_meta($order)
     }
 }
 add_action('woocommerce_admin_order_data_after_order_details', 'universal_display_one_click_order_meta');
+
+/**
+ * Wyświetl modal checkout w footer
+ */
+function universal_render_checkout_modal() {
+    if (!get_theme_option('checkout.modal_checkout', false)) {
+        return;
+    }
+
+    $modal_title = get_theme_option('checkout.modal_title', 'Finalizuj zamówienie');
+    $payment_methods = get_theme_option('checkout.allowed_payment_methods', array('bacs'));
+    ?>
+    <div id="universal-checkout-modal" class="universal-modal">
+        <div class="universal-modal-content">
+            <div class="universal-modal-header">
+                <h2 class="universal-modal-title"><?php echo esc_html($modal_title); ?></h2>
+                <button class="universal-close" aria-label="Zamknij">&times;</button>
+            </div>
+            
+            <div class="universal-modal-body">
+                <form id="universal-modal-checkout-form" class="universal-checkout-form">
+                    
+                    <!-- Order Summary -->
+                    <div class="checkout-section order-summary">
+                        <h3><?php echo __('Podsumowanie zamówienia', 'universal-theme'); ?></h3>
+                        <div class="order-items">
+                            <!-- Dynamicznie wypełniane przez JS -->
+                        </div>
+                        <div class="order-totals">
+                            <!-- Sumy -->
+                        </div>
+                    </div>
+
+                    <!-- Customer Details -->
+                    <div class="checkout-section customer-details">
+                        <h3><?php echo __('Dane do wysyłki', 'universal-theme'); ?></h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="billing_first_name"><?php echo __('Imię', 'universal-theme'); ?> <span class="required">*</span></label>
+                                <input type="text" id="billing_first_name" name="billing_first_name" required>
+                            </div>
+                            <div class="form-group half">
+                                <label for="billing_last_name"><?php echo __('Nazwisko', 'universal-theme'); ?> <span class="required">*</span></label>
+                                <input type="text" id="billing_last_name" name="billing_last_name" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="billing_email"><?php echo __('Email', 'universal-theme'); ?> <span class="required">*</span></label>
+                                <input type="email" id="billing_email" name="billing_email" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="billing_address_1"><?php echo __('Adres', 'universal-theme'); ?> <span class="required">*</span></label>
+                                <input type="text" id="billing_address_1" name="billing_address_1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="billing_city"><?php echo __('Miasto', 'universal-theme'); ?> <span class="required">*</span></label>
+                                <input type="text" id="billing_city" name="billing_city" required>
+                            </div>
+                            <div class="form-group half">
+                                <label for="billing_postcode"><?php echo __('Kod pocztowy', 'universal-theme'); ?> <span class="required">*</span></label>
+                                <input type="text" id="billing_postcode" name="billing_postcode" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="billing_phone"><?php echo __('Telefon', 'universal-theme'); ?></label>
+                                <input type="tel" id="billing_phone" name="billing_phone">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Methods -->
+                    <div class="checkout-section payment-methods">
+                        <h3><?php echo __('Metoda płatności', 'universal-theme'); ?></h3>
+                        
+                        <?php foreach ($payment_methods as $method_id): 
+                            $method_title = '';
+                            switch($method_id) {
+                                case 'bacs': $method_title = 'Przelew bankowy'; break;
+                                case 'cod': $method_title = 'Płatność przy odbiorze'; break;
+                                case 'paypal': $method_title = 'PayPal'; break;
+                                case 'stripe': $method_title = 'Karta kredytowa'; break;
+                                default: $method_title = ucfirst($method_id); break;
+                            }
+                        ?>
+                        <div class="payment-method">
+                            <label>
+                                <input type="radio" name="payment_method" value="<?php echo esc_attr($method_id); ?>" <?php echo $method_id === 'bacs' ? 'checked' : ''; ?>>
+                                <span class="payment-label"><?php echo esc_html($method_title); ?></span>
+                            </label>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="checkout-section submit-section">
+                        <button type="submit" class="universal-submit-order button">
+                            <?php echo __('Złóż zamówienie', 'universal-theme'); ?>
+                        </button>
+                    </div>
+
+                    <!-- Hidden Fields -->
+                    <input type="hidden" id="modal-product-id" name="product_id" value="">
+                    <input type="hidden" id="modal-quantity" name="quantity" value="1">
+                    <input type="hidden" name="action" value="universal_modal_checkout">
+                    <input type="hidden" name="nonce" value="<?php echo wp_create_nonce('universal_modal_nonce'); ?>">
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+add_action('wp_footer', 'universal_render_checkout_modal');
+
+/**
+ * AJAX: Pobierz dane produktu dla modala
+ */
+function universal_get_product_data() {
+    // Sprawdź nonce
+    if (!wp_verify_nonce($_POST['nonce'], 'universal_one_click_nonce')) {
+        wp_die(__('Security check failed.', 'universal-theme'));
+    }
+
+    $product_id = absint($_POST['product_id'] ?? 0);
+    $quantity = absint($_POST['quantity'] ?? 1);
+
+    if (!$product_id) {
+        wp_send_json_error(array(
+            'message' => __('Nieprawidłowy produkt.', 'universal-theme')
+        ));
+    }
+
+    $product = wc_get_product($product_id);
+    if (!$product) {
+        wp_send_json_error(array(
+            'message' => __('Produkt nie został znaleziony.', 'universal-theme')
+        ));
+    }
+
+    // Przygotuj dane produktu
+    $subtotal = $product->get_price() * $quantity;
+    $tax = 0; // Można dodać kalkulację podatku jeśli potrzebne
+    $total = $subtotal + $tax;
+
+    $data = array(
+        'name' => $product->get_name(),
+        'price_html' => wc_price($product->get_price()),
+        'quantity' => $quantity,
+        'subtotal' => wc_price($subtotal),
+        'tax' => wc_price($tax),
+        'total' => wc_price($total),
+        'image' => wp_get_attachment_image_url($product->get_image_id(), 'thumbnail') ?: ''
+    );
+
+    wp_send_json_success($data);
+}
+
+/**
+ * AJAX: Obsługa modal checkout
+ */
+function universal_handle_modal_checkout() {
+    try {
+        // Sprawdź nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'universal_modal_nonce')) {
+            throw new Exception(__('Security check failed.', 'universal-theme'));
+        }
+
+        $product_id = absint($_POST['product_id'] ?? 0);
+        $quantity = absint($_POST['quantity'] ?? 1);
+
+        if (!$product_id) {
+            throw new Exception(__('Nieprawidłowy produkt.', 'universal-theme'));
+        }
+
+        $product = wc_get_product($product_id);
+        if (!$product || !$product->is_purchasable()) {
+            throw new Exception(__('Produkt nie jest dostępny.', 'universal-theme'));
+        }
+
+        // Sprawdź dostępność
+        if (!$product->has_enough_stock($quantity)) {
+            throw new Exception(__('Niewystarczająca ilość w magazynie.', 'universal-theme'));
+        }
+
+        // Utwórz zamówienie
+        $order = wc_create_order();
+        
+        // Dodaj produkt
+        $order->add_product($product, $quantity);
+
+        // Ustaw dane klienta z formularza
+        $billing_data = array(
+            'first_name' => sanitize_text_field($_POST['billing_first_name'] ?? ''),
+            'last_name'  => sanitize_text_field($_POST['billing_last_name'] ?? ''),
+            'email'      => sanitize_email($_POST['billing_email'] ?? ''),
+            'phone'      => sanitize_text_field($_POST['billing_phone'] ?? ''),
+            'address_1'  => sanitize_text_field($_POST['billing_address_1'] ?? ''),
+            'city'       => sanitize_text_field($_POST['billing_city'] ?? ''),
+            'postcode'   => sanitize_text_field($_POST['billing_postcode'] ?? ''),
+            'country'    => sanitize_text_field($_POST['billing_country'] ?? 'PL'),
+        );
+
+        // Walidacja wymaganych pól
+        $required_fields = get_theme_option('checkout.guest_required_fields', array());
+        foreach ($required_fields as $field => $required) {
+            if ($required && empty($billing_data[str_replace('billing_', '', $field)])) {
+                throw new Exception(sprintf(__('Pole %s jest wymagane.', 'universal-theme'), $field));
+            }
+        }
+
+        $order->set_address($billing_data, 'billing');
+        $order->set_address($billing_data, 'shipping');
+
+        // Ustaw klienta jeśli zalogowany
+        if (is_user_logged_in()) {
+            $order->set_customer_id(get_current_user_id());
+        } else {
+            // Ustaw email dla gościa
+            $order->set_billing_email($billing_data['email']);
+        }
+
+        // Ustaw metodę płatności
+        $payment_method = sanitize_text_field($_POST['payment_method'] ?? get_theme_option('checkout.default_payment_method', 'bacs'));
+        $allowed_methods = get_theme_option('checkout.allowed_payment_methods', array('bacs'));
+
+        if (in_array($payment_method, $allowed_methods)) {
+            $order->set_payment_method($payment_method);
+        } else {
+            throw new Exception(__('Nieprawidłowa metoda płatności.', 'universal-theme'));
+        }
+
+        // Oblicz kwoty
+        $order->calculate_totals();
+
+        // Zapisz zamówienie
+        $order->save();
+
+        // Ustaw status
+        if ($payment_method === 'cod') {
+            $order->update_status('processing', __('Zamówienie złożone przez modal checkout.', 'universal-theme'));
+        } else {
+            $order->update_status('pending-payment', __('Zamówienie złożone przez modal checkout - oczekuje na płatność.', 'universal-theme'));
+        }
+
+        // Dodaj meta info
+        update_post_meta($order->get_id(), '_universal_modal_checkout', 'yes');
+
+        // Wyślij emaile
+        WC()->mailer()->get_emails()['WC_Email_New_Order']->trigger($order->get_id(), $order);
+
+        // Zmniejsz stan magazynowy
+        wc_reduce_stock_levels($order->get_id());
+
+        // Przygotuj odpowiedź
+        $redirect_url = '';
+        if ($payment_method === 'paypal') {
+            // Dla PayPal można dodać link do płatności
+            $redirect_url = $order->get_checkout_payment_url();
+        } else {
+            // Dla innych metod - strona potwierdzenia
+            $redirect_url = $order->get_checkout_order_received_url();
+        }
+
+        wp_send_json_success(array(
+            'message' => __('Zamówienie zostało złożone pomyślnie!', 'universal-theme'),
+            'order_id' => $order->get_id(),
+            'order_key' => $order->get_order_key(),
+            'redirect_url' => $redirect_url,
+            'total' => $order->get_formatted_order_total()
+        ));
+
+    } catch (Exception $e) {
+        wp_send_json_error(array(
+            'message' => $e->getMessage()
+        ));
+    }
+}
