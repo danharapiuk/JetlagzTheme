@@ -113,3 +113,28 @@ function universal_theme_layout_css()
     echo '</style>';
 }
 add_action('wp_head', 'universal_theme_layout_css');
+
+/**
+ * Kolory motywu z konfiguracji
+ */
+function universal_theme_colors_css() {
+    $colors = get_theme_option('colors');
+    
+    echo '<style type="text/css">';
+    echo ':root {';
+    echo '--color-primary: ' . $colors['primary'] . ';';
+    echo '--color-secondary: ' . $colors['secondary'] . ';';
+    echo '--color-accent: ' . $colors['accent'] . ';';
+    echo '--color-text-dark: ' . $colors['text_dark'] . ';';
+    echo '--color-text-light: ' . $colors['text_light'] . ';';
+    echo '--color-background: ' . $colors['background'] . ';';
+    echo '--color-background-alt: ' . $colors['background_alt'] . ';';
+    echo '}';
+    
+    // Header background (używa primary color)
+    echo '.site-header { background-color: ' . $colors['primary'] . '; }';
+    echo '.main-navigation ul li a { color: white; }'; // Białe linki w menu na kolorowym tle
+    
+    echo '</style>';
+}
+add_action('wp_head', 'universal_theme_colors_css');

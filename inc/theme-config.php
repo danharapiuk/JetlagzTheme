@@ -12,11 +12,11 @@ function get_theme_config()
         'theme_name' => 'Universal Store Theme',
         'theme_version' => '1.0.0',
 
-        // Kolory (można łatwo zmieniać dla różnych sklepów)
+        // Kolory (domyślne Storefront - można łatwo zmieniać dla różnych sklepów)
         'colors' => array(
-            'primary' => '#e74c3c',           // Główny kolor marki
+            'primary' => '#7f54b3',           // Domyślny kolor Storefront (fioletowy)
             'secondary' => '#3498db',         // Kolor drugorzędny
-            'accent' => '#f39c12',            // Kolor akcji/przycisków
+            'accent' => '#7f54b3',            // Kolor akcji/przycisków (taki sam jak primary)
             'text_dark' => '#2c3e50',         // Ciemny tekst
             'text_light' => '#7f8c8d',        // Jasny tekst
             'background' => '#ffffff',        // Tło
