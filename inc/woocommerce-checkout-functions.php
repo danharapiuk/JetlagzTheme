@@ -15,9 +15,15 @@ if (!defined('ABSPATH')) {
  */
 function universal_theme_init_one_click_checkout()
 {
-    if (!get_theme_option('checkout.enable_one_click', false)) {
+    $enable_one_click = get_theme_option('checkout.enable_one_click', false);
+    error_log('Universal Debug: enable_one_click = ' . ($enable_one_click ? 'true' : 'false'));
+
+    if (!$enable_one_click) {
+        error_log('Universal Debug: One-click checkout is disabled');
         return;
     }
+
+    error_log('Universal Debug: One-click checkout enabled, setting up hooks');
 
     // AJAX endpoints
     add_action('wp_ajax_universal_one_click_checkout', 'universal_handle_one_click_checkout');
@@ -37,7 +43,7 @@ function universal_theme_init_one_click_checkout()
 
     // Dodaj przyciski na stronie produktu
     if (get_theme_option('checkout.show_on_single_product', true)) {
-        add_action('woocommerce_after_single_product_summary', 'universal_display_one_click_button', 25);
+        add_action('woocommerce_single_product_summary', 'universal_display_one_click_button', 31);
     }
 
     // Dodaj przyciski w pętli produktów
@@ -91,9 +97,20 @@ function universal_display_one_click_button()
 {
     global $product;
 
-    if (!universal_can_show_one_click_button($product)) {
+    // Debug - sprawdź czy funkcja się wykonuje
+    error_log('Universal Debug: universal_display_one_click_button called');
+
+    if (!$product) {
+        error_log('Universal Debug: Brak obiektu $product');
         return;
     }
+
+    if (!universal_can_show_one_click_button($product)) {
+        error_log('Universal Debug: universal_can_show_one_click_button returned false');
+        return;
+    }
+
+    error_log('Universal Debug: Renderuję przycisk one-click dla produktu: ' . $product->get_id());
 
     $button_text = get_theme_option('checkout.button_text', 'Dodaj do koszyka i przejdź do płatności');
     $redirect_mode = get_theme_option('checkout.redirect_to_checkout', true);
@@ -149,30 +166,41 @@ function universal_display_one_click_button_loop()
  */
 function universal_can_show_one_click_button($product)
 {
+    error_log('Universal Debug: Sprawdzam czy można pokazać przycisk...');
+    
     if (!$product || !is_a($product, 'WC_Product')) {
+        error_log('Universal Debug: Brak produktu lub nieprawidłowy typ');
         return false;
     }
 
     // Sprawdź czy produkt jest dostępny
     if (!$product->is_purchasable() || !$product->is_in_stock()) {
+        error_log('Universal Debug: Produkt niedostępny lub brak w magazynie');
         return false;
     }
 
     // Sprawdź czy to produkt zmienhy (wymaga wyboru opcji)
     if ($product->is_type('variable') && !$product->get_default_attributes()) {
+        error_log('Universal Debug: Produkt zmienhy bez domyślnych atrybutów');
         return false;
     }
 
     // W trybie modal checkout - pokaż dla wszystkich
     if (get_theme_option('checkout.modal_checkout', false)) {
+        error_log('Universal Debug: Tryb modal checkout - pokazuję przycisk');
         return true;
     }
 
     // Klasyczna logika - sprawdź czy wymagane logowanie
-    if (get_theme_option('checkout.require_login', true) && !is_user_logged_in()) {
+    $require_login = get_theme_option('checkout.require_login', true);
+    error_log('Universal Debug: require_login = ' . ($require_login ? 'true' : 'false'));
+    
+    if ($require_login && !is_user_logged_in()) {
+        error_log('Universal Debug: Wymagane logowanie, a użytkownik nie zalogowany');
         return false;
     }
 
+    error_log('Universal Debug: Wszystkie warunki spełnione - pokazuję przycisk');
     return true;
 }
 

@@ -51,8 +51,8 @@ function universal_enqueue_crosssell_scripts()
             'error' => __('Wystąpił błąd podczas dodawania produktu.', 'universal-theme'),
         ),
         'settings' => array(
-            'free_shipping_threshold' => get_theme_option('checkout.free_shipping_threshold', 199),
-            'update_checkout_delay' => get_theme_option('checkout.update_delay', 1500),
+            'free_shipping_threshold' => get_theme_option('crosssell.free_shipping_threshold', 100),
+            'update_checkout_delay' => 1500,
         )
     ));
 }
@@ -67,7 +67,7 @@ function universal_display_checkout_crosssell()
     }
 
     $cart_total = WC()->cart->get_cart_contents_total();
-    $free_shipping_threshold = get_theme_option('checkout.free_shipping_threshold', 199);
+    $free_shipping_threshold = get_theme_option('crosssell.free_shipping_threshold', 100);
     $remaining_for_free_shipping = max(0, $free_shipping_threshold - $cart_total);
 
     // Pobierz produkty cross-sell
@@ -195,6 +195,10 @@ function universal_display_checkout_crosssell()
 function universal_get_checkout_crosssell_products($limit = 4)
 {
     $products = array();
+    $cart_items = WC()->cart->get_cart();
+
+    // Dodaj debug info (usuń w produkcji)
+    error_log('Universal Cross-sell Debug: Liczba produktów w koszyku: ' . count($cart_items));
 
     // Strategia 1: Cross-sell products z produktów w koszyku
     foreach (WC()->cart->get_cart() as $cart_item) {
@@ -211,7 +215,24 @@ function universal_get_checkout_crosssell_products($limit = 4)
         }
     }
 
-    // Strategia 2: Jeśli brak cross-sell, użyj produktów z tej samej kategorii
+    // Strategia 2: Jeśli brak cross-sell, użyj produktów powiązanych (related)
+    if (empty($products)) {
+        foreach (WC()->cart->get_cart() as $cart_item) {
+            $product = $cart_item['data'];
+            $upsells = $product->get_upsell_ids(); // Dodajemy też upsells
+
+            if (!empty($upsells)) {
+                foreach ($upsells as $upsell_id) {
+                    $upsell_product = wc_get_product($upsell_id);
+                    if ($upsell_product && $upsell_product->is_purchasable()) {
+                        $products[$upsell_id] = $upsell_product;
+                    }
+                }
+            }
+        }
+    }
+
+    // Strategia 3: Jeśli nadal brak, użyj produktów z tej samej kategorii
     if (empty($products)) {
         $category_ids = array();
 
@@ -242,22 +263,50 @@ function universal_get_checkout_crosssell_products($limit = 4)
         }
     }
 
-    // Strategia 3: Fallback - popularne produkty
+    // Strategia 4: Fallback - popularne produkty
     if (empty($products)) {
+        error_log('Universal Cross-sell Debug: Używam fallback - popularne produkty');
+
         $popular_products = wc_get_products(array(
             'limit' => $limit,
             'orderby' => 'popularity',
             'exclude' => array_keys(WC()->cart->get_cart_contents()),
             'return' => 'objects',
+            'status' => 'publish',
         ));
+
+        error_log('Universal Cross-sell Debug: Znaleziono ' . count($popular_products) . ' popularnych produktów');
 
         foreach ($popular_products as $popular_product) {
             $products[$popular_product->get_id()] = $popular_product;
         }
     }
 
+    // Strategia 5: Ultimate fallback - najnowsze produkty
+    if (empty($products)) {
+        error_log('Universal Cross-sell Debug: Ultimate fallback - najnowsze produkty');
+
+        $newest_products = wc_get_products(array(
+            'limit' => $limit,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'exclude' => array_keys(WC()->cart->get_cart_contents()),
+            'return' => 'objects',
+            'status' => 'publish',
+        ));
+
+        error_log('Universal Cross-sell Debug: Znaleziono ' . count($newest_products) . ' najnowszych produktów');
+
+        foreach ($newest_products as $newest_product) {
+            $products[$newest_product->get_id()] = $newest_product;
+        }
+    }
+
+    $final_products = array_slice($products, 0, $limit, true);
+    error_log('Universal Cross-sell Debug: Zwracam ' . count($final_products) . ' produktów');
+
     // Zwróć tylko określoną liczbę produktów
-    return array_slice($products, 0, $limit, true);
+    return $final_products;
 }
 
 /**
