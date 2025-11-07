@@ -136,26 +136,6 @@ function universal_theme_colors_css()
     echo '.site-header { background-color: ' . $colors['primary'] . '; }';
     echo '.main-navigation ul li a { color: white; }'; // Białe linki w menu na kolorowym tle
 
-    // Ukryj hamburger menu na desktop i pokaż normalne menu
-    echo '@media (min-width: 768px) {';
-    echo '.menu-toggle, .handheld-navigation, .universal-mobile-toggle, .mobile-menu-toggle { display: none !important; }';
-    echo '.primary-navigation { display: block !important; }';
-    echo '.main-navigation { display: block !important; }';
-    echo '.main-navigation ul { display: block !important; overflow: visible !important; max-height: none !important; }';
-    echo '.main-navigation ul li { display: inline-block !important; }';
-    echo '.main-navigation ul li a { padding: 1.618em 1em; }';
-    echo '}';
-    
-    // Responsive: hamburger tylko na mobile
-    echo '@media (max-width: 767px) {';
-    echo '.primary-navigation { display: none; }';
-    echo '.main-navigation ul { display: none; max-height: 0; }';
-    echo '.menu-toggle { display: block; }';
-    echo '.main-navigation.toggled ul { display: block; max-height: 9999px; }';
-    echo '}';
-    
-    // Dodatkowe ukrywanie problematycznych elementów
-    echo '.universal-mobile-toggle, .mobile-menu-toggle, button[aria-expanded] { display: none !important; }';
-    echo '@media (min-width: 768px) { .universal-mobile-toggle, .mobile-menu-toggle, button[aria-expanded] { display: none !important; } }';    echo '</style>';
+    echo '</style>';
 }
 add_action('wp_head', 'universal_theme_colors_css');

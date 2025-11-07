@@ -39,75 +39,76 @@
 }
 
 /* === MENU NAVIGATION FIX === */
-/* Ukryj hamburger menu na desktop - zgodnie ze Storefront */
-@media(min-width: 768px) {
-	.menu-toggle,
+/* Przepisz dokładnie tak jak w Storefront */
+@media (min-width: 768px) {
+	/* Ukryj mobile menu elements jak w Storefront */
+	.menu-toggle, 
 	.handheld-navigation,
-	.universal-mobile-toggle,
-	.mobile-menu-toggle,
-	button[aria-expanded] {
-		display: none !important;
-	}
-	
-	.primary-navigation {
-		display: block !important;
-	}
-	
-	.main-navigation {
-		display: block !important;
-		clear: both;
-		width: 100%;
-	}
-	
-	.main-navigation ul {
-		display: block !important;
-		position: static !important;
-		background: transparent !important;
-		box-shadow: none !important;
-		max-height: none !important;
-		overflow: visible !important;
-		margin-left: -1em;
-		transition: none;
-	}
-	
-	.main-navigation ul li {
-		display: inline-block !important;
-		position: relative;
-		text-align: left;
-	}
-	
-	.main-navigation ul li a {
-		display: block !important;
-		padding: 1.618em 1em;
-	}
-	
-	/* Ukryj wszystkie mobile-specific elementy */
 	.main-navigation.toggled .handheld-navigation,
 	.main-navigation.toggled div.menu {
 		display: none !important;
 	}
+	
+	/* Pokaż primary navigation jak w Storefront */
+	.primary-navigation {
+		display: block !important;
+	}
+	
+	/* Main navigation styling jak w Storefront */
+	.main-navigation,
+	.secondary-navigation {
+		clear: both;
+		display: block;
+		width: 100%;
+	}
+	
+	.main-navigation ul.menu,
+	.main-navigation ul.nav-menu {
+		max-height: none !important;
+		overflow: visible !important;
+		margin-left: -1em;
+		transition: none;
+		display: block !important;
+	}
+	
+	.main-navigation ul li {
+		position: relative;
+		display: inline-block !important;
+		text-align: left;
+	}
+	
+	.main-navigation ul li a {
+		display: block;
+	}
+	
+	.main-navigation ul.menu > li > a,
+	.main-navigation ul.nav-menu > li > a {
+		padding: 1.618em 1em;
+	}
 }
 
-/* Mobile: pokaż hamburger tylko na małych ekranach */
-@media(max-width: 767px) {
+/* Mobile: tylko hamburger */
+@media (max-width: 767px) {
 	.primary-navigation {
-		display: none;
+		display: none !important;
 	}
 	
 	.menu-toggle {
-		display: block;
+		display: block !important;
 	}
 	
 	.main-navigation ul {
-		display: none;
+		overflow: hidden;
 		max-height: 0;
+		transition: all, ease, 0.8s;
 	}
 	
-	.main-navigation.toggled ul {
-		display: block;
+	.main-navigation.toggled .handheld-navigation,
+	.main-navigation.toggled .menu > ul:not(.nav-menu),
+	.main-navigation.toggled ul[aria-expanded="true"] {
 		max-height: 9999px;
 	}
-}/* Podstawowe zmienne - będą nadpisane przez customizer */
+} /* Podstawowe zmienne - będą nadpisane przez customizer */
 :root {
 	--primary-color: #e74c3c;
 	--secondary-color: #3498db;
