@@ -19,13 +19,84 @@ add_action('admin_menu', function () {
 });
 
 /**
+ * Usunięcie przycisku "Dostosuj" z paska narzędzi WordPress
+ */
+function universal_theme_remove_customize_toolbar($wp_admin_bar)
+{
+    // Usuń link "Dostosuj" z toolbar
+    $wp_admin_bar->remove_node('customize');
+}
+add_action('admin_bar_menu', 'universal_theme_remove_customize_toolbar', 999);
+
+/**
+ * Blokowanie dostępu do customizer przez URL
+ */
+function universal_theme_block_customizer_access()
+{
+    global $pagenow;
+
+    // Blokuj customize.php
+    if ($pagenow === 'customize.php') {
+        wp_die(
+            __('Dostęp do personalizacji motywu został zablokowany.', 'universal-theme'),
+            __('Dostęp zabroniony', 'universal-theme'),
+            array('response' => 403)
+        );
+    }
+
+    // Blokuj dostęp przez admin-ajax.php
+    if (defined('DOING_AJAX') && DOING_AJAX) {
+        if (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'customize') !== false) {
+            wp_die(__('Dostęp do personalizacji motywu został zablokowany.', 'universal-theme'));
+        }
+    }
+}
+add_action('admin_init', 'universal_theme_block_customizer_access');
+
+/**
+ * Usunięcie metabox "Dostosuj" ze stron i postów
+ */
+function universal_theme_remove_customize_meta_boxes()
+{
+    // Usuń wszystkie metaboxy związane z customizer
+    remove_meta_box('customize-homepage', 'page', 'normal');
+    remove_meta_box('customize-homepage', 'post', 'normal');
+}
+add_action('add_meta_boxes', 'universal_theme_remove_customize_meta_boxes', 999);
+
+/**
+ * Ukrycie linków do customizer w CSS (admin)
+ */
+function universal_theme_hide_customize_links()
+{
+    echo '<style>
+        .customize-support .hide-if-no-customize,
+        .customize-support .wp-core-ui .button-link-delete,
+        a[href*="customize.php"],
+        #customize-theme,
+        .customize-control,
+        .theme-options .theme-overlay .theme-actions .button[href*="customize"] {
+            display: none !important;
+        }
+        
+        /* Ukryj w admin bar */
+        #wpadminbar #wp-admin-bar-customize {
+            display: none !important;
+        }
+    </style>';
+}
+add_action('admin_head', 'universal_theme_hide_customize_links');
+add_action('wp_head', 'universal_theme_hide_customize_links');
+
+/**
  * Layout CSS z konfiguracji motywu - kontrola sidebar
  */
-function universal_theme_layout_css() {
+function universal_theme_layout_css()
+{
     $layout_config = get_theme_option('layout');
-    
+
     echo '<style type="text/css">';
-    
+
     // Sidebar control
     $enable_sidebar = $layout_config['enable_sidebar'] ?? true;
     if (!$enable_sidebar) {
@@ -34,12 +105,11 @@ function universal_theme_layout_css() {
         echo '#primary { width: 100% !important; }';
         echo '.no-wc-breadcrumb:not(.page-template-template-fullwidth) #primary { width: 100% !important; }';
     }
-    
+
     // Container główny
     $container_width = $layout_config['container_width'] ?? '1200px';
     echo '.container, .site-content { max-width: ' . $container_width . '; margin: 0 auto; }';
-    
+
     echo '</style>';
 }
 add_action('wp_head', 'universal_theme_layout_css');
-

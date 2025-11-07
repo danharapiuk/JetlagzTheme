@@ -24,18 +24,18 @@
 .widget-area,
 .sidebar,
 #secondary {
-    display: none !important;
+	display: none !important;
 }
 
 /* Rozszerzenie content area gdy sidebar ukryty */
 .no-wc-breadcrumb:not(.page-template-template-fullwidth) #primary {
-    width: 100% !important;
-    max-width: 100% !important;
+	width: 100% !important;
+	max-width: 100% !important;
 }
 
 .content-area {
-    width: 100% !important;
-    max-width: 100% !important;
+	width: 100% !important;
+	max-width: 100% !important;
 }
 
 /* Podstawowe zmienne - będą nadpisane przez customizer */
