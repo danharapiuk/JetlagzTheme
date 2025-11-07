@@ -129,10 +129,10 @@ function universal_display_one_click_button_loop()
         return;
     }
 
-        $button_text = get_theme_option('checkout.button_text', 'Kup w 1 klik');
+    $button_text = get_theme_option('checkout.button_text', 'Kup w 1 klik');
     $redirect_mode = get_theme_option('checkout.redirect_to_checkout', true);
 ?>
-?>
+    ?>
     <button
         type="button"
         class="universal-one-click-btn-loop button"

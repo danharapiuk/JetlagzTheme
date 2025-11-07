@@ -18,7 +18,7 @@ function universal_init_checkout_crosssell()
     // AJAX endpoints
     add_action('wp_ajax_universal_add_crosssell_product', 'universal_handle_add_crosssell_product');
     add_action('wp_ajax_nopriv_universal_add_crosssell_product', 'universal_handle_add_crosssell_product');
-    
+
     // Enqueue scripts tylko na checkout
     add_action('wp_enqueue_scripts', 'universal_enqueue_crosssell_scripts');
 }
@@ -69,16 +69,16 @@ function universal_display_checkout_crosssell()
     $cart_total = WC()->cart->get_cart_contents_total();
     $free_shipping_threshold = get_theme_option('checkout.free_shipping_threshold', 199);
     $remaining_for_free_shipping = max(0, $free_shipping_threshold - $cart_total);
-    
+
     // Pobierz produkty cross-sell
     $crosssell_products = universal_get_checkout_crosssell_products();
-    
+
     if (empty($crosssell_products) && $remaining_for_free_shipping <= 0) {
         return; // Brak produktów i już mamy darmową wysyłkę
     }
 ?>
     <div class="checkout-crosssell-section">
-        
+
         <?php if ($remaining_for_free_shipping > 0) : ?>
             <!-- Free Shipping Progress -->
             <div class="free-shipping-progress">
@@ -91,7 +91,7 @@ function universal_display_checkout_crosssell()
                         Zostało: <strong><?php echo wc_price($remaining_for_free_shipping); ?></strong>
                     </span>
                 </div>
-                
+
                 <div class="shipping-progress-bar">
                     <div class="progress-track">
                         <div class="progress-fill" style="width: <?php echo min(100, ($cart_total / $free_shipping_threshold) * 100); ?>%"></div>
@@ -128,33 +128,33 @@ function universal_display_checkout_crosssell()
                         <div class="crosssell-product-item" data-product-id="<?php echo $product->get_id(); ?>">
                             <div class="crosssell-product-image">
                                 <?php echo $product->get_image('thumbnail'); ?>
-                                
+
                                 <?php if ($product->is_on_sale()) : ?>
                                     <span class="crosssell-sale-badge">SALE</span>
                                 <?php endif; ?>
                             </div>
-                            
+
                             <div class="crosssell-product-info">
                                 <h4 class="crosssell-product-name"><?php echo $product->get_name(); ?></h4>
-                                
+
                                 <div class="crosssell-product-price">
                                     <?php echo $product->get_price_html(); ?>
                                 </div>
-                                
+
                                 <?php if ($product->get_short_description()) : ?>
                                     <p class="crosssell-product-description">
                                         <?php echo wp_trim_words($product->get_short_description(), 10); ?>
                                     </p>
                                 <?php endif; ?>
                             </div>
-                            
+
                             <div class="crosssell-product-actions">
                                 <?php if ($product->is_purchasable() && $product->is_in_stock()) : ?>
-                                    <button type="button" 
-                                            class="crosssell-add-btn button"
-                                            data-product-id="<?php echo $product->get_id(); ?>"
-                                            data-product-name="<?php echo esc_attr($product->get_name()); ?>"
-                                            data-product-price="<?php echo $product->get_price(); ?>">
+                                    <button type="button"
+                                        class="crosssell-add-btn button"
+                                        data-product-id="<?php echo $product->get_id(); ?>"
+                                        data-product-name="<?php echo esc_attr($product->get_name()); ?>"
+                                        data-product-price="<?php echo $product->get_price(); ?>">
                                         <span class="btn-icon">+</span>
                                         <span class="btn-text">Dodaj</span>
                                         <span class="btn-price"><?php echo wc_price($product->get_price()); ?></span>
@@ -168,7 +168,7 @@ function universal_display_checkout_crosssell()
                         </div>
                     <?php endforeach; ?>
                 </div>
-                
+
                 <div class="crosssell-benefits">
                     <div class="benefit-item">
                         <i class="benefit-icon">⚡</i>
@@ -195,12 +195,12 @@ function universal_display_checkout_crosssell()
 function universal_get_checkout_crosssell_products($limit = 4)
 {
     $products = array();
-    
+
     // Strategia 1: Cross-sell products z produktów w koszyku
     foreach (WC()->cart->get_cart() as $cart_item) {
         $product = $cart_item['data'];
         $cross_sells = $product->get_cross_sell_ids();
-        
+
         if (!empty($cross_sells)) {
             foreach ($cross_sells as $cross_sell_id) {
                 $cross_sell_product = wc_get_product($cross_sell_id);
@@ -210,23 +210,23 @@ function universal_get_checkout_crosssell_products($limit = 4)
             }
         }
     }
-    
+
     // Strategia 2: Jeśli brak cross-sell, użyj produktów z tej samej kategorii
     if (empty($products)) {
         $category_ids = array();
-        
+
         // Zbierz kategorie z produktów w koszyku
         foreach (WC()->cart->get_cart() as $cart_item) {
             $product = $cart_item['data'];
             $terms = get_the_terms($product->get_id(), 'product_cat');
-            
+
             if ($terms && !is_wp_error($terms)) {
                 foreach ($terms as $term) {
                     $category_ids[] = $term->term_id;
                 }
             }
         }
-        
+
         if (!empty($category_ids)) {
             $related_products = wc_get_products(array(
                 'limit' => $limit * 2, // Pobierz więcej żeby móc filtrować
@@ -235,13 +235,13 @@ function universal_get_checkout_crosssell_products($limit = 4)
                 'orderby' => 'popularity',
                 'return' => 'objects',
             ));
-            
+
             foreach ($related_products as $related_product) {
                 $products[$related_product->get_id()] = $related_product;
             }
         }
     }
-    
+
     // Strategia 3: Fallback - popularne produkty
     if (empty($products)) {
         $popular_products = wc_get_products(array(
@@ -250,12 +250,12 @@ function universal_get_checkout_crosssell_products($limit = 4)
             'exclude' => array_keys(WC()->cart->get_cart_contents()),
             'return' => 'objects',
         ));
-        
+
         foreach ($popular_products as $popular_product) {
             $products[$popular_product->get_id()] = $popular_product;
         }
     }
-    
+
     // Zwróć tylko określoną liczbę produktów
     return array_slice($products, 0, $limit, true);
 }
@@ -302,7 +302,7 @@ function universal_handle_add_crosssell_product()
         $cart_total = WC()->cart->get_cart_contents_total();
         $free_shipping_threshold = get_theme_option('checkout.free_shipping_threshold', 199);
         $remaining_for_free_shipping = max(0, $free_shipping_threshold - $cart_total);
-        
+
         wp_send_json_success(array(
             'message' => sprintf(__('%s został dodany do koszyka!', 'universal-theme'), $product->get_name()),
             'product_name' => $product->get_name(),
@@ -314,7 +314,6 @@ function universal_handle_add_crosssell_product()
             'free_shipping_achieved' => $remaining_for_free_shipping <= 0,
             'progress_percentage' => min(100, ($cart_total / $free_shipping_threshold) * 100),
         ));
-
     } catch (Exception $e) {
         wp_send_json_error(array(
             'message' => $e->getMessage()

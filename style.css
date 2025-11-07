@@ -1455,400 +1455,411 @@ input[type='submit']:hover {
 /* === CHECKOUT CROSS-SELL SECTION === */
 
 .checkout-crosssell-section {
-    margin-top: 1.5rem;
+	margin-top: 1.5rem;
 }
 
 /* Free Shipping Progress */
 .free-shipping-progress,
 .free-shipping-achieved {
-    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: var(--border-radius);
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+	background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+	color: white;
+	padding: 1.5rem;
+	border-radius: var(--border-radius);
+	margin-bottom: 1.5rem;
+	box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
 }
 
 .shipping-progress-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1rem;
 }
 
 .shipping-progress-header h3 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0;
+	font-size: 1.2rem;
+	font-weight: 600;
 }
 
 .shipping-icon {
-    font-size: 1.3rem;
+	font-size: 1.3rem;
 }
 
 .remaining-amount {
-    font-size: 0.95rem;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
+	font-size: 0.95rem;
+	background: rgba(255, 255, 255, 0.2);
+	padding: 0.3rem 0.8rem;
+	border-radius: 20px;
 }
 
 .shipping-progress-bar {
-    margin-top: 1rem;
+	margin-top: 1rem;
 }
 
 .progress-track {
-    width: 100%;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
+	width: 100%;
+	height: 8px;
+	background: rgba(255, 255, 255, 0.3);
+	border-radius: 4px;
+	overflow: hidden;
+	position: relative;
 }
 
 .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
-    border-radius: 4px;
-    transition: width 0.8s ease;
-    position: relative;
+	height: 100%;
+	background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+	border-radius: 4px;
+	transition: width 0.8s ease;
+	position: relative;
 }
 
 .progress-fill.updating {
-    animation: progressPulse 0.8s ease;
+	animation: progressPulse 0.8s ease;
 }
 
 @keyframes progressPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.7;
+	}
 }
 
 .progress-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
-    opacity: 0.9;
+	display: flex;
+	justify-content: space-between;
+	margin-top: 0.5rem;
+	font-size: 0.85rem;
+	opacity: 0.9;
 }
 
 .free-shipping-achieved h3 {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin: 0;
-    font-size: 1.3rem;
-    font-weight: 600;
-    text-align: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	margin: 0;
+	font-size: 1.3rem;
+	font-weight: 600;
+	text-align: center;
 }
 
 /* Cross-sell Products */
 .crosssell-products {
-    background: white;
-    border: 1px solid #e9ecef;
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+	background: white;
+	border: 1px solid #e9ecef;
+	border-radius: var(--border-radius);
+	padding: 1.5rem;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .crosssell-header {
-    text-align: center;
-    margin-bottom: 1.5rem;
+	text-align: center;
+	margin-bottom: 1.5rem;
 }
 
 .crosssell-header h3 {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin: 0 0 0.5rem 0;
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: var(--text-dark);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	margin: 0 0 0.5rem 0;
+	font-size: 1.3rem;
+	font-weight: 600;
+	color: var(--text-dark);
 }
 
 .products-icon {
-    font-size: 1.2rem;
+	font-size: 1.2rem;
 }
 
 .crosssell-subtitle {
-    margin: 0;
-    color: var(--text-light);
-    font-size: 0.95rem;
+	margin: 0;
+	color: var(--text-light);
+	font-size: 0.95rem;
 }
 
 .crosssell-products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin: 1.5rem 0;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+	margin: 1.5rem 0;
 }
 
 .crosssell-product-item {
-    background: #f8f9fa;
-    border: 2px solid transparent;
-    border-radius: var(--border-radius);
-    padding: 1rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    position: relative;
+	background: #f8f9fa;
+	border: 2px solid transparent;
+	border-radius: var(--border-radius);
+	padding: 1rem;
+	text-align: center;
+	transition: all 0.3s ease;
+	position: relative;
 }
 
 .crosssell-product-item:hover {
-    border-color: var(--accent-color);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+	border-color: var(--accent-color);
+	transform: translateY(-2px);
+	box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .crosssell-product-item.product-added {
-    opacity: 0.7;
-    transform: scale(0.98);
-    border-color: #27ae60;
+	opacity: 0.7;
+	transform: scale(0.98);
+	border-color: #27ae60;
 }
 
 .crosssell-product-image {
-    position: relative;
-    margin-bottom: 1rem;
+	position: relative;
+	margin-bottom: 1rem;
 }
 
 .crosssell-product-image img {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: var(--border-radius);
-    margin: 0 auto;
-    display: block;
+	width: 80px;
+	height: 80px;
+	object-fit: cover;
+	border-radius: var(--border-radius);
+	margin: 0 auto;
+	display: block;
 }
 
 .crosssell-sale-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: #e74c3c;
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 0.2rem 0.5rem;
-    border-radius: 10px;
-    text-transform: uppercase;
+	position: absolute;
+	top: -5px;
+	right: -5px;
+	background: #e74c3c;
+	color: white;
+	font-size: 0.7rem;
+	font-weight: 600;
+	padding: 0.2rem 0.5rem;
+	border-radius: 10px;
+	text-transform: uppercase;
 }
 
 .crosssell-product-info {
-    margin-bottom: 1rem;
+	margin-bottom: 1rem;
 }
 
 .crosssell-product-name {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin: 0 0 0.5rem 0;
-    color: var(--text-dark);
-    line-height: 1.3;
+	font-size: 0.95rem;
+	font-weight: 600;
+	margin: 0 0 0.5rem 0;
+	color: var(--text-dark);
+	line-height: 1.3;
 }
 
 .crosssell-product-price {
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
+	font-weight: 600;
+	color: var(--primary-color);
+	margin-bottom: 0.5rem;
 }
 
 .crosssell-product-description {
-    font-size: 0.85rem;
-    color: var(--text-light);
-    margin: 0;
-    line-height: 1.3;
+	font-size: 0.85rem;
+	color: var(--text-light);
+	margin: 0;
+	line-height: 1.3;
 }
 
 .crosssell-product-actions {
-    margin-top: 1rem;
+	margin-top: 1rem;
 }
 
 .crosssell-add-btn {
-    background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: var(--border-radius) !important;
-    padding: 8px 12px !important;
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
-    cursor: pointer;
-    transition: all 0.3s ease !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    width: 100%;
-    min-height: 36px;
+	background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%) !important;
+	color: white !important;
+	border: none !important;
+	border-radius: var(--border-radius) !important;
+	padding: 8px 12px !important;
+	font-size: 0.85rem !important;
+	font-weight: 500 !important;
+	cursor: pointer;
+	transition: all 0.3s ease !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem;
+	width: 100%;
+	min-height: 36px;
 }
 
 .crosssell-add-btn:hover:not(.disabled) {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+	transform: translateY(-1px) !important;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
 }
 
 .crosssell-add-btn.adding {
-    background: #95a5a6 !important;
-    cursor: not-allowed;
-    pointer-events: none;
+	background: #95a5a6 !important;
+	cursor: not-allowed;
+	pointer-events: none;
 }
 
 .crosssell-add-btn.added {
-    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
-    animation: addedSuccess 0.6s ease;
+	background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+	animation: addedSuccess 0.6s ease;
 }
 
 @keyframes addedSuccess {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 .crosssell-add-btn.disabled {
-    background: #bdc3c7 !important;
-    color: #7f8c8d !important;
-    cursor: not-allowed;
-    pointer-events: none;
+	background: #bdc3c7 !important;
+	color: #7f8c8d !important;
+	cursor: not-allowed;
+	pointer-events: none;
 }
 
 .btn-icon {
-    font-size: 0.9rem;
-    font-weight: 600;
+	font-size: 0.9rem;
+	font-weight: 600;
 }
 
 .btn-text {
-    font-weight: 500;
+	font-weight: 500;
 }
 
 .btn-price {
-    font-weight: 600;
-    opacity: 0.9;
-    font-size: 0.8rem;
+	font-weight: 600;
+	opacity: 0.9;
+	font-size: 0.8rem;
 }
 
 /* Cross-sell Benefits */
 .crosssell-benefits {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e9ecef;
+	display: flex;
+	justify-content: center;
+	gap: 2rem;
+	margin-top: 1.5rem;
+	padding-top: 1rem;
+	border-top: 1px solid #e9ecef;
 }
 
 .benefit-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.85rem;
-    color: var(--text-light);
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.85rem;
+	color: var(--text-light);
 }
 
 .benefit-icon {
-    font-size: 1rem;
-    opacity: 0.8;
+	font-size: 1rem;
+	opacity: 0.8;
 }
 
 /* Notifications */
 .crosssell-notification {
-    background: white;
-    border: 2px solid #e9ecef;
-    border-radius: var(--border-radius);
-    padding: 1rem 1.5rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    transform: translateY(-10px);
-    opacity: 0;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+	background: white;
+	border: 2px solid #e9ecef;
+	border-radius: var(--border-radius);
+	padding: 1rem 1.5rem;
+	margin-bottom: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	transform: translateY(-10px);
+	opacity: 0;
+	transition: all 0.3s ease;
+	cursor: pointer;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .crosssell-notification.show {
-    transform: translateY(0);
-    opacity: 1;
+	transform: translateY(0);
+	opacity: 1;
 }
 
 .crosssell-notification-success {
-    border-color: #27ae60;
-    background: linear-gradient(135deg, #d5f4e6 0%, #f0fdf4 100%);
-    color: #1e7e34;
+	border-color: #27ae60;
+	background: linear-gradient(135deg, #d5f4e6 0%, #f0fdf4 100%);
+	color: #1e7e34;
 }
 
 .crosssell-notification-error {
-    border-color: #e74c3c;
-    background: linear-gradient(135deg, #fdeaea 0%, #fdf2f2 100%);
-    color: #c62d42;
+	border-color: #e74c3c;
+	background: linear-gradient(135deg, #fdeaea 0%, #fdf2f2 100%);
+	color: #c62d42;
 }
 
 .crosssell-notification-info {
-    border-color: #3498db;
-    background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%);
-    color: #1976d2;
+	border-color: #3498db;
+	background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%);
+	color: #1976d2;
 }
 
 .notification-icon {
-    font-size: 1.1rem;
+	font-size: 1.1rem;
 }
 
 .notification-message {
-    font-weight: 500;
-    flex-grow: 1;
+	font-weight: 500;
+	flex-grow: 1;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .crosssell-products-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
-    }
-    
-    .crosssell-product-item {
-        padding: 0.75rem;
-    }
-    
-    .crosssell-product-image img {
-        width: 60px;
-        height: 60px;
-    }
-    
-    .crosssell-product-name {
-        font-size: 0.85rem;
-    }
-    
-    .crosssell-benefits {
-        flex-direction: column;
-        gap: 0.75rem;
-        align-items: center;
-    }
-    
-    .shipping-progress-header {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-    }
-    
-    .progress-labels {
-        flex-direction: column;
-        gap: 0.25rem;
-        text-align: center;
-    }
+	.crosssell-products-grid {
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0.75rem;
+	}
+
+	.crosssell-product-item {
+		padding: 0.75rem;
+	}
+
+	.crosssell-product-image img {
+		width: 60px;
+		height: 60px;
+	}
+
+	.crosssell-product-name {
+		font-size: 0.85rem;
+	}
+
+	.crosssell-benefits {
+		flex-direction: column;
+		gap: 0.75rem;
+		align-items: center;
+	}
+
+	.shipping-progress-header {
+		flex-direction: column;
+		gap: 0.5rem;
+		text-align: center;
+	}
+
+	.progress-labels {
+		flex-direction: column;
+		gap: 0.25rem;
+		text-align: center;
+	}
 }
 
 @media (max-width: 480px) {
-    .crosssell-products-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .crosssell-product-item {
-        padding: 1rem;
-    }
-    
-    .crosssell-product-image img {
-        width: 70px;
-        height: 70px;
-    }
+	.crosssell-products-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.crosssell-product-item {
+		padding: 1rem;
+	}
+
+	.crosssell-product-image img {
+		width: 70px;
+		height: 70px;
+	}
 }
