@@ -38,6 +38,41 @@
 	max-width: 100% !important;
 }
 
+/* === MENU NAVIGATION FIX === */
+/* Ukryj hamburger menu na desktop */
+@media (min-width: 768px) {
+	.menu-toggle, 
+	.handheld-navigation {
+		display: none !important;
+	}
+	
+	.main-navigation {
+		display: block !important;
+	}
+	
+	.main-navigation ul {
+		display: flex !important;
+		position: static !important;
+		background: transparent !important;
+		box-shadow: none !important;
+	}
+	
+	.main-navigation li {
+		display: inline-block !important;
+	}
+}
+
+/* Mobile: pokaż hamburger tylko na małych ekranach */
+@media (max-width: 767px) {
+	.main-navigation ul {
+		display: none;
+	}
+	
+	.menu-toggle {
+		display: block;
+	}
+}
+
 /* Podstawowe zmienne - będą nadpisane przez customizer */
 :root {
 	--primary-color: #e74c3c;

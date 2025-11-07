@@ -117,9 +117,10 @@ add_action('wp_head', 'universal_theme_layout_css');
 /**
  * Kolory motywu z konfiguracji
  */
-function universal_theme_colors_css() {
+function universal_theme_colors_css()
+{
     $colors = get_theme_option('colors');
-    
+
     echo '<style type="text/css">';
     echo ':root {';
     echo '--color-primary: ' . $colors['primary'] . ';';
@@ -130,10 +131,23 @@ function universal_theme_colors_css() {
     echo '--color-background: ' . $colors['background'] . ';';
     echo '--color-background-alt: ' . $colors['background_alt'] . ';';
     echo '}';
-    
+
     // Header background (używa primary color)
     echo '.site-header { background-color: ' . $colors['primary'] . '; }';
     echo '.main-navigation ul li a { color: white; }'; // Białe linki w menu na kolorowym tle
+    
+    // Ukryj hamburger menu na desktop i pokaż normalne menu
+    echo '@media (min-width: 768px) {';
+    echo '.menu-toggle { display: none !important; }'; // Ukryj hamburger
+    echo '.main-navigation ul { display: block !important; }'; // Pokaż menu
+    echo '.main-navigation { display: block !important; }';
+    echo '}';
+    
+    // Responsive: hamburger tylko na mobile
+    echo '@media (max-width: 767px) {';
+    echo '.main-navigation ul { display: none; }';
+    echo '.menu-toggle { display: block; }';
+    echo '}';
     
     echo '</style>';
 }
