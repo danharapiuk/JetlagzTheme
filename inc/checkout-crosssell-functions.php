@@ -62,9 +62,14 @@ function universal_enqueue_crosssell_scripts()
  */
 function universal_display_checkout_crosssell()
 {
+    error_log('Universal Cross-sell Debug: Funkcja universal_display_checkout_crosssell została wywołana');
+    
     if (!is_checkout() || is_wc_endpoint_url()) {
+        error_log('Universal Cross-sell Debug: Nie jest to strona checkout lub jest to endpoint');
         return;
     }
+
+    error_log('Universal Cross-sell Debug: Jestem na stronie checkout, sprawdzam koszyk...');
 
     $cart_total = WC()->cart->get_cart_contents_total();
     $free_shipping_threshold = get_theme_option('crosssell.free_shipping_threshold', 100);
@@ -73,9 +78,25 @@ function universal_display_checkout_crosssell()
     // Pobierz produkty cross-sell
     $crosssell_products = universal_get_checkout_crosssell_products();
 
+    // Debug info
+    error_log('Universal Cross-sell Debug: Liczba znalezionych produktów: ' . count($crosssell_products));
+    error_log('Universal Cross-sell Debug: Wartość koszyka: ' . $cart_total);
+    error_log('Universal Cross-sell Debug: Próg darmowej wysyłki: ' . $free_shipping_threshold);
+    error_log('Universal Cross-sell Debug: Do darmowej wysyłki zostało: ' . $remaining_for_free_shipping);
+
+    // Sprawdź czy włączony cross-sell
+    if (!get_theme_option('crosssell.enable', true)) {
+        error_log('Universal Cross-sell Debug: Cross-sell wyłączony w konfiguracji');
+        return;
+    }
+
+    // Pokaż sekcję jeśli mamy produkty LUB jeszcze nie osiągnięto darmowej wysyłki
     if (empty($crosssell_products) && $remaining_for_free_shipping <= 0) {
+        error_log('Universal Cross-sell Debug: Brak produktów i osiągnięto darmową wysyłkę - ukrywam sekcję');
         return; // Brak produktów i już mamy darmową wysyłkę
     }
+
+    error_log('Universal Cross-sell Debug: Wyświetlam sekcję cross-sell');
 ?>
     <div class="checkout-crosssell-section">
 
@@ -205,6 +226,8 @@ function universal_get_checkout_crosssell_products($limit = 4)
         $product = $cart_item['data'];
         $cross_sells = $product->get_cross_sell_ids();
 
+        error_log('Universal Cross-sell Debug: Produkt ' . $product->get_name() . ' ma ' . count($cross_sells) . ' cross-sells');
+
         if (!empty($cross_sells)) {
             foreach ($cross_sells as $cross_sell_id) {
                 $cross_sell_product = wc_get_product($cross_sell_id);
@@ -214,6 +237,8 @@ function universal_get_checkout_crosssell_products($limit = 4)
             }
         }
     }
+
+    error_log('Universal Cross-sell Debug: Po strategii 1 (cross-sells): ' . count($products) . ' produktów');
 
     // Strategia 2: Jeśli brak cross-sell, użyj produktów powiązanych (related)
     if (empty($products)) {
@@ -299,6 +324,38 @@ function universal_get_checkout_crosssell_products($limit = 4)
 
         foreach ($newest_products as $newest_product) {
             $products[$newest_product->get_id()] = $newest_product;
+        }
+    }
+
+    // Strategia 6: Ultimate fallback - wszystkie dostępne produkty (bez exclusions)
+    if (empty($products)) {
+        error_log('Universal Cross-sell Debug: Ultimate fallback - wszystkie produkty bez filtrów');
+        
+        $all_products = wc_get_products(array(
+            'limit' => $limit,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'return' => 'objects',
+            'status' => 'publish',
+            'type' => 'simple', // Tylko proste produkty
+        ));
+
+        error_log('Universal Cross-sell Debug: Znaleziono ' . count($all_products) . ' wszystkich produktów');
+
+        foreach ($all_products as $simple_product) {
+            // Sprawdź czy produkt nie jest już w koszyku
+            $in_cart = false;
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                if ($cart_item['product_id'] == $simple_product->get_id()) {
+                    $in_cart = true;
+                    break;
+                }
+            }
+            
+            if (!$in_cart) {
+                $products[$simple_product->get_id()] = $simple_product;
+                error_log('Universal Cross-sell Debug: Dodano produkt: ' . $simple_product->get_name());
+            }
         }
     }
 
