@@ -109,6 +109,35 @@ function get_theme_config()
             'product_gallery_lightbox' => true,
         ),
 
+        // One-Click Checkout
+        'checkout' => array(
+            'enable_one_click' => true,           // Włącz/wyłącz one-click checkout
+            'require_login' => true,              // Czy wymagać logowania
+            'allowed_payment_methods' => array(   // Dozwolone metody płatności
+                'bacs',    // Przelew bankowy
+                'cheque',  // Czek
+                'cod',     // Za pobraniem
+                'paypal',  // PayPal
+                'stripe',  // Stripe (jeśli zainstalowany)
+            ),
+            'skip_fields' => array(               // Pola do pominięcia (użyj danych z profilu)
+                'billing_phone' => false,         // false = wymagane, true = pomiń
+                'billing_email' => false,
+                'billing_first_name' => true,     // true = użyj z profilu
+                'billing_last_name' => true,
+                'billing_address_1' => false,     // false = wymagane w one-click
+                'billing_city' => false,
+                'billing_postcode' => false,
+                'billing_country' => true,        // true = użyj domyślnego
+            ),
+            'default_payment_method' => 'bacs',   // Domyślna metoda płatności
+            'show_on_shop_loop' => true,          // Pokaż na liście produktów
+            'show_on_single_product' => true,     // Pokaż na stronie produktu
+            'button_text' => 'Kup w 1 klik',      // Tekst przycisku
+            'success_redirect' => 'order_received', // order_received lub custom URL
+            'enable_guest_checkout' => false,     // Czy pozwolić gościom na one-click
+        ),
+
         // Funkcje
         'features' => array(
             'custom_header' => true,

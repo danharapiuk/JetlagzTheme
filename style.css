@@ -42,18 +42,18 @@
 /* Przepisz dokładnie tak jak w Storefront */
 @media (min-width: 768px) {
 	/* Ukryj mobile menu elements jak w Storefront */
-	.menu-toggle, 
+	.menu-toggle,
 	.handheld-navigation,
 	.main-navigation.toggled .handheld-navigation,
 	.main-navigation.toggled div.menu {
 		display: none !important;
 	}
-	
+
 	/* Pokaż primary navigation jak w Storefront */
 	.primary-navigation {
 		display: block !important;
 	}
-	
+
 	/* Main navigation styling jak w Storefront */
 	.main-navigation,
 	.secondary-navigation {
@@ -61,7 +61,7 @@
 		display: block;
 		width: 100%;
 	}
-	
+
 	.main-navigation ul.menu,
 	.main-navigation ul.nav-menu {
 		max-height: none !important;
@@ -70,17 +70,17 @@
 		transition: none;
 		display: block !important;
 	}
-	
+
 	.main-navigation ul li {
 		position: relative;
 		display: inline-block !important;
 		text-align: left;
 	}
-	
+
 	.main-navigation ul li a {
 		display: block;
 	}
-	
+
 	.main-navigation ul.menu > li > a,
 	.main-navigation ul.nav-menu > li > a {
 		padding: 1.618em 1em;
@@ -92,20 +92,20 @@
 	.primary-navigation {
 		display: none !important;
 	}
-	
+
 	.menu-toggle {
 		display: block !important;
 	}
-	
+
 	.main-navigation ul {
 		overflow: hidden;
 		max-height: 0;
 		transition: all, ease, 0.8s;
 	}
-	
+
 	.main-navigation.toggled .handheld-navigation,
 	.main-navigation.toggled .menu > ul:not(.nav-menu),
-	.main-navigation.toggled ul[aria-expanded="true"] {
+	.main-navigation.toggled ul[aria-expanded='true'] {
 		max-height: 9999px;
 	}
 } /* Podstawowe zmienne - będą nadpisane przez customizer */
@@ -319,6 +319,189 @@ input[type='submit']:hover {
 	}
 	100% {
 		transform: scale(1);
+	}
+}
+
+/* === ONE-CLICK CHECKOUT STYLES === */
+
+/* Wrapper dla przycisku one-click */
+.universal-one-click-wrapper {
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+}
+
+/* Główny przycisk one-click */
+.universal-one-click-btn {
+	background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%) !important;
+	color: white !important;
+	border: none !important;
+	border-radius: var(--border-radius) !important;
+	padding: 15px 30px !important;
+	font-size: 16px !important;
+	font-weight: 600 !important;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	position: relative;
+	overflow: hidden;
+	transition: all 0.3s ease !important;
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+	cursor: pointer;
+	width: 100%;
+	max-width: 300px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+}
+
+.universal-one-click-btn:hover {
+	transform: translateY(-3px) !important;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+	background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%) !important;
+}
+
+.universal-one-click-btn:active {
+	transform: translateY(-1px) !important;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Loading state */
+.universal-one-click-btn.loading {
+	pointer-events: none;
+	opacity: 0.8;
+}
+
+.universal-one-click-btn.loading .btn-text {
+	opacity: 0;
+}
+
+.universal-one-click-btn.loading .btn-loading {
+	display: flex !important;
+	align-items: center;
+	justify-content: center;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+/* Success state */
+.universal-one-click-btn.success {
+	background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+}
+
+.universal-one-click-btn.success::after {
+	content: '✓';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 20px;
+	animation: checkmark 0.6s ease;
+}
+
+@keyframes checkmark {
+	0% {
+		opacity: 0;
+		transform: translate(-50%, -50%) scale(0);
+	}
+	50% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1.2);
+	}
+	100% {
+		opacity: 1;
+		transform: translate(-50%, -50%) scale(1);
+	}
+}
+
+/* Error state */
+.universal-one-click-btn.error {
+	background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+	animation: shake 0.6s ease;
+}
+
+@keyframes shake {
+	0%, 100% { transform: translateX(0); }
+	10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+	20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* Przycisk one-click w loop produktów */
+.universal-one-click-btn-loop {
+	background: var(--accent-color) !important;
+	color: white !important;
+	border: none !important;
+	border-radius: var(--border-radius) !important;
+	padding: 8px 16px !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	text-transform: none;
+	margin-top: 8px;
+	width: 100%;
+	transition: all 0.3s ease !important;
+	position: relative;
+	overflow: hidden;
+}
+
+.universal-one-click-btn-loop:hover {
+	background: var(--primary-color) !important;
+	transform: translateY(-2px) !important;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+.universal-one-click-btn-loop::before {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: -100%;
+	width: 100%;
+	height: 2px;
+	background: rgba(255, 255, 255, 0.3);
+	transition: left 0.6s ease;
+}
+
+.universal-one-click-btn-loop:hover::before {
+	left: 100%;
+}
+
+/* Spinner dla loading state */
+.spinner {
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+/* Responsywność dla przycisków one-click */
+@media (max-width: 768px) {
+	.universal-one-click-btn {
+		padding: 12px 24px !important;
+		font-size: 14px !important;
+		max-width: 100%;
+	}
+	
+	.universal-one-click-wrapper {
+		margin: 0.8rem 0;
+	}
+}
+
+/* Pulse effect dla nowych użytkowników */
+.universal-one-click-btn.pulse {
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0% {
+		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+	}
+	50% {
+		box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4), 0 0 20px var(--accent-color);
+	}
+	100% {
+		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 	}
 }
 

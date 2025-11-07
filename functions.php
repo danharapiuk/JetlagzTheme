@@ -72,3 +72,4 @@ add_action('wp_enqueue_scripts', 'universal_theme_enqueue_assets');
  */
 require_once THEME_DIR . '/inc/woocommerce-functions.php';
 require_once THEME_DIR . '/inc/theme-functions.php';
+require_once THEME_DIR . '/inc/woocommerce-checkout-functions.php';
