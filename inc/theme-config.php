@@ -139,6 +139,7 @@ function get_theme_config()
             'checkout_title' => 'Finalizuj zamówienie',    // Tytuł strony checkout
             'enable_guest_checkout' => true,      // Pozwól gościom na checkout
             'auto_add_to_cart' => true,          // Automatycznie dodaj do koszyka
+            'clear_cart_before_add' => false,    // Czy czyścić koszyk przed dodaniem produktu (false = sumuj produkty)
         ),
 
         // Cross-sell Configuration

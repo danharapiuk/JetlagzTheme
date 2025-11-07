@@ -167,7 +167,7 @@ function universal_display_one_click_button_loop()
 function universal_can_show_one_click_button($product)
 {
     error_log('Universal Debug: Sprawdzam czy można pokazać przycisk...');
-    
+
     if (!$product || !is_a($product, 'WC_Product')) {
         error_log('Universal Debug: Brak produktu lub nieprawidłowy typ');
         return false;
@@ -194,7 +194,7 @@ function universal_can_show_one_click_button($product)
     // Klasyczna logika - sprawdź czy wymagane logowanie
     $require_login = get_theme_option('checkout.require_login', true);
     error_log('Universal Debug: require_login = ' . ($require_login ? 'true' : 'false'));
-    
+
     if ($require_login && !is_user_logged_in()) {
         error_log('Universal Debug: Wymagane logowanie, a użytkownik nie zalogowany');
         return false;
@@ -705,8 +705,13 @@ function universal_add_to_cart_and_redirect()
             throw new Exception(__('Niewystarczająca ilość w magazynie.', 'universal-theme'));
         }
 
-        // Wyczyść koszyk (opcjonalne - można zostawić istniejące produkty)
-        WC()->cart->empty_cart();
+        // Sprawdź czy czyścić koszyk przed dodaniem produktu
+        if (get_theme_option('checkout.clear_cart_before_add', false)) {
+            error_log('Universal Debug: Czyszczę koszyk przed dodaniem produktu');
+            WC()->cart->empty_cart();
+        } else {
+            error_log('Universal Debug: Dodaję produkt do istniejącego koszyka (sumowanie)');
+        }
 
         // Dodaj produkt do koszyka
         $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity);
