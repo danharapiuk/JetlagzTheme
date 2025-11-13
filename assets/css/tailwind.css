@@ -1,0 +1,105 @@
+/* Tailwind CSS Input File */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom WordPress & WooCommerce specific styles */
+@layer base {
+	/* Zachowaj nasze custom CSS variables */
+	:root {
+		/* Kolory będą nadpisane przez customizer */
+		--theme-primary: #e74c3c;
+		--theme-secondary: #3498db;
+		--theme-accent: #f39c12;
+		--theme-text-dark: #2c3e50;
+		--theme-text-light: #7f8c8d;
+		--theme-background: #ffffff;
+		--theme-background-alt: #f8f9fa;
+
+		/* Typografia */
+		--theme-font-primary: 'Inter', sans-serif;
+		--theme-font-secondary: 'Inter', sans-serif;
+
+		/* Layout */
+		--theme-container-width: 1200px;
+		--theme-border-radius: 8px;
+		--theme-box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+		/* Spacing */
+		--theme-spacing-xs: 0.25rem;
+		--theme-spacing-sm: 0.5rem;
+		--theme-spacing-md: 1rem;
+		--theme-spacing-lg: 1.5rem;
+		--theme-spacing-xl: 2rem;
+		--theme-spacing-xxl: 3rem;
+	}
+}
+
+@layer components {
+	/* Universal Button Components */
+	.universal-btn {
+		@apply inline-block px-lg py-sm border-0 rounded-theme bg-accent text-white no-underline font-medium cursor-pointer transition-all duration-300 ease-in-out;
+	}
+
+	.universal-btn:hover {
+		@apply -translate-y-0.5 shadow-theme text-white;
+	}
+
+	.universal-btn-primary {
+		@apply bg-primary;
+	}
+
+	.universal-btn-secondary {
+		@apply bg-secondary;
+	}
+
+	/* Container Components */
+	.universal-container {
+		@apply max-w-container mx-auto px-md;
+	}
+
+	/* WooCommerce Product Grid */
+	.woocommerce-products-grid {
+		@apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-lg;
+	}
+
+	.woocommerce-product-card {
+		@apply bg-white rounded-theme shadow-theme p-md transition-all duration-300 relative overflow-hidden;
+	}
+
+	.woocommerce-product-card:hover {
+		@apply -translate-y-1 shadow-lg;
+	}
+
+	/* Typography Components */
+	.text-theme-primary {
+		@apply text-primary;
+	}
+
+	.text-theme-secondary {
+		@apply text-secondary;
+	}
+
+	.text-theme-accent {
+		@apply text-accent;
+	}
+
+	.text-theme-dark {
+		@apply text-text-dark;
+	}
+
+	.text-theme-light {
+		@apply text-text-light;
+	}
+}
+
+@layer utilities {
+	/* Responsive spacing utilities that match our breakpoints */
+	.responsive-padding-x {
+		@apply px-4 tablet:px-6 desktop:px-8 large:px-0;
+	}
+
+	.responsive-container {
+		@apply max-w-container mx-auto responsive-padding-x;
+	}
+}

@@ -33,7 +33,7 @@ function get_theme_config()
 
         // Layout
         'layout' => array(
-            'container_width' => '1200px',
+            'container_width' => '1536px',
             'border_radius' => '8px',
             'box_shadow' => '0 2px 10px rgba(0,0,0,0.1)',
             'content_width' => '800px',         // Szerokość treści
@@ -88,7 +88,7 @@ function get_theme_config()
 
         // Layout
         'layout' => array(
-            'container_width' => '1200px',   // Szerokość głównego kontenera
+            'container_width' => '1536px',   // Szerokość głównego kontenera
             'content_width' => '800px',      // Szerokość obszaru treści
             'sidebar_width' => '300px',      // Szerokość sidebar
             'enable_sidebar' => false,       // ← SIDEBAR WYŁĄCZONY

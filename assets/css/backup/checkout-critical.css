@@ -1,0 +1,107 @@
+/* === CHECKOUT CRITICAL CSS - ULTRA AGGRESSIVE === */
+/* This file loads first to prevent layout shift on checkout page */
+
+@media (min-width: 1024px) {
+	/* Ultra specific selectors with maximum specificity */
+	body.woocommerce-checkout .wc-block-components-sidebar-layout.wc-block-checkout.is-large,
+	.woocommerce-page .entry-content .wc-block-components-sidebar-layout.wc-block-checkout.is-large,
+	.wp-site-blocks .wc-block-components-sidebar-layout.wc-block-checkout.is-large,
+	html .wc-block-components-sidebar-layout.wc-block-checkout.is-large {
+		display: grid !important;
+		grid-template-columns: 1fr 400px !important;
+		grid-template-areas: 'main sidebar' !important;
+		gap: 2rem !important;
+		max-width: 1200px !important;
+		margin: 0 auto !important;
+		align-items: start !important;
+
+		/* Force override any flex properties */
+		flex-direction: unset !important;
+		flex-wrap: unset !important;
+		flex: unset !important;
+	}
+
+	/* Ultra specific sidebar selectors */
+	body.woocommerce-checkout .wc-block-components-sidebar-layout.wc-block-checkout.is-large .wc-block-components-sidebar,
+	.woocommerce-page
+		.entry-content
+		.wc-block-components-sidebar-layout.wc-block-checkout.is-large
+		.wc-block-components-sidebar,
+	.wp-site-blocks .wc-block-components-sidebar-layout.wc-block-checkout.is-large .wc-block-components-sidebar,
+	html .wc-block-components-sidebar-layout.wc-block-checkout.is-large .wc-block-components-sidebar {
+		grid-area: sidebar !important;
+		order: 2 !important;
+
+		/* Force override any flex properties */
+		flex: unset !important;
+		flex-basis: unset !important;
+		flex-grow: unset !important;
+		flex-shrink: unset !important;
+		width: auto !important;
+	}
+
+	/* Ultra specific main selectors */
+	body.woocommerce-checkout .wc-block-components-sidebar-layout.wc-block-checkout.is-large .wc-block-components-main,
+	.woocommerce-page
+		.entry-content
+		.wc-block-components-sidebar-layout.wc-block-checkout.is-large
+		.wc-block-components-main,
+	.wp-site-blocks .wc-block-components-sidebar-layout.wc-block-checkout.is-large .wc-block-components-main,
+	html .wc-block-components-sidebar-layout.wc-block-checkout.is-large .wc-block-components-main {
+		grid-area: main !important;
+		order: 1 !important;
+
+		/* Force override any flex properties */
+		flex: unset !important;
+		flex-basis: unset !important;
+		flex-grow: unset !important;
+		flex-shrink: unset !important;
+		width: auto !important;
+	}
+
+	/* Prevent initial flash of wrong layout */
+	.wc-block-checkout.is-loading {
+		opacity: 0.3 !important;
+		transition: opacity 0.3s ease !important;
+	}
+
+	.wc-block-checkout.universal-layout-ready,
+	.wc-block-checkout:not(.is-loading) {
+		opacity: 1 !important;
+	}
+
+	/* Extra specific override for any flex containers */
+	.wc-block-components-sidebar-layout.wc-block-checkout.is-large[style*='display: flex'] {
+		display: grid !important;
+	}
+
+	/* Immediate visual feedback */
+	.wc-block-components-sidebar-layout.wc-block-checkout.is-large::before {
+		content: '' !important;
+		display: none !important; /* Hidden debug indicator */
+		position: fixed !important;
+		top: 10px !important;
+		right: 10px !important;
+		width: 10px !important;
+		height: 10px !important;
+		background: #00ff00 !important;
+		border-radius: 50% !important;
+		z-index: 99999 !important;
+	}
+}
+
+/* Responsive reset - ensure mobile works normally */
+@media (max-width: 1023px) {
+	.wc-block-components-sidebar-layout.wc-block-checkout.is-large {
+		display: block !important;
+		grid-template-columns: unset !important;
+		grid-template-areas: unset !important;
+		gap: unset !important;
+	}
+
+	.wc-block-components-sidebar,
+	.wc-block-components-main {
+		grid-area: unset !important;
+		order: unset !important;
+	}
+}

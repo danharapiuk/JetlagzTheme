@@ -1,0 +1,22 @@
+{
+  "name": "jetlagz-theme",
+  "version": "1.0.0",
+  "description": "Uniwersalny motyw potomny Storefront do szybkiego wdrażania w różnych sklepach WooCommerce.",
+  "main": "index.js",
+  "scripts": {
+    "build-css": "tailwindcss -i ./assets/css/tailwind.css -o ./assets/css/tailwind-compiled.css --watch",
+    "build-css-prod": "tailwindcss -i ./assets/css/tailwind.css -o ./assets/css/tailwind-compiled.css --minify",
+    "dev": "npm run build-css",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.19",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17"
+  }
+}
