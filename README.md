@@ -196,3 +196,4 @@ GPL v2 lub nowsza - zgodnie z licencją WordPress
 **🎯 Blueprint Strategy:** Jeden motyw bazowy + WordPress Customizer = nieskończone możliwości personalizacji! 
 
 **Pamiętaj:** Zawsze testuj zmiany na środowisku testowym przed wdrożeniem na produkcji!# woocommerce-starter
+# JetlagzTheme
