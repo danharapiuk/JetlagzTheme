@@ -175,26 +175,28 @@ jQuery(document).ready(function($) {
                 console.log('✅ AJAX Success:', response);
                 
                 if (response.success) {
+                    // Sprawdź czy koszyk jest pusty (ilość zmieniona na 0)
+                    if (response.data.cart_empty === true) {
+                        console.log('🛒 Cart is empty after quantity change - redirecting to empty cart page');
+                        window.location.href = universal_ajax.empty_cart_url;
+                        return;
+                    }
+                    
                     // Aktualizuj wyświetlanie ilości
                     $qtyDisplay.removeClass('editing').text(newQty).attr('data-qty', newQty);
                     
-                    // Aktualizuj ceny
-                    const $priceUnit = $item.find('.checkout-item-price-unit');
-                    const unitPrice = parseFloat($priceUnit.attr('data-unit-price')) || 0;
-                    const totalPrice = (unitPrice * newQty).toFixed(2);
+                    // Aktualizuj cenę całkowitą (nowy layout)
+                    const $totalPrice = $item.find('.checkout-item-total-price');
+                    const unitPrice = parseFloat($totalPrice.attr('data-unit-price')) || 0;
+                    const totalPrice = unitPrice * newQty;
                     
-                    // Formatuj cenę (dodaj separator tysięcy i walutę)
-                    const $priceTotal = $item.find('.checkout-item-price-total .price');
-                    const $priceTotalContainer = $item.find('.checkout-item-price-total');
+                    // Formatuj cenę z walutą (np. "30.00 zł")
+                    const formatted = new Intl.NumberFormat('pl-PL', {
+                        style: 'currency',
+                        currency: 'PLN'
+                    }).format(totalPrice);
                     
-                    // Pokaż/ukryj razem w zależności od ilości
-                    if (newQty > 1) {
-                        $priceTotalContainer.show();
-                        // Prosta konwersja - polegaj na WooCommerce formatowaniu
-                        $priceTotal.text(formatPrice(totalPrice));
-                    } else {
-                        $priceTotalContainer.hide();
-                    }
+                    $totalPrice.text(formatted);
                     
                     // ⭐ WAŻNE: Odświeżenie TOTALS na ekranie
                     refreshCheckoutTotals();
@@ -394,6 +396,13 @@ jQuery(document).ready(function($) {
                 console.log('✅ Item removed:', response);
                 
                 if (response.success) {
+                    // Sprawdź czy koszyk jest pusty
+                    if (response.data.cart_empty === true) {
+                        console.log('🛒 Cart is empty - redirecting to empty cart page');
+                        window.location.href = universal_ajax.empty_cart_url;
+                        return;
+                    }
+                    
                     // Animuj usunięcie
                     $item.animate({
                         opacity: 0,

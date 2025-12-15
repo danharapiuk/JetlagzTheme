@@ -1,0 +1,24 @@
+/**
+ * Cart Page Styles
+ * Ładuje się TYLKO na stronie koszyka
+ */
+
+/* ========================================
+   CART CUSTOM STYLES
+   ======================================== */
+
+.woocommerce-cart {
+	/* Twoje custom style dla cart */
+}
+
+.woocommerce-cart-form {
+	/* Formularz koszyka */
+}
+
+.cart-collaterals {
+	/* Podsumowanie koszyka */
+}
+
+.cart_totals {
+	/* Suma koszyka */
+}

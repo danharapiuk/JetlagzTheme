@@ -1951,7 +1951,6 @@ input[type='submit']:hover {
 .universal-checkout-totals tr {
 	display: flex;
 	justify-content: space-between;
-	padding: 8px 0;
 	font-size: 14px;
 }
 
@@ -1974,8 +1973,7 @@ input[type='submit']:hover {
 .universal-checkout-totals tr.order-total td {
 	font-size: 18px;
 	font-weight: 700;
-	color: #0066cc;
-	border-top: 2px solid #ddd;
+	color: black;
 	padding-top: 15px;
 }
 
@@ -1987,77 +1985,116 @@ input[type='submit']:hover {
 	border-radius: 8px;
 }
 
-.universal-checkout-review-title {
-	font-size: 18px;
-	font-weight: 600;
-	margin: 0 0 20px 0;
-	color: #333;
+.universal-checkout-review-title h3{
+	font-size: 20px;
+	font-weight: 700;
+	margin: 0 0 16px 0;
+	color: #000;
+}
+
+.universal-checkout-review-title .subtitle {
+	font-size: 14px;
+	font-weight: 400;
+	color: #666;
 }
 
 .universal-checkout-review-table-custom {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
-}
-
-/* Pojedynczy produkt w checkout */
-.universal-checkout-item {
-	display: grid;
-	grid-template-columns: 80px 1fr 150px;
-	gap: 16px;
-	padding: 16px;
-	background: white;
+	gap: 0;
 	border: 1px solid #e0e0e0;
-	border-radius: 6px;
-	align-items: center;
-}
-
-/* Miniaturka produktu */
-.checkout-item-thumbnail {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 80px;
-	height: 80px;
 	border-radius: 4px;
 	overflow: hidden;
 }
 
+/* Pojedynczy produkt w checkout */
+.universal-checkout-item {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: 20px;
+	padding: 16px;
+	background: white;
+	border-bottom: 1px solid #e0e0e0;
+	align-items: center;
+	position: relative;
+}
+
+.universal-checkout-item:last-child {
+	border-bottom: none;
+}
+
+/* Lewa część: Miniaturka + Nazwa + Cena */
+.checkout-item-left {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	position: relative;
+}
+
+.checkout-item-thumbnail {
+	width: 70px;
+	height: 70px;
+	border-radius: 4px;
+	overflow: visible;
+	background: #f5f5f5;
+	flex-shrink: 0;
+	position: relative;
+}
+
 .checkout-item-thumbnail img {
-	max-width: 100%;
-	max-height: 100%;
+	width: 100%;
+	height: 100%;
 	object-fit: cover;
 }
 
-/* Info: Nazwa + Sterowniki ilości */
-.checkout-item-info {
+.checkout-item-details {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 4px;
 }
 
 .checkout-item-name {
-	font-size: 15px;
+	font-size: 14px;
 	font-weight: 600;
-	color: #333;
+	color: #000;
 	line-height: 1.4;
+}
+
+.checkout-item-unit-price {
+	font-size: 16px;
+	font-weight: 700;
+	color: #000;
+}
+
+/* Środek: Ilość */
+.checkout-item-quantity-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+}
+
+.qty-label {
+	font-size: 13px;
+	color: #666;
+	font-weight: 600;
 }
 
 .checkout-item-quantity-controls {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	width: fit-content;
+	gap: 4px;
 }
 
 .checkout-item-quantity-controls .qty-btn {
-	width: 32px;
-	height: 32px;
+	width: 28px;
+	height: 28px;
 	border: 1px solid #ddd;
 	background: white;
 	color: #333;
-	border-radius: 4px;
-	font-size: 18px;
+	border-radius: 3px;
+	font-size: 16px;
 	font-weight: bold;
 	cursor: pointer;
 	display: flex;
@@ -2069,28 +2106,18 @@ input[type='submit']:hover {
 }
 
 .checkout-item-quantity-controls .qty-btn:hover {
-	background: #f8f9fa;
+	background: #f5f5f5;
 	border-color: #999;
 }
 
-.checkout-item-quantity-controls .qty-btn:active {
-	transform: scale(0.95);
-	background: #e9ecef;
-}
-
-.checkout-item-quantity-controls .qty-btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
 .checkout-item-quantity-controls .qty-display {
-	min-width: 30px;
+	min-width: 40px;
 	text-align: center;
 	font-weight: 600;
-	font-size: 16px;
+	font-size: 14px;
 	padding: 4px 8px;
 	border: 1px solid #ddd;
-	border-radius: 4px;
+	border-radius: 3px;
 	background: white;
 	cursor: pointer;
 	transition: all 0.2s ease;
@@ -2098,26 +2125,69 @@ input[type='submit']:hover {
 }
 
 .checkout-item-quantity-controls .qty-display:hover {
-	border-color: #0066cc;
+	border-color: black;
 	background: #f0f7ff;
 }
 
-.checkout-item-quantity-controls .qty-display.editing {
-	padding: 2px 4px;
-	border-color: #0066cc;
-	background: white;
-}
-
 .checkout-item-quantity-controls .qty-input {
-	min-width: 30px;
+	min-width: 40px;
 	text-align: center;
 	font-weight: 600;
-	font-size: 16px;
+	font-size: 14px;
 	padding: 4px 6px;
-	border: 2px solid #0066cc;
-	border-radius: 4px;
+	border: 2px solid black;
+	border-radius: 3px;
 	background: white;
 	outline: none;
+}
+
+/* Prawa część: Cena całkowita + Remove */
+.checkout-item-right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 8px;
+}
+
+.checkout-item-remove-btn {
+	position: absolute;
+	top: -8px;
+	right: -8px;
+	background: #dc3545;
+	color: white;
+	border: none;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	font-size: 16px;
+	font-weight: bold;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+	padding: 0;
+	line-height: 1;
+	opacity: 0;
+	visibility: hidden;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+	z-index: 10;
+}
+
+.universal-checkout-item:hover .checkout-item-remove-btn {
+	opacity: 1;
+	visibility: visible;
+}
+
+.checkout-item-remove-btn:hover {
+	background: #c82333;
+	transform: scale(1.15);
+}
+
+.checkout-item-total-price {
+	font-size: 18px;
+	font-weight: 700;
+	color: #000;
 }
 
 /* Ceny */
@@ -2151,7 +2221,7 @@ input[type='submit']:hover {
 }
 
 .checkout-item-price-total .price {
-	color: #0066cc;
+	color: black;
 	font-size: 18px;
 }
 
@@ -2179,56 +2249,73 @@ input[type='submit']:hover {
 
 /* Responsive: Mobile */
 @media (max-width: 767px) {
-	.universal-checkout-review-wrapper {
-		padding: 12px;
-		margin: 12px 0;
+	.universal-checkout-review-title {
+		font-size: 18px;
 	}
 
-	.universal-checkout-review-title {
-		font-size: 16px;
-		margin-bottom: 12px;
+	.universal-checkout-review-title .subtitle {
+		font-size: 12px;
 	}
 
 	.universal-checkout-item {
-		grid-template-columns: 60px 1fr;
+		grid-template-columns: 1fr;
 		gap: 12px;
 		padding: 12px;
+	}
+
+	.checkout-item-left {
+		gap: 10px;
 	}
 
 	.checkout-item-thumbnail {
 		width: 60px;
 		height: 60px;
-		grid-row: 1 / 3;
-	}
-
-	.checkout-item-info {
-		grid-column: 2;
-		grid-row: 1;
-		gap: 8px;
 	}
 
 	.checkout-item-name {
 		font-size: 13px;
 	}
 
-	.checkout-item-quantity-controls .qty-btn {
-		width: 28px;
-		height: 28px;
+	.checkout-item-unit-price {
+		font-size: 14px;
+	}
+
+	.checkout-item-quantity-wrapper {
+		flex-direction: row;
+		justify-content: flex-start;
+		gap: 10px;
+	}
+
+	.checkout-item-remove-btn {
+		width: 20px;
+		height: 20px;
+		font-size: 14px;
+	}
+
+	.checkout-item-total-price {
 		font-size: 16px;
 	}
 
-	.checkout-item-quantity-controls .qty-display {
-		min-width: 25px;
-		font-size: 14px;
-		padding: 3px 6px;
+	.universal-coupon-wrapper {
+		padding: 12px;
+		margin: 16px 0;
 	}
 
-	.checkout-item-prices {
-		grid-column: 2;
-		grid-row: 2;
-		text-align: left;
-		flex-direction: row;
-		gap: 16px;
+	.coupon-title {
+		font-size: 14px;
+		margin-bottom: 10px;
+	}
+
+	.universal-coupon-form {
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.universal-coupon-apply-btn {
+		width: 100%;
+	}
+}
+.universal-coupon-apply-btn {
 		justify-content: space-between;
 	}
 
@@ -2524,79 +2611,58 @@ input[type='submit']:hover {
 	display: none !important;
 }
 
-/* Custom coupon form - pod listą produktów */
-.universal-coupon-form {
-	margin: 20px 0;
-	padding: 16px;
-	background: #f8f9fa;
+/* Wrapper kuponu z tytułem */
+.universal-coupon-wrapper {
+	margin: 24px 0;
+	background: white;
 	border: 1px solid #e0e0e0;
-	border-radius: 8px;
+	border-radius: 4px;
+	padding: 16px;
+}
+
+.coupon-title {
+	font-size: 16px;
+	font-weight: 700;
+	color: #000;
+	margin: 0 0 12px 0;
+}
+
+.universal-coupon-form {
 	display: flex;
-	gap: 12px;
-	align-items: flex-end;
+	gap: 8px;
+	align-items: center;
 }
 
-.universal-coupon-form-group {
+.universal-coupon-form input[type='text'] {
 	flex: 1;
-	min-width: 200px;
-}
-
-.universal-coupon-form-group label {
-	display: block;
-	margin-bottom: 8px;
+	padding: 10px 12px;
+	border: 1px solid #ddd;
+	border-radius: 3px;
 	font-size: 14px;
-	font-weight: 600;
-	color: #333;
-}
-
-.universal-coupon-form-group input[type='text'] {
-	width: 100%;
-	padding: 12px;
-	border: 2px solid #ddd;
-	border-radius: 6px;
-	font-size: 14px;
-	transition: all 0.3s ease;
+	transition: all 0.2s ease;
 	box-sizing: border-box;
 }
 
-.universal-coupon-form-group input[type='text']:focus {
-	border-color: #0066cc;
-	box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+.universal-coupon-form input[type='text']:focus {
+	border-color: black;
 	outline: none;
 }
 
 .universal-coupon-apply-btn {
-	background: linear-gradient(135deg, #0066cc 0%, #004a99 100%);
+	background: black;
 	color: white;
 	border: none;
-	padding: 12px 28px;
-	border-radius: 6px;
+	padding: 10px 24px;
+	border-radius: 3px;
 	font-size: 14px;
 	font-weight: 600;
 	cursor: pointer;
-	transition: all 0.3s ease;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	transition: all 0.2s ease;
 	white-space: nowrap;
 }
 
-.universal-coupon-apply-btn:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
-}
-
 .universal-coupon-apply-btn:active {
-	transform: translateY(0);
-}
-
-.universal-coupon-apply-btn:disabled {
-	opacity: 0.6;
-	cursor: not-allowed;
-	pointer-events: none;
-}
-
-.universal-coupon-apply-btn.loading {
-	opacity: 0.8;
+	transform: scale(0.98);
 }
 
 .universal-coupon-apply-btn.loading::after {
@@ -2648,9 +2714,7 @@ input[type='submit']:hover {
 	display: flex !important;
 	justify-content: space-between !important;
 	align-items: center !important;
-	padding: 12px 0 !important;
 	font-size: 14px !important;
-	border-bottom: 1px solid #f0f0f0 !important;
 	border-collapse: separate !important;
 }
 
@@ -2662,7 +2726,6 @@ input[type='submit']:hover {
 	font-weight: 600 !important;
 	color: #333 !important;
 	text-align: left !important;
-	padding: 12px 0 !important;
 	border: none !important;
 	display: inline !important;
 	flex: 0 !important;
@@ -2673,16 +2736,10 @@ input[type='submit']:hover {
 	text-align: right !important;
 	font-weight: 500 !important;
 	color: #333 !important;
-	padding: 12px 0 !important;
 	border: none !important;
 	display: inline !important;
 	flex: 0 !important;
 	margin: 0 !important;
-}
-
-/* Subtotal */
-.universal-checkout-totals tr.cart-subtotal {
-	padding: 12px 0 !important;
 }
 
 .universal-checkout-totals tr.cart-subtotal th {
@@ -2696,9 +2753,6 @@ input[type='submit']:hover {
 }
 
 /* Shipping */
-.universal-checkout-totals tr.shipping-totals {
-	padding: 12px 0 !important;
-}
 
 .universal-checkout-totals tr.shipping-totals th {
 	color: #666 !important;
@@ -2727,22 +2781,22 @@ input[type='submit']:hover {
 
 /* Order Total - wyróżniony */
 .universal-checkout-totals tr.order-total {
-	border-top: 2px solid #0066cc !important;
 	border-bottom: none !important;
-	padding-top: 16px !important;
-	margin-top: 8px !important;
+	padding-top: 5px !important;
+	margin-top: 16px !important;
+	border-top: 1px solid #ddd !important;
 }
 
 .universal-checkout-totals tr.order-total th {
 	font-size: 16px !important;
 	font-weight: 700 !important;
-	color: #0066cc !important;
+	color: black !important;
 }
 
 .universal-checkout-totals tr.order-total td {
 	font-size: 18px !important;
 	font-weight: 700 !important;
-	color: #0066cc !important;
+	color: black !important;
 }
 
 /* Responsive */
@@ -2767,15 +2821,6 @@ input[type='submit']:hover {
 /* Woocommerce Billing Section */
 .woocommerce-billing-fields {
 	margin-bottom: 24px;
-}
-
-.woocommerce-billing-fields h3 {
-	font-size: 18px;
-	font-weight: 600;
-	margin: 0 0 20px 0;
-	color: #333;
-	padding-bottom: 12px;
-	border-bottom: 2px solid #e0e0e0;
 }
 
 .woocommerce-billing-fields .form-row {
@@ -2824,7 +2869,7 @@ input[type='submit']:hover {
 .woocommerce-billing-fields select:focus,
 .woocommerce-billing-fields textarea:focus {
 	outline: none;
-	border-color: #0066cc;
+	border-color: black;
 	box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 	background: #f0f7ff;
 }
@@ -2832,20 +2877,27 @@ input[type='submit']:hover {
 /* Form Row - 2 kolumny na desktop */
 .woocommerce-billing-fields .form-row-first,
 .woocommerce-billing-fields .form-row-last {
-	width: 48%;
-	display: inline-block;
-	vertical-align: top;
-	box-sizing: border-box;
+	width: 48% !important;
+	display: inline-block !important;
+	vertical-align: top !important;
+	box-sizing: border-box !important;
+	float: none !important;
 }
 
 .woocommerce-billing-fields .form-row-first {
-	margin-right: 4%;
+	margin-right: 4% !important;
+	clear: left !important;
+}
+
+.woocommerce-billing-fields .form-row-last {
+	margin-right: 0 !important;
+	clear: none !important;
 }
 
 .woocommerce-billing-fields .form-row.form-row-wide {
-	display: block;
-	clear: both;
-	width: 100%;
+	display: block !important;
+	clear: both !important;
+	width: 100% !important;
 }
 
 /* Checkboxes */
@@ -2860,7 +2912,7 @@ input[type='submit']:hover {
 	width: auto;
 	height: auto;
 	cursor: pointer;
-	accent-color: #0066cc;
+	accent-color: black;
 }
 
 .woocommerce-billing-fields .woocommerce-form__label-checkbox label {

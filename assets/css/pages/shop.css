@@ -1,0 +1,36 @@
+/**
+ * Shop & Archive Pages Styles
+ * Ładuje się na stronie sklepu i archiwach kategorii
+ */
+
+/* ========================================
+   SHOP & ARCHIVE CUSTOM STYLES
+   ======================================== */
+
+.woocommerce-products-header {
+	/* Header sklepu */
+}
+
+.woocommerce ul.products {
+	/* Lista produktów */
+}
+
+.woocommerce ul.products li.product {
+	/* Pojedynczy produkt */
+}
+
+.woocommerce-loop-product__title {
+	/* Tytuł produktu w liście */
+}
+
+.woocommerce-ordering {
+	/* Sortowanie */
+}
+
+.woocommerce-result-count {
+	/* Licznik wyników */
+}
+
+.woocommerce-pagination {
+	/* Paginacja */
+}

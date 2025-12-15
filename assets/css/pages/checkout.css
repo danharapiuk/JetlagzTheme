@@ -1,0 +1,455 @@
+/**
+ * Checkout Page Styles
+ * Ładuje się TYLKO na stronie checkout z PRIORITY 999
+ */
+
+/* ========================================
+   BILLING FIELDS - LAYOUT 2 KOLUMNY
+   ======================================== */
+
+/* Kontener z flexbox i space-between */
+.woocommerce-billing-fields__field-wrapper {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	justify-content: space-between !important;
+}
+
+/* WYMUSZENIE layoutu 2-kolumnowego dla pól billing */
+.woocommerce-billing-fields .form-row-first,
+.woocommerce-billing-fields .form-row-last,
+.woocommerce-billing-fields__field-wrapper .form-row-first,
+.woocommerce-billing-fields__field-wrapper .form-row-last,
+#billing_address_1_field,
+#billing_address_2_field,
+#billing_postcode_field,
+#billing_city_field {
+	width: 48% !important;
+	display: inline-block !important;
+	vertical-align: top !important;
+	float: none !important;
+	clear: none !important;
+	box-sizing: border-box !important;
+}
+
+/* Brak dodatkowych marginesów - space-between zadba o odstępy */
+.woocommerce-billing-fields .form-row-first,
+.woocommerce-billing-fields__field-wrapper .form-row-first,
+.woocommerce-billing-fields .form-row-last,
+.woocommerce-billing-fields__field-wrapper .form-row-last,
+#billing_address_1_field,
+#billing_postcode_field,
+#billing_address_2_field,
+#billing_city_field {
+	margin-right: 0 !important;
+	margin-left: 0 !important;
+}
+
+/* Pola full-width (jak country) */
+.woocommerce-billing-fields .form-row-wide,
+.woocommerce-billing-fields__field-wrapper .form-row-wide {
+	width: 100% !important;
+	display: block !important;
+	clear: both !important;
+}
+
+/* Wymuszenie widoczności labeli dla wszystkich pól billing */
+.woocommerce-billing-fields label,
+.woocommerce-billing-fields__field-wrapper label,
+.form-row label {
+	display: block !important;
+	visibility: visible !important;
+	opacity: 1 !important;
+	height: auto !important;
+	font-size: 14px !important;
+	margin-bottom: 8px !important;
+}
+
+/* Ukryj labele dla pól adresowych - użytkownicy zobaczą placeholdery */
+#billing_address_1_field label,
+#billing_address_2_field label,
+#billing_postcode_field label,
+#billing_city_field label,
+#shipping_address_1_field label,
+#shipping_address_2_field label,
+#shipping_postcode_field label,
+#shipping_city_field label {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+/* ========================================
+   SHIPPING FIELDS - IDENTYCZNY LAYOUT JAK BILLING
+   ======================================== */
+
+/* Kontener z flexbox i space-between */
+.woocommerce-shipping-fields__field-wrapper {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	justify-content: space-between !important;
+}
+
+/* WYMUSZENIE layoutu 2-kolumnowego dla pól shipping */
+.woocommerce-shipping-fields .form-row-first,
+.woocommerce-shipping-fields .form-row-last,
+.woocommerce-shipping-fields__field-wrapper .form-row-first,
+.woocommerce-shipping-fields__field-wrapper .form-row-last,
+#shipping_address_1_field,
+#shipping_address_2_field,
+#shipping_postcode_field,
+#shipping_city_field {
+	width: 48% !important;
+	display: inline-block !important;
+	vertical-align: top !important;
+	float: none !important;
+	clear: none !important;
+	box-sizing: border-box !important;
+}
+
+/* Brak dodatkowych marginesów - space-between zadba o odstępy */
+.woocommerce-shipping-fields .form-row-first,
+.woocommerce-shipping-fields__field-wrapper .form-row-first,
+.woocommerce-shipping-fields .form-row-last,
+.woocommerce-shipping-fields__field-wrapper .form-row-last,
+#shipping_address_1_field,
+#shipping_postcode_field,
+#shipping_address_2_field,
+#shipping_city_field {
+	margin-right: 0 !important;
+	margin-left: 0 !important;
+}
+
+/* Pola full-width shipping (jak country) */
+.woocommerce-shipping-fields .form-row-wide,
+.woocommerce-shipping-fields__field-wrapper .form-row-wide {
+	width: 100% !important;
+	display: block !important;
+	clear: both !important;
+}
+
+/* Widoczność labeli dla shipping */
+.woocommerce-shipping-fields label,
+.woocommerce-shipping-fields__field-wrapper label {
+	display: block !important;
+	visibility: visible !important;
+	opacity: 1 !important;
+	height: auto !important;
+	font-size: 14px !important;
+	margin-bottom: 8px !important;
+}
+
+/* ========================================
+   CHECKOUT CUSTOM STYLES
+   ======================================== */
+
+.woocommerce-checkout {
+	/* Twoje custom style dla checkout */
+}
+
+/* Billing form customization */
+.woocommerce-billing-fields {
+	/* Style dla formularza rozliczeniowego */
+}
+
+/* Payment methods */
+.woocommerce-checkout-payment {
+	/* Style dla metod płatności */
+}
+
+/* Order review */
+.woocommerce-checkout-review-order {
+	/* Style dla przeglądu zamówienia */
+}
+
+/* Place order button */
+.woocommerce-checkout .place-order {
+	/* Style dla przycisku "Zamów i zapłać" */
+}
+
+/* Additional customizations */
+.checkout-custom-section {
+	/* Dodatkowe sekcje */
+}
+
+@media (min-width: 1024px) {
+	.col2-set {
+		margin-right: 2%;
+	}
+}
+
+.checkout-crosssell-section {
+	border: none !important;
+}
+
+#order_comments_field {
+	display: block;
+}
+
+/* Style dla nagłówków dodawanych przez JavaScript */
+
+.address-label {
+	margin-top: 15px !important;
+	margin-bottom: 10px !important;
+	color: black !important;
+	font-weight: 700 !important;
+}
+
+#billing_country_field label {
+	color: black !important;
+	font-weight: 700 !important;
+}
+
+.woocommerce-billing-fields input[type='text'],
+.woocommerce-billing-fields input[type='email'],
+.woocommerce-billing-fields input[type='tel'],
+.woocommerce-billing-fields input[type='password'],
+.woocommerce-billing-fields input[type='number'],
+.woocommerce-billing-fields select,
+.woocommerce-billing-fields textarea {
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	box-shadow: none;
+}
+.woocommerce-checkout h3 {
+	font-size: 20px;
+	font-weight: 700;
+	letter-spacing: -1px;
+	margin: 0 0 20px 0;
+	color: #333;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #e0e0e0;
+	width: 100%;
+}
+
+#apaczka_pl_geowidget_classic {
+	margin-left: 0;
+}
+
+.woocommerce-info.checkout-login-notice.moved {
+	background-color: transparent;
+	color: #333;
+	border-left: none;
+	padding: 0;
+}
+
+.woocommerce-info .checkout-login-notice .moved::before {
+	display: none;
+}
+
+.woocommerce-info.checkout-login-notice.moved a {
+	color: #333;
+	text-decoration: underline;
+}
+
+form.checkout.woocommerce-checkout.woocommerce-checkout {
+	margin-top: 15px;
+	border-top: 1px solid #e0e0e0;
+}
+
+#order_review {
+	padding: 10px;
+	border-radius: 12px;
+	background-color: rgba(234, 234, 234, 0.7);
+}
+
+.universal-checkout-review-wrapper,
+.universal-coupon-wrapper,
+.universal-checkout-totals {
+	border: none;
+	background-color: #f9f9f9;
+	border-radius: 0;
+	margin: 0;
+}
+
+.universal-checkout-review-table-custom {
+	border: none;
+}
+
+h4.coupon-title {
+	display: none;
+}
+
+.universal-coupon-wrapper {
+	padding: 20px;
+	padding-top: 0;
+}
+
+.universal-coupon-form {
+	padding-top: 20px;
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.coupon-input-wrapper {
+	position: relative;
+	flex: 1;
+	display: flex;
+	align-items: center;
+}
+
+.coupon-icon {
+	position: absolute;
+	left: 12px;
+	color: #666;
+	pointer-events: none;
+	z-index: 1;
+}
+
+#payment {
+	margin-top: 20px;
+}
+.universal-checkout-review-wrapper {
+	border-top-left-radius: 12px;
+	border-top-right-radius: 12px;
+}
+
+.universal-checkout-totals {
+	border-bottom-left-radius: 12px;
+	border-bottom-right-radius: 12px;
+}
+
+h1 {
+	font-size: 28px;
+	letter-spacing: -1px;
+	font-weight: 500;
+}
+
+textarea,
+.input-text {
+	background-color: transparent;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 1px;
+	box-shadow: none;
+}
+
+span.qty-label {
+	font-size: 8px;
+	font-weight: 500;
+	color: black;
+}
+
+span.woocommerce-Price-amount {
+	font-size: 10px;
+	font-weight: 300;
+}
+
+.col2-set,
+#order_review {
+	width: 100%;
+	float: none;
+	margin: 0;
+}
+
+@media (min-width: 1024px) {
+	.col2-set {
+		width: 40%;
+		float: left;
+		margin-right: 5.8823529412%;
+	}
+
+	#order_review {
+		width: 41.1764705882%;
+		float: right;
+	}
+	span.woocommerce-Price-amount {
+		font-size: 14px;
+		font-weight: 500;
+	}
+}
+
+form.checkout {
+	padding-top: 20px;
+}
+.address-label {
+	width: 100%;
+	display: block;
+}
+
+#apaczka_pl_geowidget_classic {
+	background-color: #ffcc05;
+	color: black;
+	font-size: 12px !important;
+	box-shadow: none;
+	font-weight: 500 !important;
+	padding: 10px 30px !important;
+	border-radius: 4px;
+}
+
+.universal-checkout-totals table tbody tr th {
+	flex: auto !important;
+}
+
+table:not(.has-background) tbody td {
+	background-color: transparent;
+}
+
+.order-total {
+	color: black;
+}
+
+table.woocommerce-table--totals {
+	margin-bottom: 0;
+}
+
+.universal-coupon-form input {
+	background-color: white;
+	box-shadow: none;
+	width: 100%;
+	padding-left: 42px !important;
+}
+
+textarea#order_comments textarea::placeholder {
+	display: none;
+}
+
+#payment .place-order {
+	display: block;
+}
+
+button#place_order {
+	margin-top: 16px;
+	background-color: black;
+}
+
+tr.cart-subtotal {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.shipping-totals th,
+.shipping-totals td {
+	padding-top: 0 !important;
+}
+
+/* ========================================
+   SHIPPING METHOD LOGOS
+   ======================================== */
+
+.shipping-method-logo {
+	width: 40px !important;
+	height: 40px !important;
+	object-fit: contain !important;
+	margin-right: 10px !important;
+	vertical-align: middle !important;
+	display: inline-block !important;
+}
+
+/* Wrapper dla radio + logo + tekst */
+ul#shipping_method li {
+	display: flex !important;
+	align-items: center !important;
+	padding: 10px 0 !important;
+}
+
+ul#shipping_method li label {
+	display: flex !important;
+	align-items: center !important;
+	cursor: pointer !important;
+	flex: 1 !important;
+}

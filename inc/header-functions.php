@@ -78,6 +78,17 @@ function universal_theme_custom_header_content()
                     <?php endif; ?>
                 </div>
 
+                <!-- My Account -->
+                <div class="universal-header-account">
+                    <?php if (class_exists('WooCommerce')) : ?>
+                        <a href="<?php echo esc_url(wc_get_account_endpoint_url('dashboard')); ?>" class="universal-account-link" title="<?php echo is_user_logged_in() ? esc_attr__('Moje konto', 'universal-theme') : esc_attr__('Zaloguj się', 'universal-theme'); ?>">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </a>
+                    <?php endif; ?>
+                </div>
+
                 <!-- Cart -->
                 <div class="universal-header-cart">
                     <?php if (class_exists('WooCommerce')) : ?>
@@ -224,7 +235,7 @@ function universal_theme_header_styles()
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 2rem;
+            gap: 0.5rem;
             flex-wrap: wrap;
         }
 
@@ -326,6 +337,29 @@ function universal_theme_header_styles()
             color: white;
             padding: 0.5rem;
             cursor: pointer;
+        }
+
+        .universal-header-account {
+            flex: 0 0 auto;
+        }
+
+        .universal-account-link {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .universal-account-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .universal-account-link svg {
+            width: 24px;
+            height: 24px;
         }
 
         .universal-header-cart {
@@ -794,7 +828,6 @@ function universal_theme_responsive_container_styles()
         .woocommerce-checkout .col2-set .col-2 {
             max-width: 100% !important;
             box-sizing: border-box !important;
-            padding: 0 10px;
         }
 
         /* Zagnieżdżone col-full - mniejszy padding */

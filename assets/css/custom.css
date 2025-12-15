@@ -349,7 +349,6 @@
 .woocommerce-checkout-review-order-table th,
 .woocommerce-checkout-review-order-table td {
 	padding: var(--theme-spacing-sm);
-	border-bottom: 1px solid #eee;
 	text-align: left;
 	vertical-align: top;
 }
@@ -573,4 +572,24 @@
 		min-width: 32px;
 		justify-content: center;
 	}
+}
+
+.site-content {
+	max-width: 1280px !important;
+	margin: 0 auto !important;
+}
+
+.woocommerce-breadcrumb a:first-of-type::before {
+	display: none !important;
+}
+
+.woocommerce-breadcrumb {
+	color: black !important;
+	font-size: 10px !important;
+	font-weight: 300 !important;
+	font-family: 'Inter', 'sans-serif';
+}
+
+form.universal-search-form {
+	margin-bottom: 0;
 }

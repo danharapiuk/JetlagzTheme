@@ -90,25 +90,67 @@ function universal_add_checkout_remove_column()
                 var $button = $(this);
                 var $row = $button.closest('tr');
                 var productName = $button.data('product-name');
+                var cartItemKey = $button.data('cart-item-key');
 
-                console.log('Universal: Remove clicked for:', productName);
+                console.log('=== REMOVE PRODUCT DEBUG ===');
+                console.log('Product name:', productName);
+                console.log('Cart item key:', cartItemKey);
 
                 if (confirm('Czy na pewno chcesz usunąć "' + productName + '" z koszyka?')) {
                     // Dodaj loading state
                     $button.css('background', '#95a5a6').html('...');
 
-                    // Tu będzie właściwy AJAX call
-                    // Na razie symulujemy usunięcie
-                    setTimeout(function() {
-                        $row.fadeOut(300, function() {
-                            $(this).remove();
-                            // Odśwież checkout
-                            $('body').trigger('update_checkout');
+                    console.log('Sending AJAX request...');
 
-                            // Pokaż powiadomienie
-                            alert('Produkt został usunięty z koszyka');
-                        });
-                    }, 1000);
+                    // AJAX call do usunięcia produktu
+                    $.ajax({
+                        url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                        type: 'POST',
+                        data: {
+                            action: 'remove_checkout_product',
+                            cart_item_key: cartItemKey,
+                            nonce: '<?php echo wp_create_nonce('checkout_remove_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            console.log('=== AJAX SUCCESS ===');
+                            console.log('Full response:', response);
+                            console.log('Response success:', response.success);
+                            console.log('Response data:', response.data);
+
+                            if (response.success) {
+                                console.log('Cart empty:', response.data.cart_empty);
+                                console.log('Cart count:', response.data.cart_count);
+
+                                $row.fadeOut(300, function() {
+                                    $(this).remove();
+
+                                    // Sprawdź czy koszyk jest pusty
+                                    if (response.data.cart_empty === true) {
+                                        console.log('!!! REDIRECTING TO EMPTY CART PAGE !!!');
+                                        var redirectUrl = '<?php echo esc_url(home_url('/koszyk-pusty/')); ?>';
+                                        console.log('Redirect URL:', redirectUrl);
+                                        window.location.href = redirectUrl;
+                                    } else {
+                                        console.log('Cart not empty, updating checkout...');
+                                        // Odśwież checkout
+                                        $('body').trigger('update_checkout');
+                                    }
+                                });
+                            } else {
+                                console.error('Remove failed:', response.data);
+                                alert('Nie udało się usunąć produktu');
+                                $button.css('background', '').html('×');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('=== AJAX ERROR ===');
+                            console.error('Status:', status);
+                            console.error('Error:', error);
+                            console.error('Response:', xhr.responseText);
+                            alert('Wystąpił błąd');
+                            $button.css('background', '').html('×');
+                        }
+                    });
                 }
             });
         });
@@ -162,7 +204,18 @@ function universal_ajax_remove_checkout_product()
 
     if (WC()->cart->remove_cart_item($cart_item_key)) {
         WC()->cart->calculate_totals();
-        wp_send_json_success(['message' => 'Produkt został usunięty']);
+
+        // Sprawdź czy koszyk jest pusty
+        $cart_empty = WC()->cart->is_empty();
+        $cart_count = WC()->cart->get_cart_contents_count();
+
+        error_log('Universal Debug: Product removed. Cart empty: ' . ($cart_empty ? 'YES' : 'NO') . ', Cart count: ' . $cart_count);
+
+        wp_send_json_success([
+            'message' => 'Produkt został usunięty',
+            'cart_empty' => $cart_empty,
+            'cart_count' => $cart_count
+        ]);
     } else {
         wp_send_json_error(['message' => 'Nie udało się usunąć produktu']);
     }

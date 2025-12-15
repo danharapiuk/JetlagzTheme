@@ -1,0 +1,32 @@
+/**
+ * Product Page Styles
+ * Ładuje się TYLKO na pojedynczej stronie produktu
+ */
+
+/* ========================================
+   PRODUCT PAGE CUSTOM STYLES
+   ======================================== */
+
+.single-product {
+	/* Strona produktu */
+}
+
+.product_title {
+	/* Tytuł produktu */
+}
+
+.woocommerce-product-gallery {
+	/* Galeria zdjęć */
+}
+
+.product_meta {
+	/* Metadata produktu */
+}
+
+.woocommerce-tabs {
+	/* Zakładki (opis, recenzje) */
+}
+
+.related.products {
+	/* Powiązane produkty */
+}

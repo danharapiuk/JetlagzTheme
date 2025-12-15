@@ -131,7 +131,7 @@ function universal_simple_checkout_layout_fix()
             font-weight: 600;
             margin-bottom: 1.5rem;
             color: #333;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
             padding-bottom: 0.5rem;
         }
 
