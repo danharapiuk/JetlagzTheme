@@ -270,8 +270,6 @@ function universal_theme_admin_scripts($hook)
     // Dodaj debug info
     wp_add_inline_script('universal-admin', '
         jQuery(document).ready(function($) {
-            console.log("WordPress Media API available:", typeof wp !== "undefined" && typeof wp.media !== "undefined");
-            console.log("jQuery loaded:", typeof $ !== "undefined");
             if (typeof wp === "undefined" || typeof wp.media === "undefined") {
                 console.error("WordPress Media API not loaded! Check wp_enqueue_media()");
             }

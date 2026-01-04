@@ -39,7 +39,6 @@
                 const productId = $(this).data('product-id');
                 
                 // Tutaj możesz dodać AJAX do ładowania quick view
-                console.log('Quick view dla produktu:', productId);
                 
                 // Przykład prostego modala
                 if (!$('#universal-quick-view-modal').length) {
@@ -77,6 +76,15 @@
                     
                     if (target.length) {
                         event.preventDefault();
+                        
+                        // Jeśli to link do reviews, otwórz zakładkę
+                        if (this.hash === '#reviews' || this.hash === '#reviews') {
+                            const reviewsTab = $('.woocommerce-tabs .tabs li.reviews_tab a');
+                            if (reviewsTab.length && !reviewsTab.parent().hasClass('active')) {
+                                reviewsTab.trigger('click');
+                            }
+                        }
+                        
                         $('html, body').animate({
                             scrollTop: target.offset().top - 100
                         }, 1000);
@@ -232,9 +240,173 @@
     };
 
     // Inicjalizacja po załadowaniu DOM
-    $(document).ready(function() {
+    $(function() {
         UniversalTheme.init();
-    });
+        
+        // Lazy load reviews section when it comes into viewport
+        var reviewsSection = document.getElementById('product-reviews');
+        
+        if (reviewsSection) {
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        // Add loaded class to show the section
+                        entry.target.classList.add('loaded');
+                        
+                        // Initialize Swiper after section becomes visible
+                        setTimeout(function() {
+                            initReviewsSwiper();
+                        }, 100);
+                        
+                        // Stop observing once loaded
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                rootMargin: '200px' // Start loading 200px before it enters viewport
+            });
+            
+            observer.observe(reviewsSection);
+        }
+        
+        // Scroll to reviews functionality
+        $(document).on('click', 'a.reviews-link, a[href="#product-reviews"], .woocommerce-review-link', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var reviewsSection = document.getElementById('product-reviews');
+            
+            if (reviewsSection) {
+                // Make sure section is visible before scrolling
+                reviewsSection.classList.add('loaded');
+                
+                // Use scrollIntoView instead of window.scrollTo
+                reviewsSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Add small offset by scrolling up a bit after
+                setTimeout(function() {
+                    window.scrollBy(0, -100);
+                }, 100);
+            }
+            return false;
+        });
+    
+        // Reviews Swiper Slider - initialization function
+    function initReviewsSwiper() {
+        if (typeof Swiper === 'undefined' || !$('.reviews-swiper').length) {
+            return;
+        }
+        
+        var reviewsSwiper = new Swiper('.reviews-swiper', {
+            slidesPerView: 1,
+            spaceBetween: 20,
+            centeredSlides: false,
+            width: null,
+            navigation: {
+                nextEl: '.reviews-slider-next',
+                prevEl: '.reviews-slider-prev',
+            },
+            pagination: {
+                el: '.reviews-slider-pagination',
+                clickable: true,
+                dynamicBullets: true,
+            },
+            autoHeight: true,
+            loop: false,
+            keyboard: {
+                enabled: true,
+            },
+            a11y: {
+                enabled: true,
+            },
+            watchOverflow: true,
+            observer: true,
+            observeParents: true
+        });
+        
+        // Update slider when sorting reviews
+        $('#reviews-sort').on('change', function() {
+            const sortBy = $(this).val();
+            const slides = $('.reviews-swiper .swiper-slide').get();
+            
+            slides.sort(function(a, b) {
+                const $reviewA = $(a).find('.review-card');
+                const $reviewB = $(b).find('.review-card');
+                
+                switch(sortBy) {
+                    case 'newest':
+                        return $reviewB.data('date') - $reviewA.data('date');
+                    case 'oldest':
+                        return $reviewA.data('date') - $reviewB.data('date');
+                    case 'highest':
+                        return $reviewB.data('rating') - $reviewA.data('rating');
+                    case 'lowest':
+                        return $reviewA.data('rating') - $reviewB.data('rating');
+                    default:
+                        return 0;
+                }
+            });
+            
+            const $wrapper = $('.reviews-swiper .swiper-wrapper');
+            $wrapper.empty();
+            $.each(slides, function(idx, slide) {
+                $wrapper.append(slide);
+            });
+            
+            reviewsSwiper.update();
+            reviewsSwiper.slideTo(0);
+        });
+        
+        // Filter reviews by rating
+        $('.rating-bar-item').on('click keypress', function(e) {
+            if (e.type === 'keypress' && e.which !== 13 && e.which !== 32) {
+                return;
+            }
+            
+            e.preventDefault();
+            
+            const rating = $(this).data('rating');
+            const isActive = $(this).hasClass('active');
+            
+            if (isActive) {
+                // Show all slides
+                $(this).removeClass('active').attr('aria-pressed', 'false');
+                $('.reviews-swiper .swiper-slide').show();
+            } else {
+                // Filter by rating
+                $('.rating-bar-item').removeClass('active').attr('aria-pressed', 'false');
+                $(this).addClass('active').attr('aria-pressed', 'true');
+                
+                $('.reviews-swiper .swiper-slide').each(function() {
+                    const slideRating = $(this).find('.review-card').data('rating');
+                    if (slideRating == rating) {
+                        $(this).show();
+                    } else {
+                        $(this).hide();
+                    }
+                });
+            }
+            
+            reviewsSwiper.update();
+            reviewsSwiper.slideTo(0);
+        });
+    }
+    
+    // Read more functionality for long reviews
+        $(document).on('click', '.read-more-toggle', function(e) {
+            e.preventDefault();
+            const $content = $(this).closest('.review-content');
+            const isExpanded = $content.hasClass('expanded');
+            
+            $content.toggleClass('expanded');
+            $(this)
+                .text(isExpanded ? 'Read more' : 'Read less')
+                .attr('aria-expanded', !isExpanded);
+        });
+    }); // End of $(function() {
 
     // Udostępnij obiekt globalnie
     window.UniversalTheme = UniversalTheme;

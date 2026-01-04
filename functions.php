@@ -23,6 +23,87 @@ require_once THEME_DIR . '/inc/theme-config.php';
 // Ładowanie critical CSS i web styles
 require_once THEME_DIR . '/inc/web-styles.php';
 
+// ACF Options Pages dla Template Parts
+require_once THEME_DIR . '/inc/acf-options-pages.php';
+
+// Template Parts Helper Functions
+require_once THEME_DIR . '/inc/template-parts-helper.php';
+
+/**
+ * Zezwól na upload plików SVG do biblioteki mediów
+ */
+function jetlagz_allow_svg_upload($mimes)
+{
+  $mimes['svg'] = 'image/svg+xml';
+  $mimes['svgz'] = 'image/svg+xml';
+  return $mimes;
+}
+add_filter('upload_mimes', 'jetlagz_allow_svg_upload');
+
+/**
+ * Napraw wyświetlanie SVG w bibliotece mediów
+ */
+function jetlagz_fix_svg_display()
+{
+  echo '<style>
+    .attachment-266x266, .thumbnail img {
+      width: 100% !important;
+      height: auto !important;
+    }
+  </style>';
+}
+add_action('admin_head', 'jetlagz_fix_svg_display');
+
+/**
+ * Dodaj wymiary do SVG podczas uploadu
+ */
+function jetlagz_fix_svg_metadata($data, $file, $filename, $mimes)
+{
+  $ext = pathinfo($filename, PATHINFO_EXTENSION);
+
+  if ($ext === 'svg' || $ext === 'svgz') {
+    $data['type'] = 'image/svg+xml';
+    $data['ext'] = 'svg';
+
+    // Spróbuj pobrać wymiary z SVG
+    if (file_exists($file)) {
+      $svg = file_get_contents($file);
+      if (preg_match('/width="([^"]+)"/', $svg, $width_match)) {
+        $data['width'] = intval($width_match[1]);
+      } else {
+        $data['width'] = 150;
+      }
+      if (preg_match('/height="([^"]+)"/', $svg, $height_match)) {
+        $data['height'] = intval($height_match[1]);
+      } else {
+        $data['height'] = 150;
+      }
+    }
+  }
+
+  return $data;
+}
+add_filter('wp_check_filetype_and_ext', 'jetlagz_fix_svg_metadata', 10, 4);
+
+/**
+ * Sanityzacja SVG podczas uploadu (bezpieczeństwo)
+ */
+function jetlagz_sanitize_svg($file)
+{
+  if ($file['type'] === 'image/svg+xml') {
+    $contents = file_get_contents($file['tmp_name']);
+
+    // Usuń potencjalnie niebezpieczne tagi
+    $contents = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $contents);
+    $contents = preg_replace('/on\w+="[^"]*"/i', '', $contents);
+
+    file_put_contents($file['tmp_name'], $contents);
+  }
+
+  return $file;
+}
+add_filter('wp_handle_upload_prefilter', 'jetlagz_sanitize_svg');
+
 /**
  * Debug helper - guards error_log calls behind WP_DEBUG and administrator check
  * Use universal_debug_log($message) instead of direct error_log() to avoid
@@ -38,6 +119,102 @@ function universal_debug_log($message)
     }
   }
 }
+
+/**
+ * Mark reviews added by admin with metadata
+ */
+add_action('comment_post', function ($comment_id) {
+  if (current_user_can('manage_options')) {
+    add_comment_meta($comment_id, 'review_source', 'admin_seed', true);
+  }
+});
+
+/**
+ * Hide review form on product pages but allow displaying existing reviews
+ * This only hides the form, not the reviews list
+ */
+add_filter('woocommerce_product_review_comment_form_args', function ($comment_form) {
+  // Return empty array to prevent form from displaying
+  // But comments_open() will still return true so reviews can be displayed
+  return array();
+}, 99);
+
+/**
+ * ========================================
+ * ADMIN RATING FIELD FOR PRODUCT REVIEWS
+ * ========================================
+ */
+
+/**
+ * Add rating metabox to comment edit screen in admin
+ */
+add_action('add_meta_boxes_comment', 'jetlagz_add_comment_rating_metabox');
+function jetlagz_add_comment_rating_metabox()
+{
+  add_meta_box(
+    'rating',
+    __('Ocena produktu', 'jetlagz-theme'),
+    'jetlagz_comment_rating_metabox_callback',
+    'comment',
+    'normal',
+    'high'
+  );
+}
+
+/**
+ * Render rating metabox content
+ */
+function jetlagz_comment_rating_metabox_callback($comment)
+{
+  $rating = get_comment_meta($comment->comment_ID, 'rating', true);
+  wp_nonce_field('update_comment_rating', 'update_comment_rating_nonce', false);
+?>
+  <p>
+    <label for="rating"><?php _e('Ocena (1-5 gwiazdek):', 'jetlagz-theme'); ?></label>
+    <select name="rating" id="rating" style="width: 100%; padding: 5px;">
+      <option value=""><?php _e('Brak oceny', 'jetlagz-theme'); ?></option>
+      <?php for ($i = 1; $i <= 5; $i++) : ?>
+        <option value="<?php echo $i; ?>" <?php selected($rating, $i); ?>>
+          <?php echo str_repeat('⭐', $i) . ' (' . $i . ' ' . ($i === 1 ? 'gwiazdka' : ($i < 5 ? 'gwiazdki' : 'gwiazdek')) . ')'; ?>
+        </option>
+      <?php endfor; ?>
+    </select>
+  </p>
+  <p class="description">
+    <?php _e('Wybierz ocenę od 1 do 5 gwiazdek dla tej opinii o produkcie.', 'jetlagz-theme'); ?>
+  </p>
+<?php
+}
+
+/**
+ * Save rating when comment is updated in admin
+ */
+add_action('edit_comment', 'jetlagz_save_comment_rating');
+function jetlagz_save_comment_rating($comment_id)
+{
+  if (
+    !isset($_POST['update_comment_rating_nonce']) ||
+    !wp_verify_nonce($_POST['update_comment_rating_nonce'], 'update_comment_rating')
+  ) {
+    return;
+  }
+
+  if (isset($_POST['rating']) && $_POST['rating'] !== '') {
+    $rating = intval($_POST['rating']);
+    if ($rating >= 1 && $rating <= 5) {
+      update_comment_meta($comment_id, 'rating', $rating);
+    }
+  } else {
+    delete_comment_meta($comment_id, 'rating');
+  }
+}
+
+/**
+ * Wyłącz sticky add-to-cart Storefront
+ */
+add_action('wp', function () {
+  remove_action('storefront_after_header', 'storefront_sticky_single_add_to_cart', 999);
+}, 99);
 
 /**
  * WYMUSZENIE CLASSIC CHECKOUT (zamiast WooCommerce Blocks)
@@ -202,11 +379,28 @@ function universal_theme_enqueue_assets()
     $theme_version
   );
 
+
+  // Universal Product Card Styles (używane wszędzie: sliders, shop, archive)
+  wp_enqueue_style(
+    'universal-product-card',
+    get_stylesheet_directory_uri() . '/assets/css/components/product-card.css',
+    array('universal-theme-custom'),
+    $theme_version
+  );
+
+  // Universal Footer Styles (site-wide)
+  wp_enqueue_style(
+    'universal-footer',
+    get_stylesheet_directory_uri() . '/assets/css/components/footer.css',
+    array('universal-product-card'),
+    $theme_version
+  );
+
   // Tailwind CSS
   wp_enqueue_style(
     'universal-theme-tailwind',
     get_stylesheet_directory_uri() . '/assets/css/tailwind-compiled.css',
-    array('universal-theme-custom'),
+    array('universal-product-card'),
     $theme_version
   );
 
@@ -290,6 +484,8 @@ function universal_theme_enqueue_assets()
     );
     */
 
+    // Checkout enhanced - disabled (file moved to backup)
+    /*
     wp_enqueue_script(
       'universal-checkout-enhanced',
       get_stylesheet_directory_uri() . '/assets/js/checkout-enhanced.js',
@@ -297,6 +493,7 @@ function universal_theme_enqueue_assets()
       $theme_version,
       true
     );
+    */
 
     // Cross-sell Script dla checkout - BACKUP (jeśli classic nie zadziała)
     /*
@@ -331,6 +528,14 @@ function universal_theme_enqueue_assets()
     'nonce' => wp_create_nonce('theme_nonce'),
     'colors' => get_theme_option('colors')
   ));
+
+  // Universal sliders styles - loaded on all pages that use product sliders
+  wp_enqueue_style(
+    'universal-sliders-styles',
+    get_stylesheet_directory_uri() . '/assets/css/sliders.css',
+    array(),
+    $theme_version
+  );
 }
 add_action('wp_enqueue_scripts', 'universal_theme_enqueue_assets');
 
@@ -364,11 +569,28 @@ function universal_page_specific_styles()
 
   // Single product page styles
   if (is_product()) {
+    // Swiper CSS
+    wp_enqueue_style(
+      'swiper-css',
+      'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+      array(),
+      '11.0.0'
+    );
+
     wp_enqueue_style(
       'universal-product-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/product.css',
       array(),
       $theme_version . '-v3'
+    );
+
+    // Swiper JS
+    wp_enqueue_script(
+      'swiper-js',
+      'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+      array(),
+      '11.0.0',
+      true
     );
   }
 
@@ -380,6 +602,15 @@ function universal_page_specific_styles()
       array(),
       $theme_version . '-v3'
     );
+
+    // Shop filters JavaScript
+    wp_enqueue_script(
+      'universal-shop-filters',
+      get_stylesheet_directory_uri() . '/assets/js/shop-filters.js',
+      array('jquery'),
+      $theme_version . '-v6', // Cache bust
+      true
+    );
   }
 
   // Login page styles (My Account when not logged in)
@@ -387,6 +618,36 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-login-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/login.css',
+      array(),
+      $theme_version . '-v1'
+    );
+  }
+
+  // My Account page styles (when logged in)
+  if (is_account_page() && is_user_logged_in()) {
+    wp_enqueue_style(
+      'universal-myaccount-page-styles',
+      get_stylesheet_directory_uri() . '/assets/css/pages/myaccount.css',
+      array(),
+      $theme_version . '-v1'
+    );
+  }
+
+  // Thank You page styles
+  if (is_order_received_page() || isset($_GET['preview_thankyou'])) {
+    wp_enqueue_style(
+      'universal-thankyou-page-styles',
+      get_stylesheet_directory_uri() . '/assets/css/pages/thankyou.css',
+      array(),
+      $theme_version . '-v1'
+    );
+  }
+
+  // Order Pay page styles
+  if (is_checkout_pay_page()) {
+    wp_enqueue_style(
+      'universal-order-pay-page-styles',
+      get_stylesheet_directory_uri() . '/assets/css/pages/order-pay.css',
       array(),
       $theme_version . '-v1'
     );
@@ -401,8 +662,46 @@ function universal_woocommerce_support()
   add_theme_support('wc-product-gallery-zoom');
   add_theme_support('wc-product-gallery-lightbox');
   add_theme_support('wc-product-gallery-slider');
+
+  // Wysokiej jakości rozmiary obrazków produktów
+  add_image_size('product_thumbnail_hq', 600, 800, true); // Wysoka jakość dla kart produktów (3:4 ratio)
+  add_image_size('product_single_hq', 1200, 1600, true);  // Bardzo wysoka jakość dla strony produktu
 }
 add_action('after_setup_theme', 'universal_woocommerce_support');
+
+// Zwiększ domyślne rozmiary WooCommerce
+add_filter('woocommerce_get_image_size_gallery_thumbnail', function ($size) {
+  return array(
+    'width'  => 300,
+    'height' => 400,
+    'crop'   => 1,
+  );
+});
+
+add_filter('woocommerce_get_image_size_single', function ($size) {
+  return array(
+    'width'  => 1200,
+    'height' => 1600,
+    'crop'   => 1,
+  );
+});
+
+add_filter('woocommerce_get_image_size_thumbnail', function ($size) {
+  return array(
+    'width'  => 600,
+    'height' => 800,
+    'crop'   => 1,
+  );
+});
+
+// Zwiększ jakość kompresji JPEG
+add_filter('jpeg_quality', function ($quality) {
+  return 90; // Domyślnie WordPress używa 82%
+});
+
+add_filter('wp_editor_set_quality', function ($quality) {
+  return 90;
+});
 
 /**
  * ========================================
@@ -641,6 +940,7 @@ require_once THEME_DIR . '/inc/checkout-table-custom.php';
 require_once THEME_DIR . '/inc/admin-panel.php';
 require_once THEME_DIR . '/inc/header-functions.php';
 require_once THEME_DIR . '/inc/checkout-remove-products.php';
+require_once THEME_DIR . '/inc/slide-in-cart.php';
 // require_once THEME_DIR . '/inc/checkout-layout-hooks.php'; // Ponownie włączamy dla blocks
 
 // Temporary test removed during aggressive cleanup. Backup available at functions.php.bak
@@ -755,12 +1055,12 @@ function universal_update_cart_quantity()
     wp_die('Unauthorized');
   }
 
-  $cart_item_key = sanitize_text_field($_POST['cart_item_key']);
-  $product_id = intval($_POST['product_id']);
-  $variation_id = intval($_POST['variation_id']);
-  $product_name = sanitize_text_field($_POST['product_name']);
-  $item_index = intval($_POST['item_index']);
-  $quantity = intval($_POST['quantity']);
+  $cart_item_key = isset($_POST['cart_item_key']) ? sanitize_text_field($_POST['cart_item_key']) : '';
+  $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+  $variation_id = isset($_POST['variation_id']) ? intval($_POST['variation_id']) : 0;
+  $product_name = isset($_POST['product_name']) ? sanitize_text_field($_POST['product_name']) : '';
+  $item_index = isset($_POST['item_index']) ? intval($_POST['item_index']) : 0;
+  $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 0;
 
   // CRITICAL: Validate quantity to prevent corruption
   if ($quantity < 0 || $quantity > 999) {
@@ -913,6 +1213,22 @@ function universal_render_checkout_totals()
   $tax_total = WC()->cart->get_total_tax();
   $tax_formatted = wc_price($tax_total);
 
+  // Pobierz fees (np. pakowanie na prezent)
+  $fees = WC()->cart->get_fees();
+  $gift_wrapping_fee = null;
+  $gift_wrapping_count = 0;
+
+  foreach ($fees as $fee) {
+    if (strpos($fee->name, '🎁') !== false) {
+      $gift_wrapping_fee = $fee;
+      // Extract count from name if exists (e.g., "x3")
+      if (preg_match('/\(x(\d+)\)/', $fee->name, $matches)) {
+        $gift_wrapping_count = intval($matches[1]);
+      }
+      break;
+    }
+  }
+
   ?>
   <div class="universal-checkout-totals">
     <table class="woocommerce-table--totals">
@@ -922,6 +1238,14 @@ function universal_render_checkout_totals()
           <th><?php echo __('Sub total:', 'woocommerce'); ?></th>
           <td><?php echo wp_kses_post($subtotal); ?></td>
         </tr>
+
+        <!-- Gift Wrapping Fee (if exists) -->
+        <?php if ($gift_wrapping_fee) : ?>
+          <tr class="gift-wrapping-fee">
+            <th><?php echo esc_html($gift_wrapping_fee->name); ?></th>
+            <td><?php echo wc_price($gift_wrapping_fee->amount); ?></td>
+          </tr>
+        <?php endif; ?>
 
         <!-- Shipping -->
         <tr class="shipping-totals">
@@ -1133,7 +1457,7 @@ function universal_get_crosssells_ajax()
               'id' => $p->get_id(),
               'name' => $p->get_name(),
               'price_formatted' => wc_price($p->get_price()),
-              'image' => wp_get_attachment_image_url($p->get_image_id(), 'thumbnail'),
+              'image' => wp_get_attachment_image_url($p->get_image_id(), 'woocommerce_single'),
               'permalink' => get_permalink($p->get_id()),
               'has_variants' => $has_variants,
             );
@@ -1158,7 +1482,7 @@ function universal_get_crosssells_ajax()
         'id' => $p->get_id(),
         'name' => $p->get_name(),
         'price_formatted' => wc_price($p->get_price()),
-        'image' => wp_get_attachment_image_url($p->get_image_id(), 'thumbnail'),
+        'image' => wp_get_attachment_image_url($p->get_image_id(), 'woocommerce_single'),
         'permalink' => get_permalink($p->get_id()),
         'has_variants' => $has_variants,
       );
@@ -1277,7 +1601,6 @@ function universal_refresh_checkout_table()
 
           <!-- Środek: Ilość +/- -->
           <div class="checkout-item-quantity-wrapper">
-            <span class="qty-label"><?php echo __('Ilość:', 'universal-theme'); ?></span>
             <div class="checkout-item-quantity-controls">
               <button type="button" class="qty-btn minus" data-action="minus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="<?php echo __('Zmniejsz ilość', 'universal-theme'); ?>">−</button>
               <span class="qty-display" data-qty="<?php echo esc_attr($quantity); ?>" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="<?php echo __('Kliknij aby edytować ilość', 'universal-theme'); ?>"><?php echo esc_html($quantity); ?></span>
@@ -1433,6 +1756,180 @@ function universal_custom_register_handler()
   ));
 }
 add_action('wp_ajax_nopriv_custom_register', 'universal_custom_register_handler');
+
+/**
+ * Temporary preview function for Thank You page
+ * Access: 
+ * - Paid logged in: http://localhost:10109/?preview_thankyou=1&force_status=paid
+ * - Paid guest: http://localhost:10109/?preview_thankyou=1&force_status=paid&force_guest=1
+ * - Unpaid version: http://localhost:10109/?preview_thankyou=1&force_status=unpaid
+ * - Actual status: http://localhost:10109/?preview_thankyou=1
+ */
+function preview_thankyou_page()
+{
+  if (isset($_GET['preview_thankyou']) && current_user_can('manage_options')) {
+    // Get latest order or create fake order
+    $orders = wc_get_orders(array('limit' => 1, 'orderby' => 'date', 'order' => 'DESC'));
+
+    if (!empty($orders)) {
+      $order = $orders[0];
+
+      // Check if we should force guest mode (simulate logged out user)
+      $force_guest = isset($_GET['force_guest']) && $_GET['force_guest'] == '1';
+      
+      if ($force_guest) {
+        // Set global variable to override logged in check
+        global $preview_force_guest;
+        $preview_force_guest = true;
+      }
+
+      // Check if we should force a specific status for preview
+      if (isset($_GET['force_status'])) {
+        $force_status = sanitize_text_field($_GET['force_status']);
+
+        // Create a custom order object wrapper to override status methods
+        if ($force_status === 'paid') {
+          // Override the methods to simulate a paid order
+          add_filter('woocommerce_order_needs_payment', '__return_false', 999);
+          add_filter('woocommerce_order_has_status', function ($has_status, $order_obj, $status) use ($order) {
+            if ($order_obj->get_id() === $order->get_id() && $status === 'failed') {
+              return false;
+            }
+            return $has_status;
+          }, 999, 3);
+        } elseif ($force_status === 'unpaid') {
+          // Override to simulate an unpaid order
+          add_filter('woocommerce_order_needs_payment', '__return_true', 999);
+        }
+      }
+    } else {
+      // Create a temporary fake order for preview
+      wp_die('Brak zamówień. Najpierw złóż testowe zamówienie lub użyj: http://localhost:10109/checkout/order-received/ID/?key=ORDER_KEY');
+    }
+
+    get_header();
+    wc_get_template('checkout/thankyou.php', array('order' => $order));
+    get_footer();
+    exit;
+  }
+}
+add_action('template_redirect', 'preview_thankyou_page');
+
+/**
+ * Automatyczne tworzenie konta z danymi z zamówienia
+ */
+function create_account_from_order_handler()
+{
+  // Sprawdź nonce
+  if (!isset($_POST['account_nonce']) || !wp_verify_nonce($_POST['account_nonce'], 'create_account_from_order')) {
+    wp_die('Błąd bezpieczeństwa. Spróbuj ponownie.');
+  }
+
+  // Sprawdź czy order_id został przekazany
+  if (!isset($_POST['order_id'])) {
+    wp_die('Brak ID zamówienia.');
+  }
+
+  $order_id = intval($_POST['order_id']);
+  $order = wc_get_order($order_id);
+
+  if (!$order) {
+    wp_die('Nie znaleziono zamówienia.');
+  }
+
+  // Pobierz dane z zamówienia
+  $email = $order->get_billing_email();
+  $first_name = $order->get_billing_first_name();
+  $last_name = $order->get_billing_last_name();
+
+  // Sprawdź czy użytkownik z tym emailem już istnieje
+  if (email_exists($email)) {
+    wp_redirect(add_query_arg('account_error', 'exists', $order->get_checkout_order_received_url()));
+    exit;
+  }
+
+  // Wygeneruj losowe hasło
+  $password = wp_generate_password(12, false);
+
+  // Utwórz użytkownika
+  $user_id = wc_create_new_customer($email, '', $password, array(
+    'first_name' => $first_name,
+    'last_name' => $last_name,
+  ));
+
+  if (is_wp_error($user_id)) {
+    wp_redirect(add_query_arg('account_error', 'failed', $order->get_checkout_order_received_url()));
+    exit;
+  }
+
+  // Przypisz zamówienie do nowo utworzonego użytkownika
+  $order->set_customer_id($user_id);
+  $order->save();
+
+  // Skopiuj dane adresowe do konta użytkownika
+  update_user_meta($user_id, 'billing_first_name', $order->get_billing_first_name());
+  update_user_meta($user_id, 'billing_last_name', $order->get_billing_last_name());
+  update_user_meta($user_id, 'billing_company', $order->get_billing_company());
+  update_user_meta($user_id, 'billing_address_1', $order->get_billing_address_1());
+  update_user_meta($user_id, 'billing_address_2', $order->get_billing_address_2());
+  update_user_meta($user_id, 'billing_city', $order->get_billing_city());
+  update_user_meta($user_id, 'billing_postcode', $order->get_billing_postcode());
+  update_user_meta($user_id, 'billing_country', $order->get_billing_country());
+  update_user_meta($user_id, 'billing_state', $order->get_billing_state());
+  update_user_meta($user_id, 'billing_phone', $order->get_billing_phone());
+
+  if ($order->has_shipping_address()) {
+    update_user_meta($user_id, 'shipping_first_name', $order->get_shipping_first_name());
+    update_user_meta($user_id, 'shipping_last_name', $order->get_shipping_last_name());
+    update_user_meta($user_id, 'shipping_company', $order->get_shipping_company());
+    update_user_meta($user_id, 'shipping_address_1', $order->get_shipping_address_1());
+    update_user_meta($user_id, 'shipping_address_2', $order->get_shipping_address_2());
+    update_user_meta($user_id, 'shipping_city', $order->get_shipping_city());
+    update_user_meta($user_id, 'shipping_postcode', $order->get_shipping_postcode());
+    update_user_meta($user_id, 'shipping_country', $order->get_shipping_country());
+    update_user_meta($user_id, 'shipping_state', $order->get_shipping_state());
+  }
+
+  // Zaloguj użytkownika automatycznie
+  wp_set_current_user($user_id);
+  wp_set_auth_cookie($user_id);
+
+  // Wyślij email z danymi do logowania
+  wc_send_new_customer_email($user_id, $password);
+
+  // WPLoyalty automatycznie przypisze punkty gdy zamówienie jest przypisane do użytkownika
+  // Możesz też ręcznie wywołać akcję jeśli potrzeba
+  do_action('woocommerce_order_status_completed', $order_id);
+
+  // Przekieruj do strony potwierdzenia z informacją o sukcesie
+  wp_redirect(add_query_arg('account_created', '1', $order->get_checkout_order_received_url()));
+  exit;
+}
+add_action('admin_post_create_account_from_order', 'create_account_from_order_handler');
+add_action('admin_post_nopriv_create_account_from_order', 'create_account_from_order_handler');
+
+/**
+ * Przypisz zamówienie do użytkownika po zalogowaniu
+ * Jeśli użytkownik loguje się z linku w thank you page i email się zgadza
+ */
+function assign_order_after_login($user_login, $user)
+{
+  // Sprawdź czy mamy order_id w parametrach
+  if (isset($_REQUEST['order_id'])) {
+    $order_id = intval($_REQUEST['order_id']);
+    $order = wc_get_order($order_id);
+
+    if ($order && $order->get_billing_email() === $user->user_email) {
+      // Email się zgadza - przypisz zamówienie do użytkownika
+      $order->set_customer_id($user->ID);
+      $order->save();
+
+      // WPLoyalty automatycznie przeliczy punkty
+      do_action('woocommerce_order_status_completed', $order_id);
+    }
+  }
+}
+add_action('wp_login', 'assign_order_after_login', 10, 2);
 
 // === KONIEC FUNCTIONS.PHP ===
 // Wszystkie funkcje template checkout zostały usunięte - powrót do Storefront + CSS hooks

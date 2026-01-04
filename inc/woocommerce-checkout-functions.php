@@ -69,7 +69,7 @@ function universal_enqueue_one_click_scripts()
         'universal-one-click-checkout',
         get_stylesheet_directory_uri() . '/assets/js/one-click-checkout.js',
         array('jquery', 'wc-checkout'),
-        '1.0.0',
+        '1.0.2',
         true
     );
 
@@ -149,14 +149,14 @@ function universal_display_one_click_button_loop()
     $button_text = get_theme_option('checkout.button_text', 'Kup w 1 klik');
     $redirect_mode = get_theme_option('checkout.redirect_to_checkout', true);
 ?>
-<button
-    type="button"
-    class="universal-one-click-btn-loop button"
-    data-product-id="<?php echo esc_attr($product->get_id()); ?>"
-    data-quantity="1"
-    data-action="<?php echo $redirect_mode ? 'add-and-redirect' : 'direct-order'; ?>">
-    <?php echo esc_html($button_text); ?>
-</button>
+    <button
+        type="button"
+        class="universal-one-click-btn-loop button"
+        data-product-id="<?php echo esc_attr($product->get_id()); ?>"
+        data-quantity="1"
+        data-action="<?php echo $redirect_mode ? 'add-and-redirect' : 'direct-order'; ?>">
+        <?php echo esc_html($button_text); ?>
+    </button>
 <?php
 }
 

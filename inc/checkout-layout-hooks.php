@@ -155,7 +155,6 @@ function universal_checkout_layout_css()
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('=== CHECKOUT LAYOUT: Contact Info LEFT, Order Summary RIGHT (ORYGINALNY) ===');
 
             setTimeout(function() {
                 const crossSell = document.querySelector('.custom-crosssell-added');
@@ -166,7 +165,6 @@ function universal_checkout_layout_css()
                     if (sidebarLayout.contains(crossSell)) {
                         crossSell.remove();
                         wcBlockCheckout.insertBefore(crossSell, sidebarLayout);
-                        console.log('✅ Cross-sell moved above checkout');
                     }
                 }
 
@@ -182,7 +180,6 @@ function universal_checkout_layout_css()
                 }
             }, 1500);
 
-            console.log('=== CHECKOUT READY ===');
         });
     </script>
 <?php

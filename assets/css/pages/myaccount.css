@@ -1,0 +1,265 @@
+/* 
+ * My Account Page Styles
+ */
+
+/* Layout ogólny */
+.woocommerce-account .woocommerce {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: var(--theme-spacing-xl) var(--theme-spacing-md);
+}
+
+/* Nawigacja My Account */
+.woocommerce-MyAccount-navigation {
+	background: white;
+	border-radius: var(--theme-border-radius);
+	box-shadow: var(--theme-box-shadow);
+	padding: var(--theme-spacing-lg);
+}
+
+.woocommerce-MyAccount-navigation ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.woocommerce-MyAccount-navigation ul li {
+	margin: 0;
+	padding: 0;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.woocommerce-MyAccount-navigation ul li:last-child {
+	border-bottom: none;
+}
+
+.woocommerce-MyAccount-navigation ul li a {
+	display: block;
+	padding: 10px 20px;
+	color: black;
+	text-decoration: none;
+	font-weight: 400;
+	transition: all 0.3s ease;
+	border-radius: 0;
+}
+
+.woocommerce-MyAccount-navigation ul li a:hover {
+	background: transparent;
+	color: black;
+	text-decoration: underline;
+	padding-left: 20px;
+}
+
+.woocommerce-MyAccount-navigation ul li.is-active a {
+	background: black;
+	color: white;
+}
+
+.woocommerce-MyAccount-navigation ul li.is-active a:hover {
+	background: black;
+	color: white;
+	text-decoration: none;
+}
+
+/* Treść My Account */
+.woocommerce-MyAccount-content {
+	background: white;
+	border-radius: var(--theme-border-radius);
+	box-shadow: var(--theme-box-shadow);
+	padding: var(--theme-spacing-xl);
+}
+
+/* Tabele (zamówienia, adresy) */
+.woocommerce-MyAccount-content table.my_account_orders,
+.woocommerce-MyAccount-content table.shop_table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-bottom: var(--theme-spacing-lg);
+}
+
+.woocommerce-MyAccount-content table th {
+	background: var(--theme-background-alt);
+	padding: var(--theme-spacing-md);
+	text-align: left;
+	font-weight: 600;
+	border-bottom: 2px solid var(--theme-primary);
+}
+
+.woocommerce-MyAccount-content table td {
+	padding: var(--theme-spacing-md);
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.woocommerce-MyAccount-content table tr:hover {
+	background: var(--theme-background-alt);
+}
+
+/* Przyciski */
+.woocommerce-MyAccount-content .button,
+.woocommerce-MyAccount-content button {
+	background: var(--theme-primary);
+	color: white;
+	border: none;
+	padding: var(--theme-spacing-sm) var(--theme-spacing-lg);
+	border-radius: var(--theme-border-radius);
+	font-weight: 400;
+	cursor: pointer;
+	margin: 2px 2px;
+}
+
+.woocommerce-MyAccount-content .button:hover,
+.woocommerce-MyAccount-content button:hover {
+	background: var(--theme-secondary);
+	color: black;
+}
+
+/* Formularze edycji */
+.woocommerce-MyAccount-content form .form-row {
+	margin-bottom: var(--theme-spacing-md);
+}
+
+.woocommerce-MyAccount-content form label {
+	display: block;
+	margin-bottom: var(--theme-spacing-xs);
+	font-weight: 500;
+	color: var(--theme-text-dark);
+}
+
+.woocommerce-MyAccount-content form input[type='text'],
+.woocommerce-MyAccount-content form input[type='email'],
+.woocommerce-MyAccount-content form input[type='password'],
+.woocommerce-MyAccount-content form input[type='tel'],
+.woocommerce-MyAccount-content form select,
+.woocommerce-MyAccount-content form textarea {
+	width: 100%;
+	padding: var(--theme-spacing-sm);
+	border: 1px solid #ddd;
+	border-radius: var(--theme-border-radius);
+	font-size: 1rem;
+	transition: border-color 0.3s ease;
+}
+
+.woocommerce-MyAccount-content form input:focus,
+.woocommerce-MyAccount-content form select:focus,
+.woocommerce-MyAccount-content form textarea:focus {
+	outline: none;
+	border-color: var(--theme-primary);
+	box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Adresy */
+.woocommerce-MyAccount-content .woocommerce-Address {
+	background: var(--theme-background-alt);
+	padding: var(--theme-spacing-lg);
+	border-radius: var(--theme-border-radius);
+	margin-bottom: var(--theme-spacing-lg);
+}
+
+.woocommerce-MyAccount-content .woocommerce-Address-title h3 {
+	margin-top: 0;
+	color: var(--theme-text-dark);
+}
+
+/* Pobieranie plików */
+.woocommerce-MyAccount-downloads {
+	list-style: none;
+	padding: 0;
+}
+
+.woocommerce-MyAccount-downloads li {
+	background: var(--theme-background-alt);
+	padding: var(--theme-spacing-md);
+	border-radius: var(--theme-border-radius);
+	margin-bottom: var(--theme-spacing-sm);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+/* Komunikaty */
+.woocommerce-MyAccount-content .woocommerce-message,
+.woocommerce-MyAccount-content .woocommerce-info {
+	background: #d4edda;
+	border: 1px solid #c3e6cb;
+	color: #155724;
+	padding: var(--theme-spacing-md);
+	border-radius: var(--theme-border-radius);
+	margin-bottom: var(--theme-spacing-lg);
+}
+
+.woocommerce-MyAccount-content .woocommerce-error {
+	background: #f8d7da;
+	border: 1px solid #f5c6cb;
+	color: #721c24;
+	padding: var(--theme-spacing-md);
+	border-radius: var(--theme-border-radius);
+	margin-bottom: var(--theme-spacing-lg);
+}
+
+/* Responsywność */
+@media (max-width: 768px) {
+	.woocommerce-account .woocommerce {
+		padding: var(--theme-spacing-md);
+	}
+
+	.woocommerce-MyAccount-navigation,
+	.woocommerce-MyAccount-content {
+		padding: var(--theme-spacing-md);
+	}
+
+	.woocommerce-MyAccount-content table {
+		font-size: 0.9rem;
+	}
+
+	.woocommerce-MyAccount-content table th,
+	.woocommerce-MyAccount-content table td {
+		padding: var(--theme-spacing-sm);
+	}
+
+	/* Ukryj niektóre kolumny na mobile */
+	.woocommerce-MyAccount-content table .order-date,
+	.woocommerce-MyAccount-content table .order-status {
+		display: none;
+	}
+}
+
+/* Dashboard powitanie */
+.woocommerce-MyAccount-content p {
+	line-height: 1.6;
+	color: black;
+}
+
+.woocommerce-MyAccount-content p a,
+.woocommerce-MyAccount-content a {
+	color: black;
+	text-decoration: underline;
+	font-weight: 400;
+	transition: opacity 0.3s ease;
+}
+
+.woocommerce-MyAccount-content p a:hover,
+.woocommerce-MyAccount-content a:hover {
+	opacity: 0.7;
+	text-decoration: underline;
+}
+
+.woocommerce-MyAccount-navigation ul li a {
+	padding: 5px 10px !important;
+    border-radius: 5px;
+}
+
+.woocommerce-MyAccount-navigation {
+    width: 30%;
+}
+
+.woocommerce-MyAccount-content {
+    width: 60%;
+}
+
+.woocommerce-MyAccount-content h2 {
+    font-size: 18px;
+}
+
+.hentry .entry-content .woocommerce-MyAccount-navigation ul li {
+    border-bottom: none;
+}

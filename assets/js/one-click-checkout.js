@@ -504,9 +504,7 @@
         },
 
         debug: function(message, data) {
-            if (window.console && console.log) {
-                console.log('[Universal One-Click]', message, data || '');
-            }
+            // Debug disabled in production
         }
     };
 

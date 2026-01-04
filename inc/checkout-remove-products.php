@@ -22,7 +22,6 @@ function universal_add_checkout_remove_column()
 ?>
     <script type="text/javascript">
         jQuery(document).ready(function($) {
-            console.log('Universal: Checkout remove script loaded');
 
             // Poczekaj aż checkout się załaduje
             setTimeout(function() {
@@ -35,24 +34,20 @@ function universal_add_checkout_remove_column()
             });
 
             function addRemoveButtons() {
-                console.log('Universal: Trying to add remove buttons...');
 
                 // Znajdź tabelę order review (różne selektory dla różnych wersji)
                 var $table = $('.shop_table.woocommerce-checkout-review-order-table, .wc-block-components-order-summary, .cart_list, .shop_table');
 
                 if ($table.length === 0) {
-                    console.log('Universal: No order table found');
                     return;
                 }
 
-                console.log('Universal: Found table:', $table);
 
                 // Jeśli to klasyczna tabela
                 if ($table.hasClass('shop_table')) {
                     // Dodaj kolumnę Remove do header jeśli nie ma
                     if ($table.find('thead th.product-remove').length === 0) {
                         $table.find('thead tr').append('<th class="product-remove" style="width:60px;text-align:center;">Usuń</th>');
-                        console.log('Universal: Added header column');
                     }
 
                     // Dodaj przyciski remove dla każdego produktu
@@ -68,7 +63,6 @@ function universal_add_checkout_remove_column()
                         var productName = $row.find('.product-name, td:first').text().trim();
                         if (!productName) return;
 
-                        console.log('Universal: Adding remove button for:', productName);
 
                         var removeButton = '<td class="product-remove" style="text-align:center;">' +
                             '<a href="#" class="remove-product-checkout" ' +
@@ -92,15 +86,11 @@ function universal_add_checkout_remove_column()
                 var productName = $button.data('product-name');
                 var cartItemKey = $button.data('cart-item-key');
 
-                console.log('=== REMOVE PRODUCT DEBUG ===');
-                console.log('Product name:', productName);
-                console.log('Cart item key:', cartItemKey);
 
                 if (confirm('Czy na pewno chcesz usunąć "' + productName + '" z koszyka?')) {
                     // Dodaj loading state
                     $button.css('background', '#95a5a6').html('...');
 
-                    console.log('Sending AJAX request...');
 
                     // AJAX call do usunięcia produktu
                     $.ajax({
@@ -112,26 +102,17 @@ function universal_add_checkout_remove_column()
                             nonce: '<?php echo wp_create_nonce('checkout_remove_nonce'); ?>'
                         },
                         success: function(response) {
-                            console.log('=== AJAX SUCCESS ===');
-                            console.log('Full response:', response);
-                            console.log('Response success:', response.success);
-                            console.log('Response data:', response.data);
 
                             if (response.success) {
-                                console.log('Cart empty:', response.data.cart_empty);
-                                console.log('Cart count:', response.data.cart_count);
 
                                 $row.fadeOut(300, function() {
                                     $(this).remove();
 
                                     // Sprawdź czy koszyk jest pusty
                                     if (response.data.cart_empty === true) {
-                                        console.log('!!! REDIRECTING TO EMPTY CART PAGE !!!');
                                         var redirectUrl = '<?php echo esc_url(home_url('/koszyk-pusty/')); ?>';
-                                        console.log('Redirect URL:', redirectUrl);
                                         window.location.href = redirectUrl;
                                     } else {
-                                        console.log('Cart not empty, updating checkout...');
                                         // Odśwież checkout
                                         $('body').trigger('update_checkout');
                                     }

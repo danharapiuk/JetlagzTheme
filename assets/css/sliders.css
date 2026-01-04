@@ -1,0 +1,114 @@
+/* ========================================
+   UNIVERSAL PRODUCT SLIDERS
+   Shared styles for all product sliders
+   ======================================== */
+
+/* Slider Container */
+.bestsellers-slider-container {
+	max-width: 1380px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.bestsellers-slider-wrapper,
+.products-slider-wrapper {
+	position: relative;
+	overflow: visible;
+}
+
+/* Product Cards */
+.product-link {
+	text-decoration: none;
+	color: inherit;
+	display: block;
+}
+
+.product-rating {
+	min-height: 20px;
+}
+
+.product-rating .stars {
+	line-height: 1;
+}
+
+.product-rating .star {
+	font-size: 16px;
+	line-height: 1;
+}
+
+.product-rating .rating-text {
+	font-weight: 500;
+}
+
+.product-title {
+	color: #333;
+}
+
+.product-price {
+	color: var(--theme-accent);
+}
+
+.add-to-cart-btn {
+	margin-top: auto;
+	cursor: pointer;
+	border: none;
+}
+
+.sale-badge {
+	z-index: 10;
+}
+
+/* ========================================
+   SWIPER NAVIGATION
+   ======================================== */
+
+.bestsellers-swiper .swiper-button-prev,
+.bestsellers-swiper .swiper-button-next,
+.new-products-swiper .swiper-button-prev,
+.new-products-swiper .swiper-button-next,
+.related-products-swiper .swiper-button-prev,
+.related-products-swiper .swiper-button-next {
+	color: #000;
+	width: 40px;
+	height: 40px;
+	background: white;
+	border-radius: 50%;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bestsellers-swiper .swiper-button-prev:after,
+.bestsellers-swiper .swiper-button-next:after,
+.new-products-swiper .swiper-button-prev:after,
+.new-products-swiper .swiper-button-next:after,
+.related-products-swiper .swiper-button-prev:after,
+.related-products-swiper .swiper-button-next:after {
+	font-size: 20px;
+}
+
+.bestsellers-swiper .swiper-button-prev,
+.bestsellers-swiper .swiper-button-next,
+.new-products-swiper .swiper-button-prev,
+.new-products-swiper .swiper-button-next,
+.related-products-swiper .swiper-button-prev,
+.related-products-swiper .swiper-button-next {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.swiper-slide {
+	margin-right: 7px !important;
+}
+
+.swiper.bestsellers-swiper,
+.swiper.new-products-swiper,
+.swiper.related-products-swiper {
+	overflow: visible !important;
+}
+
+.swiper-button-next {
+	right: 70px !important;
+	top: 40% !important;
+}

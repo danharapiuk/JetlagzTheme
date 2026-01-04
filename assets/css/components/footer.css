@@ -1,0 +1,33 @@
+/* Scroll to Top Button Styles */
+#scrollToTopBtn {
+	background: #f9a2bc;
+	color: #fff;
+	border: none;
+	border-radius: 50%;
+	width: 48px;
+	height: 48px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	cursor: pointer;
+	position: fixed;
+	right: 2rem;
+	bottom: 2.5rem;
+	z-index: 9999;
+	transition: background 0.2s;
+	display: block !important; /* DEBUG: always show button */
+}
+#scrollToTopBtn:hover {
+	background: #e07a9e;
+}
+/* Footer styles for Jetlagz-theme */
+
+.footer-element .title {
+	font-size: 10px;
+	margin-bottom: 20px;
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.footer-element ul li a {
+	color: #cd0568 !important;
+	font-size: 12px;
+	text-decoration: none;
+}

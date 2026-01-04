@@ -1,0 +1,11 @@
+/* Home Page Styles */
+
+#content .col-full {
+	padding: 0 !important;
+}
+
+.storefront-breadcrumb {
+	display: none;
+}
+
+/* Note: Slider styles moved to assets/css/sliders.css for reusability */

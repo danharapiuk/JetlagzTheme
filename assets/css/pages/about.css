@@ -1,0 +1,7 @@
+.about-info ul li {
+    list-style: disc;
+}
+
+.about-info ul {
+    padding-left: 20px;
+}

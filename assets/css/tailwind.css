@@ -8,13 +8,14 @@
 	/* Zachowaj nasze custom CSS variables */
 	:root {
 		/* Kolory będą nadpisane przez customizer */
-		--theme-primary: #e74c3c;
-		--theme-secondary: #3498db;
-		--theme-accent: #f39c12;
+		--theme-primary: #000000;
+		--theme-secondary: #ffffff;
+		--theme-accent: #6c0955;
 		--theme-text-dark: #2c3e50;
 		--theme-text-light: #7f8c8d;
 		--theme-background: #ffffff;
 		--theme-background-alt: #f8f9fa;
+		--primary-color: var(--theme-primary);
 
 		/* Typografia */
 		--theme-font-primary: 'Inter', sans-serif;

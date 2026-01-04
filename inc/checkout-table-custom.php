@@ -31,7 +31,7 @@ add_action('woocommerce_review_order_before_payment', function () {
 
 ?>
     <div class="universal-checkout-review-wrapper">
-        <h3 class="universal-checkout-review-title"><?php echo __('Podsumowanie zamówienia', 'universal-theme'); ?></h3>
+        <h3 class="universal-checkout-review-title"><?php echo __('Podsumowanie koszyka', 'universal-theme'); ?></h3>
         <div class="universal-checkout-review-table-custom">
             <?php
             // Iteruj po produktach w koszyku
@@ -45,6 +45,7 @@ add_action('woocommerce_review_order_before_payment', function () {
                 $product_image = $product->get_image('thumbnail');
                 $product_price = $product->get_price();
                 $product_total = $product_price * $quantity;
+                $product_url = get_permalink($product_id);
 
                 // Formatuj ceny
                 $price_formatted = wc_price($product_price);
@@ -54,12 +55,14 @@ add_action('woocommerce_review_order_before_payment', function () {
                     <!-- Lewa część: Miniaturka + Nazwa + Cena jednostkowa -->
                     <div class="checkout-item-left">
                         <div class="checkout-item-thumbnail">
-                            <?php echo $product_image; ?>
+                            <a href="<?php echo esc_url($product_url); ?>">
+                                <?php echo $product_image; ?>
+                            </a>
                             <button type="button" class="checkout-item-remove-btn" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="<?php echo __('Usuń z koszyka', 'universal-theme'); ?>">×</button>
                         </div>
                         <div class="checkout-item-details">
                             <div class="checkout-item-name">
-                                <?php echo esc_html($product_name); ?>
+                                <a href="<?php echo esc_url($product_url); ?>"><?php echo esc_html($product_name); ?></a>
                             </div>
                             <div class="checkout-item-unit-price" data-unit-price="<?php echo esc_attr($product_price); ?>">
                                 <?php echo wp_kses_post($price_formatted); ?>
@@ -69,7 +72,6 @@ add_action('woocommerce_review_order_before_payment', function () {
 
                     <!-- Środek: Ilość +/- -->
                     <div class="checkout-item-quantity-wrapper">
-                        <span class="qty-label"><?php echo __('Ilość:', 'universal-theme'); ?></span>
                         <div class="checkout-item-quantity-controls">
                             <button type="button" class="qty-btn minus" data-action="minus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="<?php echo __('Zmniejsz ilość', 'universal-theme'); ?>">−</button>
                             <span class="qty-display" data-qty="<?php echo esc_attr($quantity); ?>" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="<?php echo __('Kliknij aby edytować ilość', 'universal-theme'); ?>"><?php echo esc_html($quantity); ?></span>
@@ -88,6 +90,29 @@ add_action('woocommerce_review_order_before_payment', function () {
             }
             ?>
         </div>
+
+        <!-- Global Gift Wrapping Section -->
+        <?php
+        $gift_wrapping_group = get_field('gift_wrapping_field', 'option');
+        if ($gift_wrapping_group && isset($gift_wrapping_group['gift_wrapping_enabled']) && $gift_wrapping_group['gift_wrapping_enabled']) {
+            $gift_wrapping_label = $gift_wrapping_group['gift_wrapping_label'] ?: 'Zapakować na prezent?';
+            $gift_wrapping_price = $gift_wrapping_group['gift_wrapping_price'] ?: 12;
+            $is_checked = WC()->session->get('global_gift_wrapping_enabled', false);
+        ?>
+            <div class="universal-gift-wrapping-section">
+                <label class="gift-wrapping-global-label">
+                    <input
+                        type="checkbox"
+                        id="global-gift-wrapping-checkbox"
+                        class="gift-wrapping-global-checkbox"
+                        <?php checked($is_checked, true); ?> />
+                    <span class="gift-wrapping-global-text">
+                        🎁 <?php echo esc_html($gift_wrapping_label); ?>
+                        <span class="gift-wrapping-global-price">+<?php echo number_format($gift_wrapping_price, 0, ',', ' '); ?> zł</span>
+                    </span>
+                </label>
+            </div>
+        <?php } ?>
     </div>
 
     <!-- Custom Coupon Form - Pod listą produktów -->
@@ -203,7 +228,6 @@ add_action('wp_head', function () {
                         $('#shipping-method-heading').addClass('moved');
                     }
 
-                    console.log('✅ Shipping table przeniesiona do #customer_details');
                 }
             }
 

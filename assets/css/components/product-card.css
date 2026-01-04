@@ -1,0 +1,194 @@
+/* ========================================
+   UNIVERSAL PRODUCT CARD STYLES
+   Used by: Sliders, Shop, Archive, Category pages
+   ======================================== */
+
+/* Product Card Container */
+.product-card {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.product-link {
+	text-decoration: none;
+	color: inherit;
+	display: block;
+}
+
+/* Product Image */
+.product-image-wrapper {
+	position: relative;
+	overflow: hidden;
+	aspect-ratio: 3/4;
+	margin-bottom: 0.25rem;
+}
+
+.product-image-wrapper img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: opacity 0.3s ease;
+}
+
+.product-image-wrapper .product-image-primary {
+	position: relative;
+	z-index: 1;
+}
+
+.product-image-wrapper .product-image-secondary {
+	position: absolute;
+	top: 0;
+	left: 0;
+	opacity: 0;
+	z-index: 2;
+}
+
+.product-link:hover .product-image-wrapper .product-image-primary {
+	opacity: 0;
+}
+
+.product-link:hover .product-image-wrapper .product-image-secondary {
+	opacity: 1;
+}
+
+/* Sale Badge */
+.sale-badge {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	background-color: #dc2626;
+	color: white;
+	padding: 0.25rem 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	z-index: 10;
+}
+
+/* Product Rating */
+.product-rating {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+	min-height: 20px;
+}
+
+.product-rating .stars {
+	display: flex;
+	gap: 0.125rem;
+	line-height: 1;
+}
+
+.product-rating .star {
+	font-size: 16px;
+	line-height: 1;
+}
+
+.product-rating .star.filled {
+	color: #facc15;
+}
+
+.product-rating .star.empty {
+	color: #d1d5db;
+}
+
+.product-rating .rating-text {
+	font-size: 0.875rem;
+	color: #4b5563;
+	font-weight: 500;
+}
+
+/* Product Info Row - Title and Price side by side */
+.product-info-row {
+	display: flex;
+	justify-content: space-between;
+    align-items: flex-start;
+	align-items: center;
+	gap: 0.5rem;
+	width: 100%;
+	padding: 0 0.5rem;
+}
+
+/* Product Title */
+.product-title {
+	font-size: 14px;
+	font-weight: 300;
+	text-transform: uppercase;
+	margin-bottom: 0;
+	color: #333;
+	line-height: 1.4;
+	text-align: left;
+	flex: 1 1 50%;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Product Price */
+.product-price {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--theme-accent, #000);
+	margin-bottom: 0;
+	text-align: right;
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.product-price del {
+	opacity: 0.5;
+	margin-right: 0.5rem;
+	font-weight: 400;
+}
+
+.product-price ins {
+	text-decoration: none;
+	color: #931578;
+}
+
+/* Add to Cart Button */
+.add-to-cart-btn {
+	display: block;
+	text-align: center;
+	padding: 0.5rem 1rem;
+	background-color: #000;
+	color: #fff;
+	text-transform: uppercase;
+	font-size: 0.875rem;
+	font-weight: 600;
+	transition: background-color 0.2s ease;
+	cursor: pointer;
+	border: none;
+	margin-top: auto;
+}
+
+.add-to-cart-btn:hover {
+	background-color: #374151;
+}
+
+/* ========================================
+   WOOCOMMERCE SPECIFIC OVERRIDES
+   ======================================== */
+
+/* WooCommerce product list (shop/archive) */
+.woocommerce ul.products li.product {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Ensure WooCommerce uses our card structure */
+.woocommerce ul.products li.product .product-card {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+/* Hide default WooCommerce elements that we replaced */
+.woocommerce ul.products li.product .woocommerce-loop-product__title,
+.woocommerce ul.products li.product .price,
+.woocommerce ul.products li.product .star-rating,
+.woocommerce ul.products li.product .button {
+	display: none !important;
+}

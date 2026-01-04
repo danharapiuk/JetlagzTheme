@@ -1,36 +1,10 @@
 /* 
  * Custom CSS dla Universal Theme
  * Tutaj umieszczaj style specyficzne dla konkretnego sklepu
+ * 
+ * UWAGA: Zmienne CSS są zdefiniowane w tailwind.css
+ * Edytuj je tam, nie tutaj!
  */
-
-/* === ZMIENNE CSS === */
-:root {
-	/* Kolory będą nadpisane przez customizer */
-	--theme-primary: #e74c3c;
-	--theme-secondary: #3498db;
-	--theme-accent: #f39c12;
-	--theme-text-dark: #2c3e50;
-	--theme-text-light: #7f8c8d;
-	--theme-background: #ffffff;
-	--theme-background-alt: #f8f9fa;
-
-	/* Typografia */
-	--theme-font-primary: 'Inter', sans-serif;
-	--theme-font-secondary: 'Inter', sans-serif;
-
-	/* Layout */
-	--theme-container-width: 1200px;
-	--theme-border-radius: 8px;
-	--theme-box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-
-	/* Spacing */
-	--theme-spacing-xs: 0.25rem;
-	--theme-spacing-sm: 0.5rem;
-	--theme-spacing-md: 1rem;
-	--theme-spacing-lg: 1.5rem;
-	--theme-spacing-xl: 2rem;
-	--theme-spacing-xxl: 3rem;
-}
 
 /* === RESET I PODSTAWY === */
 * {
@@ -82,8 +56,9 @@
 .woocommerce ul.products,
 .woocommerce ul.products.columns-3 {
 	display: grid !important;
-	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
-	gap: var(--theme-spacing-lg) !important;
+	grid-template-columns: repeat(3, 1fr) !important;
+	row-gap: 10px !important;
+	column-gap: 5px !important;
 	margin: 0 !important;
 	padding: 0 !important;
 }
@@ -99,11 +74,6 @@
 
 .woocommerce ul.products li.product,
 .woocommerce ul.products.columns-3 li.product {
-	background: white;
-	border-radius: var(--theme-border-radius);
-	box-shadow: var(--theme-box-shadow);
-	padding: var(--theme-spacing-md);
-	transition: transform 0.3s ease, box-shadow 0.3s ease;
 	position: relative;
 	overflow: hidden;
 	width: auto !important; /* Nadpisz domyślne 29.4117647059% */
@@ -112,11 +82,6 @@
 	margin-left: 0 !important; /* Usuń margin-left */
 	margin-top: 0 !important; /* Usuń margin-top */
 	margin-bottom: 0 !important; /* Usuń margin-bottom */
-}
-
-.woocommerce ul.products li.product:hover {
-	transform: translateY(-5px);
-	box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
 }
 
 /* Obrazy produktów */
@@ -162,15 +127,6 @@
 .woocommerce ul.products li.product .button:hover {
 	background-color: var(--theme-primary);
 	transform: translateY(-2px);
-}
-
-/* Strona produktu */
-.single-product .product {
-	background: white;
-	border-radius: var(--theme-border-radius);
-	box-shadow: var(--theme-box-shadow);
-	padding: var(--theme-spacing-xl);
-	margin: var(--theme-spacing-lg) 0;
 }
 
 /* Quick View */
@@ -260,6 +216,27 @@
 	text-decoration: underline;
 }
 
+/* === STICKY FOOTER === */
+html,
+body {
+	height: 100%;
+}
+
+#page {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+#content {
+	flex: 1 0 auto;
+}
+
+.site-footer {
+	flex-shrink: 0;
+	margin-top: auto;
+}
+
 /* === RESPONSYWNOŚĆ === */
 @media (max-width: 768px) {
 	:root {
@@ -267,20 +244,17 @@
 		--theme-spacing-lg: 1rem;
 	}
 
-	.woocommerce ul.products {
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	.woocommerce ul.products,
+	.woocommerce ul.products.columns-3 {
+		grid-template-columns: repeat(2, 1fr) !important;
 		gap: var(--theme-spacing-md);
-	}
-
-	.single-product .product {
-		padding: var(--theme-spacing-lg);
-		margin: var(--theme-spacing-md) 0;
 	}
 }
 
 @media (max-width: 480px) {
-	.woocommerce ul.products {
-		grid-template-columns: 1fr 1fr;
+	.woocommerce ul.products,
+	.woocommerce ul.products.columns-3 {
+		grid-template-columns: repeat(2, 1fr) !important;
 		gap: var(--theme-spacing-sm);
 	}
 
@@ -574,11 +548,6 @@
 	}
 }
 
-.site-content {
-	max-width: 1280px !important;
-	margin: 0 auto !important;
-}
-
 .woocommerce-breadcrumb a:first-of-type::before {
 	display: none !important;
 }
@@ -588,8 +557,105 @@
 	font-size: 10px !important;
 	font-weight: 300 !important;
 	font-family: 'Inter', 'sans-serif';
+	text-transform: uppercase;
+	text-decoration: none !important;
+}
+
+.woocommerce-breadcrumb a {
+	text-decoration: none !important;
 }
 
 form.universal-search-form {
 	margin-bottom: 0;
+}
+
+.button-primary {
+	background: var(--theme-primary) !important;
+	color: white !important;
+	padding: 8px 14px;
+	font-family: 'Inter', 'sans-serif';
+	font-size: 14px;
+	border: 1px solid black;
+}
+
+.button-secondary {
+	background: var(--theme-secondary) !important;
+	color: black !important;
+	border: 1px solid black !important;
+	padding: 8px 14px;
+	font-family: 'Inter', 'sans-serif';
+	font-size: 14px;
+	border-radius: 0 !important;
+}
+
+#content {
+	width: 100% !important;
+}
+
+.storefront-breadcrumb {
+	max-width: 1380px !important;
+	margin: 0 auto !important;
+	padding: 2rem 16px !important;
+}
+
+.woocommerce-info {
+	background-color: #000000;
+}
+
+.woocommerce-message,
+.woocommerce-info,
+.woocommerce-error,
+.woocommerce-noreviews,
+p.no-comments {
+	background-color: #000000 !important;
+}
+
+.hentry .entry-content .woocommerce-MyAccount-navigation ul {
+	border-top: none !important;
+}
+
+.storefront-breadcrumb {
+	width: 100%;
+	padding-bottom: 50px !important;
+}
+
+.wrapper {
+	max-width: 1380px;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 2rem 16px;
+}
+@media (min-width: 1440px) {
+	.wrapper {
+		padding: 0;
+	}
+	.storefront-breadcrumb, .single-product #content {
+		padding-left: 0 !important;
+		padding-right: 0 !important;
+	} 
+}
+
+h2.title {
+	font-size: 32px;
+	margin-bottom: 12px;
+}
+
+.category-item.active {
+	z-index: 100;
+}
+
+a:focus,
+button:focus,
+.button.alt:focus,
+input:focus,
+textarea:focus,
+input[type='button']:focus,
+input[type='reset']:focus,
+input[type='submit']:focus,
+input[type='email']:focus,
+input[type='tel']:focus,
+input[type='url']:focus,
+input[type='password']:focus,
+input[type='search']:focus {
+	outline: none !important;
 }

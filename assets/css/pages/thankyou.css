@@ -1,0 +1,422 @@
+/**
+ * Thank You Page Styles
+ */
+
+.thankyou-page-custom {
+	max-width: 720px;
+	margin: 0 auto;
+	padding: 60px 20px;
+}
+
+/* Hero Section */
+.thankyou-hero {
+	text-align: center;
+	margin-bottom: 50px;
+}
+
+.thankyou-title {
+	font-size: 64px;
+	font-weight: 700;
+	color: #c2185b;
+	margin: 0 0 20px 0;
+	letter-spacing: 2px;
+}
+
+.thankyou-subtitle {
+	font-size: 24px;
+	font-weight: 400;
+	color: #1a1a1a;
+	margin: 0 0 15px 0;
+}
+
+.thankyou-confirmation {
+	font-size: 16px;
+	color: #1a1a1a;
+	margin: 0;
+	line-height: 1.6;
+}
+
+.thankyou-confirmation strong {
+	font-weight: 600;
+	color: #1a1a1a;
+}
+
+/* Unpaid Order Notice */
+.thankyou-unpaid-notice {
+	background: #fff3cd;
+	border: 2px solid #f59e0b;
+	border-radius: 12px;
+	padding: 32px;
+	margin: 32px 0;
+	text-align: center;
+}
+
+.unpaid-content {
+	max-width: 500px;
+	margin: 0 auto;
+}
+
+.unpaid-content svg {
+	margin: 0 auto 16px;
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+	50% {
+		opacity: 0.8;
+		transform: scale(1.05);
+	}
+}
+
+.unpaid-content h3 {
+	font-size: 24px;
+	font-weight: 600;
+	color: #92400e;
+	margin: 0 0 12px 0;
+}
+
+.unpaid-content p {
+	font-size: 16px;
+	color: #78350f;
+	margin: 0 0 24px 0;
+}
+
+.unpaid-button {
+	background: #f59e0b;
+	color: #fff;
+	padding: 16px 40px;
+	font-size: 16px;
+	font-weight: 600;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	text-decoration: none;
+	display: inline-block;
+}
+
+.unpaid-button:hover {
+	background: #d97706;
+	transform: translateY(-2px);
+	box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+	color: #fff;
+}
+
+.products-section-title {
+	font-size: 16px;
+	font-weight: 500;
+	color: #1a1a1a;
+	text-align: left;
+	color: #cd0568;
+}
+
+.thankyou-products-grid {
+	display: flex;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.thankyou-product-card {
+	max-width: 120px;
+}
+
+.thankyou-product-card img {
+	width: 100%;
+	height: auto;
+}
+
+.product-card-name {
+	font-size: 12px;
+	color: #1a1a1a;
+	text-transform: uppercase;
+	margin: 0;
+	line-height: 1.4;
+}
+
+.thankyou-continue-shopping .arrow {
+	display: inline-block;
+	margin-left: 5px;
+	transition: transform 0.3s ease;
+}
+
+.thankyou-continue-shopping:hover .arrow {
+	transform: translateX(5px);
+}
+
+.step-item {
+	display: flex;
+	gap: 5px;
+}
+
+.step-icon {
+	flex-shrink: 0;
+	width: 24px;
+	height: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #c2185b;
+	font-size: 20px;
+	font-weight: 700;
+}
+
+.step-item p {
+	margin: 0;
+	font-size: 16px;
+	line-height: 1.6;
+	color: #1a1a1a;
+}
+
+/* Loyalty Program */
+.thankyou-loyalty {
+	text-align: center;
+	margin: 60px 0;
+}
+
+.loyalty-title {
+	font-size: 20px;
+	font-weight: 400;
+	color: #c2185b;
+	margin: 0 0 30px 0;
+	line-height: 1.5;
+}
+
+.loyalty-benefits {
+	list-style: none;
+	padding: 0;
+	margin: 0 0 30px 0;
+	text-align: left;
+	max-width: 500px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.loyalty-benefits li {
+	font-size: 15px;
+	line-height: 1.6;
+	color: #1a1a1a;
+	padding-left: 20px;
+	position: relative;
+}
+
+.loyalty-benefits li:before {
+	content: '•';
+	position: absolute;
+	left: 0;
+	color: #1a1a1a;
+}
+
+.loyalty-button-primary {
+	background: #000;
+	color: #fff;
+	padding: 16px 50px;
+	font-size: 16px;
+	font-weight: 400;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	text-decoration: none;
+	display: inline-block;
+}
+
+.loyalty-button-primary:hover {
+	background: #333;
+	color: #fff;
+}
+
+.loyalty-link-secondary {
+	display: block;
+	color: #1a1a1a73;
+	font-size: 14px;
+	text-decoration: underline;
+	display: flex;
+	align-items: center;
+}
+
+.loyalty-link-secondary:hover {
+	color: #c2185b;
+}
+.loyalty-actions form {
+	margin-bottom: 0;
+}
+/* Failed Order */
+.thankyou-failed {
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.thankyou-title-failed {
+	font-size: 36px;
+	font-weight: 700;
+	color: #dc2626;
+	margin-bottom: 24px;
+}
+
+.thankyou-failed .button {
+	margin: 0 8px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+	.thankyou-title {
+		font-size: 40px;
+	}
+
+	.thankyou-subtitle {
+		font-size: 20px;
+	}
+
+	.thankyou-products-grid {
+		gap: 15px;
+	}
+
+	.thankyou-product-card {
+		max-width: 120px;
+	}
+
+	.loyalty-title {
+		font-size: 18px;
+	}
+
+	.step-item {
+		gap: 10px;
+	}
+}
+
+/* Payment Failed / Pending Page */
+.thankyou-payment-failed {
+	text-align: center;
+	max-width: 600px;
+	margin: 0 auto;
+	padding: 20px 20px;
+}
+
+.payment-failed-hero {
+	margin-bottom: 20px;
+}
+
+.payment-failed-hero svg {
+	margin: 0 auto 30px;
+	animation: pulse 2s infinite;
+}
+
+.payment-failed-title {
+	font-size: 20px;
+	font-weight: 600;
+	color: #1a1a1a;
+	margin: 0 0 10px 0;
+}
+
+.payment-failed-subtitle {
+	font-size: 16px;
+	color: #666;
+	line-height: 1.6;
+	margin: 0;
+}
+
+.payment-failed-subtitle strong {
+	color: #1a1a1a;
+	font-weight: 600;
+}
+
+.payment-failed-details {
+	background: #f8f9fa;
+	padding: 20px 15px;
+	border-radius: 12px;
+	margin-bottom: 20px;
+}
+
+.payment-failed-details h3 {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1a1a1a;
+	margin: 0 0 24px 0;
+}
+
+.order-summary {
+	background: #fff;
+	border-radius: 8px;
+	padding: 20px;
+	margin-bottom: 30px;
+}
+
+.summary-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 0;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.summary-row:last-child {
+	border-bottom: none;
+}
+
+.summary-row span {
+	font-size: 15px;
+	color: #666;
+}
+
+.summary-row strong {
+	font-size: 18px;
+	font-weight: 700;
+	color: #1a1a1a;
+}
+
+.payment-button-primary {
+	background: #f59e0b;
+	color: #fff;
+	padding: 18px 60px;
+	font-size: 18px;
+	font-weight: 600;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	text-decoration: none;
+	display: inline-block;
+	margin-bottom: 20px;
+}
+
+.payment-button-primary:hover {
+	background: #d97706;
+	transform: translateY(-2px);
+	box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+	color: #fff;
+}
+
+.payment-help-text {
+	font-size: 14px;
+	color: #666;
+	margin: 0;
+}
+
+.payment-help-text a {
+	color: #c2185b;
+	text-decoration: underline;
+}
+
+.payment-help-text a:hover {
+	color: #880e4f;
+}
+
+@media (max-width: 640px) {
+	.payment-failed-title {
+		font-size: 24px;
+	}
+
+	.payment-failed-details {
+		padding: 30px 20px;
+	}
+
+	.payment-button-primary {
+		padding: 16px 40px;
+		font-size: 16px;
+	}
+}

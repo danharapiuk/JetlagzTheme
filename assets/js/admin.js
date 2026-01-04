@@ -6,9 +6,6 @@
 jQuery(document).ready(function($) {
     
     // Debug info
-    console.log('🎨 Universal Theme Admin Panel initializing...');
-    console.log('jQuery version:', $.fn.jquery);
-    console.log('WordPress Media API available:', typeof wp !== 'undefined' && typeof wp.media !== 'undefined');
     
     // Sprawdź czy wp.media jest dostępne
     if (typeof wp === 'undefined' || typeof wp.media === 'undefined') {
@@ -25,7 +22,6 @@ jQuery(document).ready(function($) {
      */
     function setupImageUploader(uploadButtonId, previewId, inputId, removeButtonId) {
         
-        console.log('Setting up uploader for:', uploadButtonId);
         
         // Sprawdź czy element istnieje
         if ($(uploadButtonId).length === 0) {
@@ -36,7 +32,6 @@ jQuery(document).ready(function($) {
         // Upload button
         $(uploadButtonId).click(function(e) {
             e.preventDefault();
-            console.log('Upload button clicked:', uploadButtonId);
             
             // Jeśli media uploader już istnieje, otwórz go ponownie
             if (mediaUploader) {
@@ -59,7 +54,6 @@ jQuery(document).ready(function($) {
             // Callback po wybraniu obrazu
             mediaUploader.on('select', function() {
                 var attachment = mediaUploader.state().get('selection').first().toJSON();
-                console.log('Image selected:', attachment);
                 
                 // Ustaw URL w hidden input
                 $(inputId).val(attachment.url);
@@ -78,7 +72,6 @@ jQuery(document).ready(function($) {
         // Remove button
         $(removeButtonId).click(function(e) {
             e.preventDefault();
-            console.log('Remove button clicked:', removeButtonId);
             
             // Wyczyść input i podgląd
             $(inputId).val('');
@@ -86,7 +79,6 @@ jQuery(document).ready(function($) {
             $(this).hide();
         });
         
-        console.log('✅ Uploader configured for:', uploadButtonId);
     }
     
     // Setup uploaders dla wszystkich obrazów
@@ -97,7 +89,6 @@ jQuery(document).ready(function($) {
         setupImageUploader('#upload_header_bg_button', '#header_bg_preview', '#header_bg_url', '#remove_header_bg_button');
         setupImageUploader('#upload_footer_bg_button', '#footer_bg_preview', '#footer_bg_url', '#remove_footer_bg_button');
         
-        console.log('✅ Media uploaders initialized successfully');
     } else {
         console.error('❌ Cannot initialize media uploaders - WordPress Media API not available');
         
@@ -300,7 +291,6 @@ jQuery(document).ready(function($) {
                     $result.html('✅ <span style="color: green;">Ustawienia działają poprawnie!</span>');
                     
                     // Pokaż szczegóły w konsoli
-                    console.log('Theme Settings Test:', response.data);
                 } else {
                     $result.html('❌ <span style="color: red;">Błąd: ' + (response.data || 'Nieznany błąd') + '</span>');
                 }
@@ -315,5 +305,4 @@ jQuery(document).ready(function($) {
     });
     
     // Komunikat o załadowaniu panelu
-    console.log('🎨 Universal Theme Admin Panel loaded successfully!');
 });

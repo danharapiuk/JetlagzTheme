@@ -6,13 +6,8 @@
 
 jQuery(document).ready(function($) {
     
-    console.log('🚨 CLASSIC CHECKOUT QUANTITY CONTROLS LOADED! 🚨');
-    console.log('🔍 jQuery version:', $.fn.jquery);
-    console.log('🔍 Is checkout page?', $('body').hasClass('woocommerce-checkout'));
-    console.log('🔍 universal_ajax available?', typeof universal_ajax !== 'undefined' ? universal_ajax : 'NOT AVAILABLE!');
     
     if ($('body').hasClass('woocommerce-checkout')) {
-        console.log('✅ On classic checkout page - initializing quantity controls...');
         
         // Initialize quantity controls
         setTimeout(function() {
@@ -21,13 +16,11 @@ jQuery(document).ready(function($) {
         
         // Re-initialize after checkout updates
         $(document.body).on('updated_checkout', function() {
-            console.log('🔄 Checkout updated - re-binding quantity events');
             setTimeout(bindQuantityEvents, 300);
         });
         
         // Re-initialize after custom checkout table update (z cross-sell)
         $(document).on('universalCheckoutTableUpdated', function() {
-            console.log('🔄 Custom checkout table updated - re-binding quantity events');
             setTimeout(function(){
               bindQuantityEvents();
               bindRemoveEvents();
@@ -40,7 +33,6 @@ jQuery(document).ready(function($) {
      * Bind events dla przycisków ilości (nowy custom layout)
      */
     function bindQuantityEvents() {
-        console.log('🔧 Binding quantity button events...');
         
         // Usuń poprzednie eventy żeby uniknąć duplikacji
         $(document).off('click.qtyControls', '.checkout-item-quantity-controls .qty-btn');
@@ -64,7 +56,6 @@ jQuery(document).ready(function($) {
             
             const productName = $item.find('.checkout-item-name').text().trim();
             
-            console.log(`🔄 ${action} clicked: ${productName} from ${currentQty} to ${newQty}`);
             
             if (newQty === 0) {
                 // Potwierdzenie usunięcia
@@ -95,7 +86,6 @@ jQuery(document).ready(function($) {
             const currentQty = $display.text();
             const cartKey = $display.data('cart-key');
             
-            console.log(`✏️ Editing quantity: current=${currentQty}, cartKey=${cartKey}`);
             
             // Zamień span na input
             $display.addClass('editing');
@@ -122,7 +112,6 @@ jQuery(document).ready(function($) {
             });
         });
         
-        console.log('🔗 Quantity button events bound');
     }
     
     /**
@@ -134,7 +123,6 @@ jQuery(document).ready(function($) {
         const $item = $display.closest('.universal-checkout-item');
         const currentQty = parseInt($display.attr('data-qty')) || 1;
         
-        console.log(`✅ Quantity edit submitted: ${currentQty} -> ${newQty}`);
         
         // Jeśli ilość się nie zmieniła, cofnij
         if (newQty === currentQty) {
@@ -158,7 +146,6 @@ jQuery(document).ready(function($) {
         // Pobierz product ID i inne info jeśli dostępne
         const productName = $item.find('.checkout-item-name').text().trim();
         
-        console.log(`📡 Sending AJAX request: cartKey="${cartKey}", qty=${newQty}`);
         
         $.ajax({
             url: universal_ajax.ajax_url,
@@ -172,12 +159,10 @@ jQuery(document).ready(function($) {
                 nonce: universal_ajax.nonce
             },
             success: function(response) {
-                console.log('✅ AJAX Success:', response);
                 
                 if (response.success) {
                     // Sprawdź czy koszyk jest pusty (ilość zmieniona na 0)
                     if (response.data.cart_empty === true) {
-                        console.log('🛒 Cart is empty after quantity change - redirecting to empty cart page');
                         window.location.href = universal_ajax.empty_cart_url;
                         return;
                     }
@@ -278,7 +263,6 @@ jQuery(document).ready(function($) {
      * Bind events dla Remove button
      */
     function bindRemoveEvents() {
-        console.log('🔧 Binding remove button events...');
         
         // Usuń poprzednie eventy
         $(document).off('click.removeBtn', '.checkout-item-remove-btn');
@@ -293,13 +277,11 @@ jQuery(document).ready(function($) {
             const productName = $item.find('.checkout-item-name').text().trim();
             const productQty = parseInt($item.find('.qty-display').attr('data-qty')) || 1;
             
-            console.log(`🗑️ Remove button clicked for: ${productName}`);
             
             // Pokaż modal potwierdzenia
             showRemoveConfirmModal(productName, productQty, cartKey, $item);
         });
         
-        console.log('🗑️ Remove button events bound');
     }
     
     /**
@@ -380,7 +362,6 @@ jQuery(document).ready(function($) {
         const $button = $('.remove-confirm-btn-yes');
         $button.addClass('loading');
         
-        console.log(`📡 Removing item from cart: cartKey="${cartKey}"`);
         
         $.ajax({
             url: universal_ajax.ajax_url,
@@ -393,12 +374,10 @@ jQuery(document).ready(function($) {
                 nonce: universal_ajax.nonce
             },
             success: function(response) {
-                console.log('✅ Item removed:', response);
                 
                 if (response.success) {
                     // Sprawdź czy koszyk jest pusty
                     if (response.data.cart_empty === true) {
-                        console.log('🛒 Cart is empty - redirecting to empty cart page');
                         window.location.href = universal_ajax.empty_cart_url;
                         return;
                     }
@@ -442,7 +421,6 @@ jQuery(document).ready(function($) {
      * Wysyła żądanie do serwera aby pobrać nowy HTML totals
      */
     function refreshCheckoutTotals() {
-        console.log('🔄 Refreshing checkout totals...');
         
         $.ajax({
             url: universal_ajax.ajax_url,
@@ -453,12 +431,10 @@ jQuery(document).ready(function($) {
                 nonce: universal_ajax.nonce
             },
             success: function(response) {
-                console.log('✅ Totals refreshed:', response);
                 
                 if (response.success && response.data.totals_html) {
                     // Zamień stary HTML totals na nowy
                     $('.universal-checkout-totals').replaceWith(response.data.totals_html);
-                    console.log('💰 Totals updated:', response.data.cart_total);
                 }
             },
             error: function(xhr, status, error) {
@@ -470,7 +446,6 @@ jQuery(document).ready(function($) {
      * Bind events dla Apply Coupon button
      */
     function bindCouponEvents() {
-        console.log('🔧 Binding coupon events...');
         
         // Usuń poprzednie eventy
         $(document).off('click.couponBtn', '#apply-coupon-btn');
@@ -497,14 +472,12 @@ jQuery(document).ready(function($) {
             }
         });
         
-        console.log('🎫 Coupon events bound');
     }
     
     /**
      * Zastosuj kupon
      */
     function applyCouponCode(couponCode) {
-        console.log(`🎫 Applying coupon: ${couponCode}`);
         
         const $button = $('#apply-coupon-btn');
         const $input = $('#coupon_code');
@@ -523,7 +496,6 @@ jQuery(document).ready(function($) {
                 }
             },
             success: function(response) {
-                console.log('✅ Coupon applied:', response);
                 
                 // Odświeżenie totals
                 refreshCheckoutTotals();
@@ -555,7 +527,6 @@ jQuery(document).ready(function($) {
     
     // Re-bind on checkout update
     $(document.body).on('updated_checkout', function() {
-        console.log('🔄 Checkout updated - re-binding coupon events');
         bindCouponEvents();
     });
     
@@ -564,7 +535,6 @@ jQuery(document).ready(function($) {
     
     // Re-bind on checkout update
     $(document.body).on('updated_checkout', function() {
-        console.log('🔄 Checkout updated - re-binding remove events');
         bindRemoveEvents();
     });
 });

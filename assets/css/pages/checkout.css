@@ -187,6 +187,71 @@
 	border: none !important;
 }
 
+/* Crosssell grid layout */
+.checkout-crosssell-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 10px;
+	margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+	.checkout-crosssell-grid {
+		grid-template-columns: repeat(3, 1fr);
+		gap: 10px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.checkout-crosssell-grid {
+		grid-template-columns: repeat(4, 1fr);
+		gap: 10px;
+	}
+}
+
+/* Crosssell product actions */
+.checkout-crosssell-wrapper .product-actions {
+	padding: 0 0.5rem 0.5rem;
+	margin-top: 0.75rem;
+}
+
+.hentry .entry-content a {
+	text-decoration: none;
+}
+
+.checkout-crosssell-wrapper .crosssell-add-btn {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.625rem 1rem;
+	background-color: #000;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+	font-size: 0.875rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	text-decoration: none;
+}
+
+.checkout-crosssell-wrapper .crosssell-add-btn:hover {
+	background-color: #374151;
+	transform: translateY(-1px);
+}
+
+.checkout-crosssell-wrapper .btn-icon {
+	font-size: 1.125rem;
+	line-height: 1;
+}
+
+.checkout-crosssell-wrapper .btn-text {
+	line-height: 1;
+}
+
 #order_comments_field {
 	display: block;
 }
@@ -219,12 +284,24 @@
 	font-size: 20px;
 	font-weight: 700;
 	letter-spacing: -1px;
-	margin: 0 0 20px 0;
 	color: #333;
-	padding-bottom: 12px;
-	border-bottom: 1px solid #e0e0e0;
 	width: 100%;
 }
+
+.checkout-crosssell-grid h3.product-title {
+	font-size: 14px;
+    font-weight: 300;
+    text-transform: uppercase;
+    margin-bottom: 0;
+    color: #333;
+    line-height: 1.4;
+    text-align: left;
+    flex: 1 1 50%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 #apaczka_pl_geowidget_classic {
 	margin-left: 0;
@@ -252,8 +329,8 @@ form.checkout.woocommerce-checkout.woocommerce-checkout {
 }
 
 #order_review {
-	padding: 10px;
-	border-radius: 12px;
+	padding: 16px;
+	border-radius: 18px;
 	background-color: rgba(234, 234, 234, 0.7);
 }
 
@@ -354,7 +431,7 @@ span.woocommerce-Price-amount {
 	}
 
 	#order_review {
-		width: 41.1764705882%;
+		width: 50.1764705882%;
 		float: right;
 	}
 	span.woocommerce-Price-amount {
@@ -408,8 +485,13 @@ textarea#order_comments textarea::placeholder {
 	display: none;
 }
 
+.woocommerce-Price-amount.amount {
+	padding-left: 6px;
+}
+
 #payment .place-order {
 	display: block;
+	border-radius: 12px;
 }
 
 button#place_order {
@@ -452,4 +534,47 @@ ul#shipping_method li label {
 	align-items: center !important;
 	cursor: pointer !important;
 	flex: 1 !important;
+}
+
+.universal-checkout-item .checkout-item-total-price {
+	font-weight: 400;
+	font-size: 14px;
+}
+
+/* Product links in checkout */
+.checkout-item-name a {
+	color: inherit;
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+.checkout-item-name a:hover {
+	color: #000;
+	text-decoration: underline;
+}
+
+.checkout-item-thumbnail a {
+	display: block;
+	transition: opacity 0.2s ease;
+}
+
+.checkout-item-thumbnail a:hover {
+	opacity: 0.8;
+}
+
+.checkout-item-left button:hover {
+	color: white;
+}
+
+#payment .place-order .button {
+	font-size: 18px !important;
+}
+
+.universal-checkout-review-table-custom .checkout-item-name a {
+	font-size: 12px;
+	text-decoration: none;
+}
+
+.checkout-item-name {
+	max-width: 350px;
 }

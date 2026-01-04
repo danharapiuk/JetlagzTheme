@@ -21,6 +21,10 @@
 	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
+.custom-login-form-wrapper button:hover {
+	background-color: transparent;
+}
+
 /* Left Image - Hidden on mobile, visible on desktop */
 .custom-login-image {
 	display: none;
