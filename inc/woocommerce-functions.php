@@ -35,11 +35,41 @@ function jetlagz_trim_zeros_from_price($price)
 {
     // Remove .00 or ,00 from the end of price
     $price = preg_replace('/[.,]00([^\d]|$)/', '$1', $price);
+    // Zamień przecinek na kropkę
+    $price = str_replace(',', '.', $price);
     return $price;
 }
 add_filter('woocommerce_price_trim_zeros', '__return_true');
 add_filter('formatted_woocommerce_price', 'jetlagz_trim_zeros_from_price', 10, 1);
 add_filter('woocommerce_format_sale_price', 'jetlagz_trim_zeros_from_price', 10, 1);
+
+/**
+ * Trim product title in breadcrumbs to text before "-" or "–"
+ */
+function jetlagz_trim_breadcrumb_title($crumbs, $breadcrumb)
+{
+    if (is_product() && !empty($crumbs)) {
+        // Last element in breadcrumbs array is the current product
+        $last_key = count($crumbs) - 1;
+        if (isset($crumbs[$last_key][0])) {
+            $full_title = $crumbs[$last_key][0];
+
+            // Try different separators: em-dash (–), en-dash (—), hyphen (-)
+            if (strpos($full_title, ' – ') !== false) {
+                $title_parts = explode(' – ', $full_title);
+                $crumbs[$last_key][0] = trim($title_parts[0]);
+            } elseif (strpos($full_title, ' — ') !== false) {
+                $title_parts = explode(' — ', $full_title);
+                $crumbs[$last_key][0] = trim($title_parts[0]);
+            } elseif (strpos($full_title, ' - ') !== false) {
+                $title_parts = explode(' - ', $full_title);
+                $crumbs[$last_key][0] = trim($title_parts[0]);
+            }
+        }
+    }
+    return $crumbs;
+}
+add_filter('woocommerce_get_breadcrumb', 'jetlagz_trim_breadcrumb_title', 20, 2);
 
 /**
  * Dostosowanie liczby produktów na stronę (z możliwością wyboru przez użytkownika)
@@ -361,9 +391,77 @@ add_filter('posts_results', 'jetlagz_sort_products_by_size', 10, 2);
 remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_rating', 10);
 
 /**
- * Add custom rating display before title
+ * Remove default title and price to create custom wrapper
  */
-function jetlagz_custom_product_rating()
+remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_title', 5);
+remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_price', 10);
+
+/**
+ * Add custom title and price wrapper
+ */
+function jetlagz_custom_title_price_wrapper()
+{
+    global $product;
+
+    if (!$product) {
+        return;
+    }
+?>
+    <div class="product-info-wrapper">
+        <?php
+        // Display WooCommerce Brands as sibling to single-product-info
+        if (function_exists('storefront_wc_brands_single_product')) {
+            storefront_wc_brands_single_product();
+        }
+        ?>
+
+        <div class="single-product-info flex justify-between">
+            <div class="title-price-wrapper w-full">
+                <?php jetlagz_custom_product_rating_content(); ?>
+                <h1 class="product_title entry-title max-w-[85%]"><?php the_title(); ?></h1>
+                <p class="price"><?php echo $product->get_price_html(); ?></p>
+            </div>
+            <div class="producer-logo">
+                <?php
+                // Fallback: Get brand logo from product ACF field
+                if (function_exists('get_field')) {
+                    $brand_logo = get_field('brand_logo', $product->get_id());
+
+                    if ($brand_logo && !empty($brand_logo['url'])) {
+                        $brand_name = get_field('brand_name', $product->get_id());
+                        $alt_text = !empty($brand_name) ? $brand_name : 'Brand logo';
+
+                        echo '<img src="' . esc_url($brand_logo['url']) . '" alt="' . esc_attr($alt_text) . '" class="brand-logo-img">';
+                    }
+                }
+                ?>
+            </div>
+        </div>
+    </div>
+<?php
+}
+add_action('woocommerce_single_product_summary', 'jetlagz_custom_title_price_wrapper', 5);
+
+// Remove default storefront brands display to prevent duplication
+remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 4);
+remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 3);
+remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 2);
+remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 1);
+
+// Try removing after plugins loaded
+function jetlagz_remove_storefront_brands()
+{
+    remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 4);
+    remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 3);
+    remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 2);
+    remove_action('woocommerce_single_product_summary', 'storefront_wc_brands_single_product', 1);
+}
+add_action('wp_loaded', 'jetlagz_remove_storefront_brands', 999);
+
+/**
+ * Add custom rating display content (used within single-product-info)
+ */
+function jetlagz_custom_product_rating_content()
 {
     global $product;
 
@@ -411,7 +509,6 @@ function jetlagz_custom_product_rating()
     </div>
 <?php
 }
-add_action('woocommerce_single_product_summary', 'jetlagz_custom_product_rating', 4);
 
 /**
  * Display benefits from product ACF field after product title
@@ -425,7 +522,11 @@ function jetlagz_display_benefits_after_title()
     global $product;
     $product_id = $product->get_id();
 
-    // Get benefits repeater from current product ACF
+    // Check if ACF function exists and get benefits repeater from current product
+    if (!function_exists('get_field')) {
+        return;
+    }
+
     $benefits = get_field('benefits', $product_id);
 
     if (!$benefits || !is_array($benefits)) {
@@ -434,7 +535,6 @@ function jetlagz_display_benefits_after_title()
 ?>
     <div class="product-benefits">
         <?php foreach ($benefits as $benefit):
-            $icon = $benefit['icon'] ?? '';
             $title = $benefit['title'] ?? '';
 
             // Skip if both icon and title are empty
@@ -443,11 +543,9 @@ function jetlagz_display_benefits_after_title()
             }
         ?>
             <div class="benefit-item">
-                <?php if (!empty($icon)): ?>
-                    <div class="benefit-icon">
-                        <img src="<?php echo esc_url($icon['url']); ?>" alt="<?php echo esc_attr($title); ?>" />
-                    </div>
-                <?php endif; ?>
+                <div class="benefit-icon flex items-center">
+                    ✔
+                </div>
                 <?php if (!empty($title)): ?>
                     <div class="benefit-title">
                         <?php echo esc_html($title); ?>
@@ -460,34 +558,6 @@ function jetlagz_display_benefits_after_title()
 }
 add_action('woocommerce_single_product_summary', 'jetlagz_display_benefits_after_title', 6);
 
-/**
- * Add first word from product title as data attribute for ::before
- */
-function jetlagz_add_first_word_to_title()
-{
-    if (!is_product()) {
-        return;
-    }
-
-    global $product;
-    $title = $product->get_name();
-    $first_word = strtok($title, ' ');
-
-    if (empty($first_word)) {
-        return;
-    }
-?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var productTitle = document.querySelector('.product_title.entry-title');
-            if (productTitle) {
-                productTitle.setAttribute('data-first-word', '<?php echo esc_js($first_word); ?>');
-            }
-        });
-    </script>
-<?php
-}
-add_action('wp_footer', 'jetlagz_add_first_word_to_title');
 
 /**
  * Display product features after summary (from Template Parts - repeater)
@@ -495,6 +565,13 @@ add_action('wp_footer', 'jetlagz_add_first_word_to_title');
 function jetlagz_display_product_features()
 {
     if (!is_product()) {
+        return;
+    }
+
+    global $product;
+
+    // Check if ACF function exists
+    if (!function_exists('get_field')) {
         return;
     }
 
@@ -506,9 +583,10 @@ function jetlagz_display_product_features()
     }
 ?>
     <div class="product-features-section">
+        <?php jetlagz_render_delivery_info(); ?>
         <div class="flex flex-col border border-gray-200 divide-y divide-gray-200">
             <?php foreach ($product_features as $feature): ?>
-                <div class="product-feature-item p-2 flex gap-6 items-start">
+                <div class="product-feature-item p-2 flex gap-4 items-center">
                     <?php if (!empty($feature['icon'])): ?>
                         <div class="feature-icon">
                             <img src="<?php echo esc_url($feature['icon']['url']); ?>" alt="<?php echo esc_attr($feature['title']); ?>">
@@ -516,14 +594,41 @@ function jetlagz_display_product_features()
                     <?php endif; ?>
                     <div class="feature-content">
                         <?php if (!empty($feature['title'])): ?>
-                            <h4 class="feature-title"><?php echo esc_html($feature['title']); ?></h4>
+                            <h4 class="feature-title"><?php echo wp_kses_post($feature['title']); ?></h4>
                         <?php endif; ?>
                         <?php if (!empty($feature['description'])): ?>
-                            <p class="feature-description"><?php echo esc_html($feature['description']); ?></p>
+                            <p class="feature-description"><?php echo wp_kses_post($feature['description']); ?></p>
                         <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
+
+            <?php
+            // Sprawdź czy produkt ma tag "ostrowik"
+            $product_tags = wp_get_post_terms($product->get_id(), 'product_tag', array('fields' => 'slugs'));
+
+            if (is_array($product_tags) && in_array('ostrowik', $product_tags)) {
+                // Pobierz features z Template Parts (home features)
+                $home_features = get_field('home_features', 'option');
+
+                if ($home_features && is_array($home_features)) {
+                    foreach ($home_features as $feature): ?>
+                        <div class="product-feature-item p-2 flex gap-6 items-start">
+                            <?php if (!empty($feature['icon'])): ?>
+                                <div class="feature-icon">
+                                    <img src="<?php echo esc_url($feature['icon']['url']); ?>" alt="<?php echo esc_attr($feature['title'] ?? ''); ?>">
+                                </div>
+                            <?php endif; ?>
+                            <div class="feature-content">
+                                <?php if (!empty($feature['title'])): ?>
+                                    <h4 class="feature-title"><?php echo wp_kses_post($feature['title']); ?></h4>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+            <?php endforeach;
+                }
+            }
+            ?>
         </div>
     </div>
 <?php
@@ -549,42 +654,21 @@ function jetlagz_display_newsletter_discount()
     // Calculate 11% discount
     $discount_amount = $product_price * 0.11;
     $discount_formatted = number_format($discount_amount, 2, ',', ' ');
+
+    // Get user email for Klaviyo check (if logged in)
+    $user_email = '';
+    if (is_user_logged_in()) {
+        $current_user = wp_get_current_user();
+        $user_email = $current_user->user_email;
+    }
 ?>
-    <div class="newsletter-discount-section">
+    <div class="newsletter-discount-section" data-user-email="<?php echo esc_attr($user_email); ?>">
         <div class="newsletter-discount-wrapper">
             <!-- Button with dropdown -->
             <div class="newsletter-button-container">
                 <button type="button" class="newsletter-toggle-btn" id="newsletter-toggle">
-                    KLIKNIJ I ODBIERZ RABAT
+                    <img src="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/rabat.svg" alt="Newsletter Icon">
                 </button>
-
-                <!-- Modal Backdrop -->
-                <div class="newsletter-modal-backdrop" id="newsletter-modal-backdrop" style="display: none;"></div>
-
-                <!-- Modal Newsletter Form -->
-                <div class="newsletter-modal" id="newsletter-dropdown" style="display: none;">
-                    <button type="button" class="newsletter-close-btn" id="newsletter-close-btn" aria-label="Zamknij">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                    </button>
-                    <h3 class="newsletter-dropdown-title">Odbierz kod rabatowy -11%</h3>
-                    <p class="newsletter-dropdown-description">Zapisz się do newslettera i otrzymaj rabat na pierwsze zakupy!</p>
-
-                    <form class="newsletter-form" id="product-newsletter-form">
-                        <input
-                            type="email"
-                            name="newsletter_email"
-                            placeholder="Twój adres e-mail"
-                            required
-                            class="newsletter-input" />
-                        <button type="submit" class="newsletter-submit-btn">
-                            Zapisz się
-                        </button>
-                    </form>
-
-                    <div class="newsletter-message" style="display: none;"></div>
-                </div>
             </div>
 
             <!-- Savings Info -->
@@ -595,7 +679,25 @@ function jetlagz_display_newsletter_discount()
         </div>
     </div>
 
+    <!-- Modal Backdrop - osobno, poza kontenerem -->
+    <div class="newsletter-modal-backdrop" id="newsletter-modal-backdrop"></div>
+
+    <!-- Modal Newsletter Form - osobno, z visibility zamiast display -->
+    <div class="newsletter-modal" id="newsletter-dropdown">
+        <button type="button" class="newsletter-close-btn" id="newsletter-close-btn" aria-label="Zamknij">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+        </button>
+        <div class="klaviyo-form-QVKNr8"></div>
+    </div>
+
     <style>
+        .newsletter-discount-section {
+            position: relative;
+            z-index: 10;
+        }
+
         .newsletter-discount-wrapper {
             display: flex;
             align-items: center;
@@ -610,33 +712,13 @@ function jetlagz_display_newsletter_discount()
             cursor: pointer;
         }
 
-        .newsletter-button-container::after {
-            content: '';
-            display: inline-block;
-            width: 50px;
-            height: 28px;
-            background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/assets/images/code.svg');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            margin-left: -1px;
-        }
-
         .newsletter-toggle-btn {
-            padding: 6px 1px 6px 12px;
-            background: #000;
             color: #fff;
             border: none;
             font-weight: 300;
             font-size: 10px;
             cursor: pointer;
             text-transform: uppercase;
-        }
-
-        .newsletter-toggle-btn:hover {
-            background-color: black;
-            border-color: black;
-            color: white;
         }
 
         /* Modal Backdrop - full screen overlay with blur */
@@ -649,23 +731,40 @@ function jetlagz_display_newsletter_discount()
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            z-index: 9998;
+            z-index: 999998;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        /* Modal - centered on screen */
+        .newsletter-modal-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        /* Modal - centered on screen, initially positioned off-screen for Klaviyo to render */
         .newsletter-modal {
             position: fixed;
             top: 50%;
-            left: 50%;
+            left: -9999px;
             transform: translate(-50%, -50%);
             background: #fff;
             border: 1px solid #e5e7eb;
             border-radius: 12px;
             padding: 2rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            z-index: 9999;
+            z-index: 999999;
             min-width: 400px;
             max-width: 90vw;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .newsletter-modal.active {
+            left: 50%;
+            opacity: 1;
         }
 
         /* Close button */
@@ -814,30 +913,99 @@ function jetlagz_display_newsletter_discount()
         body.newsletter-modal-open {
             overflow: hidden;
         }
+
+        /* Create isolation context for entire page content */
+        body.newsletter-modal-open #page {
+            isolation: isolate;
+            z-index: 1;
+            position: relative;
+        }
+
+        /* Ensure modal elements are ALWAYS on top - they are direct children of body */
+        .newsletter-modal-backdrop {
+            isolation: isolate;
+        }
+
+        .newsletter-modal {
+            isolation: isolate;
+        }
     </style>
 
     <script>
         jQuery(document).ready(function($) {
+            var $section = $('.newsletter-discount-section');
             var $toggleBtn = $('#newsletter-toggle');
             var $backdrop = $('#newsletter-modal-backdrop');
             var $modal = $('#newsletter-dropdown');
             var $closeBtn = $('#newsletter-close-btn');
-            var $form = $('#product-newsletter-form');
-            var $message = $('.newsletter-message');
+
+            // Move modal and backdrop to body (outside of any stacking context)
+            $backdrop.appendTo('body');
+            $modal.appendTo('body');
+
+            // Check if user is already subscribed to Klaviyo
+            var userEmail = $section.data('user-email');
+
+            if (userEmail) {
+                // User is logged in - check Klaviyo subscription status
+                var isSubscribed = false;
+
+                // Check localStorage for Klaviyo subscription
+                try {
+                    var klaviyoData = localStorage.getItem('__kla_id');
+                    if (klaviyoData) {
+                        var parsed = JSON.parse(klaviyoData);
+                        // If user has email in Klaviyo and it matches
+                        if (parsed && parsed.$email && parsed.$email.toLowerCase() === userEmail.toLowerCase()) {
+                            isSubscribed = true;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Klaviyo check error:', e);
+                }
+
+                // Also check via Klaviyo API if available
+                if (typeof klaviyo !== 'undefined' && klaviyo.isIdentified && klaviyo.isIdentified()) {
+                    isSubscribed = true;
+                }
+
+                // Hide section if subscribed
+                if (isSubscribed) {
+                    $section.hide();
+                    $backdrop.hide();
+                    $modal.hide();
+                    return; // Stop - user already subscribed
+                }
+            }
+
+            // Debug - sprawdź czy elementy istnieją
+            console.log('Newsletter toggle btn:', $toggleBtn.length);
+            console.log('Newsletter modal:', $modal.length);
+            console.log('Newsletter backdrop:', $backdrop.length);
 
             // Open modal
             $toggleBtn.on('click', function(e) {
+                console.log('Button clicked!');
                 e.preventDefault();
                 e.stopPropagation();
-                $backdrop.fadeIn(300);
-                $modal.fadeIn(300);
+                $backdrop.addClass('active');
+                $modal.addClass('active');
                 $('body').addClass('newsletter-modal-open');
+
+                // Force Klaviyo to re-scan and render embedded forms
+                setTimeout(function() {
+                    if (typeof window.klaviyo !== 'undefined' && window.klaviyo.push) {
+                        window.klaviyo.push(['identify']);
+                    }
+                    // Trigger resize to help Klaviyo detect visibility change
+                    window.dispatchEvent(new Event('resize'));
+                }, 100);
             });
 
             // Close modal function
             function closeModal() {
-                $backdrop.fadeOut(300);
-                $modal.fadeOut(300);
+                $backdrop.removeClass('active');
+                $modal.removeClass('active');
                 $('body').removeClass('newsletter-modal-open');
             }
 
@@ -849,46 +1017,20 @@ function jetlagz_display_newsletter_discount()
 
             // Close on ESC key
             $(document).on('keydown', function(e) {
-                if (e.key === 'Escape' && $modal.is(':visible')) {
+                if (e.key === 'Escape' && $modal.hasClass('active')) {
                     closeModal();
                 }
             });
 
-            // Handle form submission
-            $form.on('submit', function(e) {
-                e.preventDefault();
-
-                var email = $form.find('input[name="newsletter_email"]').val();
-
-                // Basic email validation
-                if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                    $message.removeClass('success').addClass('error')
-                        .text('Proszę podać prawidłowy adres e-mail.')
-                        .show();
-                    return;
-                }
-
-                // Show loading state
-                var $submitBtn = $form.find('.newsletter-submit-btn');
-                var originalText = $submitBtn.text();
-                $submitBtn.text('Wysyłanie...').prop('disabled', true);
-
-                // TODO: Integrate with your newsletter service
-                // For now, just show success message
-                setTimeout(function() {
-                    $message.removeClass('error').addClass('success')
-                        .html('✓ Dziękujemy! Kod rabatowy został wysłany na adres: <strong>' + email + '</strong>')
-                        .show();
-
-                    $form[0].reset();
-                    $submitBtn.text(originalText).prop('disabled', false);
-
-                    // Close modal after 3 seconds
+            // Listen for Klaviyo form submission success - hide section after signup
+            window.addEventListener('klaviyoForms', function(e) {
+                if (e.detail.type === 'submit' || e.detail.type === 'redirectedToUrl') {
+                    // User just subscribed - hide the section
                     setTimeout(function() {
                         closeModal();
-                        $message.hide();
-                    }, 3000);
-                }, 1000);
+                        $section.fadeOut(300);
+                    }, 2000); // Wait 2 seconds so user sees confirmation
+                }
             });
         });
     </script>
@@ -909,18 +1051,18 @@ function jetlagz_display_product_videos()
     $product_id = $product->get_id();
 
     // Pobierz repeater video/obrazków z ACF
+    if (!function_exists('get_field')) {
+        return;
+    }
+
     $media = get_field('videos', $product_id);
 
     if (!$media || !is_array($media)) {
         return;
     }
-
-    // Get first word from product title
-    $product_title = get_the_title($product_id);
-    $first_word = strtok($product_title, ' ');
 ?>
-    <div class="product-videos-section">
-        <h2 class="text-xl pb-1 tracking-tight">Dziewczyny w <?php echo esc_html($first_word); ?></h2>
+    <div class="product-videos-section overflow-x-hidden">
+        <h2 class="text-xl pb-1 tracking-tight">Na ciele</h2>
         <div class="swiper product-videos-swiper">
             <div class="swiper-wrapper">
                 <?php foreach ($media as $item): ?>
@@ -980,9 +1122,6 @@ function jetlagz_display_product_videos()
 
     <script>
         jQuery(document).ready(function($) {
-            console.log('Product videos script loaded');
-            console.log('Swiper available:', typeof Swiper !== 'undefined');
-            console.log('Swiper element:', $('.product-videos-swiper').length);
 
             if (typeof Swiper !== 'undefined') {
                 var swiper = new Swiper('.product-videos-swiper', {
@@ -1008,6 +1147,26 @@ function jetlagz_display_product_videos()
                 console.log('Swiper initialized:', swiper);
             } else {
                 console.error('Swiper not loaded!');
+            }
+
+            // Auto-play videos on desktop (1024px+)
+            if (window.innerWidth >= 1024) {
+                $('.custom-video').each(function() {
+                    var video = this;
+                    var $container = $(video).closest('.custom-video-container');
+                    var $button = $container.find('.video-play-button');
+                    var $playIcon = $button.find('.play-icon');
+                    var $pauseIcon = $button.find('.pause-icon');
+
+                    // Start playing and update button state
+                    video.play().then(function() {
+                        $playIcon.hide();
+                        $pauseIcon.show();
+                        $button.addClass('playing');
+                    }).catch(function(error) {
+                        console.log('Autoplay prevented:', error);
+                    });
+                });
             }
 
             // Custom video play/pause controls
@@ -1049,6 +1208,52 @@ function jetlagz_display_product_videos()
 }
 add_action('woocommerce_after_add_to_cart_form', 'jetlagz_display_product_videos', 20);
 
+/**
+ * Display banner from ACF on product page
+ */
+function jetlagz_display_product_banner()
+{
+    if (!is_product()) {
+        return;
+    }
+
+    if (!function_exists('get_field')) {
+        return;
+    }
+
+    $banner = get_field('banner', 'option');
+
+    if (!$banner) {
+        return;
+    }
+
+    // Obsługa różnych Return Format ACF
+    if (is_array($banner)) {
+        $banner_url = $banner['url'];
+        $banner_alt = $banner['alt'] ?? '';
+    } elseif (is_numeric($banner)) {
+        $banner_url = wp_get_attachment_image_url($banner, 'full');
+        $banner_alt = get_post_meta($banner, '_wp_attachment_image_alt', true);
+    } else {
+        $banner_url = $banner;
+        $banner_alt = '';
+    }
+
+    if (!$banner_url) {
+        return;
+    }
+?>
+    <div class="product-banner-payment-wrapper">
+        <div class="product-banner-section md:max-w-[70%]">
+            <img src="<?php echo esc_url($banner_url); ?>"
+                alt="<?php echo esc_attr($banner_alt); ?>"
+                class="product-banner-image">
+        </div>
+        <?php jetlagz_inject_template_part('payment-icons'); ?>
+    </div>
+<?php
+}
+add_action('woocommerce_after_add_to_cart_form', 'jetlagz_display_product_banner', 20.4);
 
 /**
  * Replace Additional Information tab with custom shipping content
@@ -1057,6 +1262,11 @@ function jetlagz_custom_product_tabs($tabs)
 {
     // Usuń zakładkę "Informacje dodatkowe"
     unset($tabs['additional_information']);
+
+    // Sprawdź czy ACF jest aktywne
+    if (!function_exists('get_field')) {
+        return $tabs;
+    }
 
     // Pobierz treść z ACF
     $shipping_content = get_field('product_shipping', 'option');
@@ -1079,6 +1289,11 @@ add_filter('woocommerce_product_tabs', 'jetlagz_custom_product_tabs', 98);
  */
 function jetlagz_shipping_tab_content()
 {
+    if (!function_exists('get_field')) {
+        echo '<p>Brak informacji o wysyłce.</p>';
+        return;
+    }
+
     $shipping_content = get_field('product_shipping', 'option');
     if ($shipping_content) {
         echo '<div class="shipping-content">';
@@ -1113,16 +1328,28 @@ function jetlagz_crosssell_in_summary()
     $crosssell_ids = array_slice($crosssell_ids, 0, 4);
 ?>
     <div class="crosssell-products-section">
-        <h3 class="crosssell-title">Dobierz do kompletu</h3>
-        <div class="crosssell-products-list">
+        <h3 class="crosssell-title !mb-0">Kup w zestawie</h3>
+        <p>Dobierz produkty do kompletu i oszczędzaj</p>
+        <div class="crosssell-products-list mt-3">
             <?php foreach ($crosssell_ids as $crosssell_id):
                 $crosssell_product = wc_get_product($crosssell_id);
                 if (!$crosssell_product || !$crosssell_product->is_visible()) {
                     continue;
                 }
 
-                $image = wp_get_attachment_image_src(get_post_thumbnail_id($crosssell_id), 'thumbnail');
-                $image_url = $image ? $image[0] : wc_placeholder_img_src();
+                // Pobierz obrazek - użyj metody produktu (działa dla wariantów i produktów prostych)
+                $image_id = $crosssell_product->get_image_id();
+
+                // Jeśli to wariant bez własnego obrazka, pobierz z produktu rodzica
+                if (!$image_id && $crosssell_product->is_type('variation')) {
+                    $parent_id = $crosssell_product->get_parent_id();
+                    $parent_product = wc_get_product($parent_id);
+                    if ($parent_product) {
+                        $image_id = $parent_product->get_image_id();
+                    }
+                }
+
+                $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : wc_placeholder_img_src();
             ?>
                 <div class="crosssell-product-item" data-product-id="<?php echo esc_attr($crosssell_id); ?>">
                     <a href="<?php echo esc_url(get_permalink($crosssell_id)); ?>" class="crosssell-product-image">
@@ -1265,8 +1492,17 @@ function jetlagz_display_product_description()
 
     $description = $product->get_description();
 
-    // Get ACF repeater from options page
-    $has_repeater = have_rows('product_description', 'option');
+    // Check if ACF functions exist
+    if (!function_exists('have_rows')) {
+        // If ACF is not available, only show product description if it exists
+        if (empty($description)) {
+            return;
+        }
+        $has_repeater = false;
+    } else {
+        // Get ACF repeater from options page
+        $has_repeater = have_rows('product_description', 'option');
+    }
 
     if (empty($description) && !$has_repeater) {
         return;
@@ -1280,7 +1516,7 @@ function jetlagz_display_product_description()
                 <div class="accordion-item">
                     <button class="accordion-header" type="button">
                         <span class="accordion-title">Opis</span>
-                        <svg class="accordion-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg class="accordion-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="https://www.w3.org/2000/svg">
                             <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </button>
@@ -1293,8 +1529,8 @@ function jetlagz_display_product_description()
             <?php endif; ?>
 
             <?php
-            // Display ACF repeater items from options page
-            if (have_rows('product_description', 'option')):
+            // Display ACF repeater items from options page - only if ACF is available
+            if (function_exists('have_rows') && function_exists('get_sub_field') && function_exists('the_row') && have_rows('product_description', 'option')):
                 while (have_rows('product_description', 'option')): the_row();
                     $title = get_sub_field('title');
                     $description_part = get_sub_field('description');
@@ -1304,7 +1540,7 @@ function jetlagz_display_product_description()
                         <div class="accordion-item">
                             <button class="accordion-header" type="button">
                                 <span class="accordion-title"><?php echo esc_html($title); ?></span>
-                                <svg class="accordion-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <svg class="accordion-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="https://www.w3.org/2000/svg">
                                     <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
                             </button>
@@ -1390,7 +1626,7 @@ function jetlagz_display_product_reviews()
     <div class="ratings-reviews-section" id="product-reviews" role="region" aria-label="Product Reviews">
         <div class="reviews-container">
             <!-- Left Column - Rating Summary -->
-            <div class="reviews-summary md:flex gap-3 md:w-1/2" aria-label="Rating Summary">
+            <div class="reviews-summary md:flex gap-1 w-full lg:!max-w-[45%]" aria-label="Rating Summary">
                 <div class="overall-rating">
                     <div class="rating-score flex gap-1">
                         <span class="score-number" aria-label="Average rating"><?php echo number_format($average_rating, 1); ?></span>
@@ -1399,15 +1635,15 @@ function jetlagz_display_product_reviews()
                     <div class="rating-subtitle">
                         <?php
                         // Poprawna odmiana słowa "opinia"
-                        if ($review_count === 1) {
+                        if ($total_reviews_with_ratings === 1) {
                             $opinion_word = 'Opinia';
-                        } elseif ($review_count % 10 >= 2 && $review_count % 10 <= 4 && ($review_count % 100 < 10 || $review_count % 100 >= 20)) {
+                        } elseif ($total_reviews_with_ratings % 10 >= 2 && $total_reviews_with_ratings % 10 <= 4 && ($total_reviews_with_ratings % 100 < 10 || $total_reviews_with_ratings % 100 >= 20)) {
                             $opinion_word = 'Opinie';
                         } else {
                             $opinion_word = 'Opinii';
                         }
                         ?>
-                        (<?php echo $review_count; ?> <?php echo $opinion_word; ?>)
+                        (<?php echo $total_reviews_with_ratings; ?> <?php echo $opinion_word; ?>)
                     </div>
                 </div>
 
@@ -1436,8 +1672,8 @@ function jetlagz_display_product_reviews()
             </div>
 
             <!-- Right Column - Reviews List -->
-            <div class="reviews-list-container sm:w-1/2 overflow-hidden" aria-label="Customer Reviews">
-                <?php if ($review_count > 0) : ?>
+            <div class="reviews-list-container w-full lg:!max-w-[45%] overflow-hidden" aria-label="Customer Reviews">
+                <?php if ($total_reviews_with_ratings > 0) : ?>
                     <div class="reviews-controls">
                         <div class="reviews-filter">
                             <label for="reviews-sort">Sortuj według:</label>
@@ -1482,15 +1718,218 @@ function jetlagz_display_product_reviews()
 }
 
 /**
+ * Generate random masked name or nickname for author
+ * Creates unique random name for each comment based on comment ID
+ * Returns masked version: first letter + *** + last character
+ */
+function jetlagz_mask_author_name($author, $comment_id = null)
+{
+    // Lista losowych imion polskich
+    $names_polish = array(
+        'Anna',
+        'Kasia',
+        'Magda',
+        'Ola',
+        'Ania',
+        'Zosia',
+        'Ewa',
+        'Gosia',
+        'Marta',
+        'Karolina',
+        'Monika',
+        'Paulina',
+        'Agnieszka',
+        'Beata',
+        'Piotr',
+        'Tomek',
+        'Marek',
+        'Krzysiek',
+        'Bartek',
+        'Michał',
+        'Paweł',
+        'Adam',
+        'Jakub',
+        'Łukasz',
+        'Kamil',
+        'Damian',
+        'Robert',
+        'Marcin'
+    );
+
+    // Lista imion ukraińskich (cyrylica)
+    $names_ukrainian = array(
+        'Оксана',
+        'Марія',
+        'Наталія',
+        'Олена',
+        'Катерина',
+        'Юлія',
+        'Тетяна',
+        'Ірина',
+        'Світлана',
+        'Людмила',
+        'Анна',
+        'Віра',
+        'Дарина',
+        'Софія',
+        'Андрій',
+        'Володимир',
+        'Олександр',
+        'Дмитро',
+        'Іван',
+        'Сергій',
+        'Максим',
+        'Богдан',
+        'Ярослав',
+        'Віктор',
+        'Петро',
+        'Михайло'
+    );
+
+    // Lista nicków
+    $nicknames = array(
+        'Fashionista',
+        'Shopaholic',
+        'StyleQueen',
+        'TrendLover',
+        'ChicGirl',
+        'ModnyFacet',
+        'KingOfStyle',
+        'FashionGuru',
+        'LuxuryLover',
+        'StreetStyle',
+        'MinimalistStyle',
+        'VintageVibes',
+        'UrbanFashion',
+        'CasualChic',
+        'ElegantStyle'
+    );
+
+    // Użyj comment_id jako seed - każdy komentarz dostanie unikalną nazwę
+    // Jeśli brak comment_id, użyj hash autora
+    $seed = $comment_id ? crc32('comment_' . $comment_id) : crc32($author);
+    mt_srand($seed);
+
+    // Losuj typ: 45% imię polskie, 25% imię ukraińskie, 30% nick
+    $rand = mt_rand(1, 100);
+
+    if ($rand <= 45) {
+        // Imię polskie
+        $name = $names_polish[mt_rand(0, count($names_polish) - 1)];
+
+        // 20% szans na dodanie pierwszej litery nazwiska
+        if (mt_rand(1, 100) <= 20) {
+            $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            $name .= ' ' . $letters[mt_rand(0, strlen($letters) - 1)] . '.';
+        }
+    } elseif ($rand <= 70) {
+        // Imię ukraińskie (cyrylica)
+        $name = $names_ukrainian[mt_rand(0, count($names_ukrainian) - 1)];
+    } else {
+        // Nick
+        $name = $nicknames[mt_rand(0, count($nicknames) - 1)];
+
+        // 40% szans na dodanie numeru
+        if (mt_rand(1, 100) <= 40) {
+            $name .= mt_rand(10, 99);
+        }
+    }
+
+    // Teraz zamaskuj wygenerowane imię/nick
+    $len = mb_strlen($name);
+    if ($len <= 2) {
+        return $name;
+    }
+
+    $first = mb_substr($name, 0, 1);
+    $last = mb_substr($name, -1);
+
+    // 30% szans na zastąpienie ostatniego znaku cyfrą zamiast litery
+    if (mt_rand(1, 100) <= 30 && !is_numeric($last)) {
+        $last = mt_rand(1, 9);
+    }
+
+    // Przywróć losowość
+    mt_srand();
+
+    return $first . '***' . $last;
+}
+
+/**
+ * Generate random review date
+ * 60% szans na 2025 (głównie ostatnie miesiące)
+ * 30% szans na 2026 (styczeń-obecnie)
+ * 10% szans na 2023-2024
+ */
+function jetlagz_generate_random_date($comment_id)
+{
+    // Użyj ID komentarza jako seed dla consistency
+    $seed = crc32('date_' . $comment_id);
+    mt_srand($seed);
+
+    $rand = mt_rand(1, 100);
+
+    if ($rand <= 60) {
+        // 2025 - głównie ostatnie miesiące (wrzesień-grudzień)
+        $month_rand = mt_rand(1, 100);
+        if ($month_rand <= 70) {
+            // 70% - ostatnie 4 miesiące (wrzesień-grudzień)
+            $month = mt_rand(9, 12);
+        } else {
+            // 30% - wcześniejsze miesiące
+            $month = mt_rand(1, 8);
+        }
+        $year = 2025;
+        $day = mt_rand(1, min(28, cal_days_in_month(CAL_GREGORIAN, $month, $year)));
+    } elseif ($rand <= 90) {
+        // 2026 - styczeń (bo jest teraz styczeń 2026)
+        $year = 2026;
+        $month = 1;
+        $day = mt_rand(1, 27); // do 27 stycznia
+
+    } else {
+        // 10% - 2023 lub 2024
+        $year = mt_rand(2023, 2024);
+        $month = mt_rand(1, 12);
+        $day = mt_rand(1, min(28, cal_days_in_month(CAL_GREGORIAN, $month, $year)));
+    }
+
+    // Przywróć losowość
+    mt_srand();
+
+    return mktime(0, 0, 0, $month, $day, $year);
+}
+
+/**
  * Display single review card
  */
 function jetlagz_display_single_review($comment)
 {
     $rating = intval(get_comment_meta($comment->comment_ID, 'rating', true));
     $author = get_comment_author($comment);
-    $date = get_comment_date('j M Y', $comment);
+    $author_email = get_comment_author_email($comment);
+
+    // Sprawdź czy to komentarz od daniel@jetlag.pl - jeśli tak, zastosuj maskowanie i losową datę
+    $should_mask = ($author_email === 'daniel@jetlag.pl');
+
+    if ($should_mask) {
+        $masked_author = jetlagz_mask_author_name($author, $comment->comment_ID);
+        // Generuj losową datę zamiast prawdziwej
+        $random_timestamp = jetlagz_generate_random_date($comment->comment_ID);
+        $date = date_i18n('j M Y', $random_timestamp);
+        $date_timestamp = $random_timestamp; // Użyj wygenerowanego timestampa do sortowania
+    } else {
+        // Dla innych użytkowników - użyj prawdziwych danych
+        $masked_author = $author;
+        $date = get_comment_date('j M Y', $comment);
+        $date_timestamp = get_comment_date('U', $comment); // Prawdziwy timestamp
+    }
+
     $content = get_comment_text($comment);
     $avatar_url = get_avatar_url($comment, array('size' => 48));
+
+    // Check if review is verified (purchased product)
+    $is_verified = get_comment_meta($comment->comment_ID, 'verified', true);
 
     // Get review images if any
     $review_images = get_comment_meta($comment->comment_ID, 'review_images', true);
@@ -1500,7 +1939,7 @@ function jetlagz_display_single_review($comment)
 ?>
     <article class="review-card"
         data-rating="<?php echo $rating; ?>"
-        data-date="<?php echo get_comment_date('U', $comment); ?>"
+        data-date="<?php echo $date_timestamp; ?>"
         role="listitem">
         <div class="review-header">
             <div class="review-author-info">
@@ -1509,7 +1948,12 @@ function jetlagz_display_single_review($comment)
                     class="review-avatar"
                     loading="lazy">
                 <div class="review-author-details">
-                    <h4 class="review-author-name"><?php echo esc_html($author); ?></h4>
+                    <div class="review-author-name-wrapper">
+                        <h4 class="review-author-name text-sm flex gap-3">
+                            <?php echo esc_html($masked_author); ?>
+                            <span class="verified font-light text-[10px] flex items-center gap-1">Zweryfikowano <img class="rounded-full" src="<?php echo esc_url(get_stylesheet_directory_uri()); ?>/assets/images/verified.png" alt="Verified" class="verified-icon" style="width:1em;height:1em;vertical-align:middle;"></span>
+                        </h4>
+                    </div>
                     <div class="review-rating"
                         role="img"
                         aria-label="Rated <?php echo $rating; ?> out of 5 stars">
@@ -1565,6 +2009,16 @@ add_action('woocommerce_after_single_product_summary', 'jetlagz_display_product_
 remove_action('woocommerce_after_single_product_summary', 'woocommerce_output_product_data_tabs', 10);
 
 /**
+ * Remove default WooCommerce review display
+ */
+add_filter('comments_template', function ($template) {
+    if (get_post_type() !== 'product') {
+        return $template;
+    }
+    return '';
+}, 100);
+
+/**
  * Related products removed - using only cross-sells in summary
  */
 
@@ -1578,6 +2032,49 @@ function jetlagz_display_product_faq()
 add_action('woocommerce_after_single_product_summary', 'jetlagz_display_product_faq', 25);
 
 /**
+ * Display Recently Viewed Products section
+ */
+function jetlagz_display_recently_viewed_products()
+{
+    get_template_part('template-parts/recently-viewed-slider');
+}
+add_action('woocommerce_after_single_product_summary', 'jetlagz_display_recently_viewed_products', 24);
+
+/**
+ * Track recently viewed products
+ */
+function jetlagz_track_recently_viewed_product()
+{
+    if (!is_singular('product')) {
+        return;
+    }
+
+    global $post;
+
+    if (empty($_COOKIE['woocommerce_recently_viewed'])) {
+        $viewed_products = array();
+    } else {
+        $viewed_products = array_map('absint', explode('|', $_COOKIE['woocommerce_recently_viewed']));
+    }
+
+    // Remove current product from array if it exists
+    $keys = array_flip($viewed_products);
+    if (isset($keys[$post->ID])) {
+        unset($viewed_products[$keys[$post->ID]]);
+    }
+
+    // Add current product to beginning of array
+    array_unshift($viewed_products, $post->ID);
+
+    // Limit to 10 products
+    $viewed_products = array_slice($viewed_products, 0, 10);
+
+    // Set cookie for 30 days
+    wc_setcookie('woocommerce_recently_viewed', implode('|', $viewed_products), time() + (30 * DAY_IN_SECONDS));
+}
+add_action('template_redirect', 'jetlagz_track_recently_viewed_product', 20);
+
+/**
  * Disable product gallery slider on desktop (1024px+)
  */
 function jetlagz_disable_product_gallery_slider()
@@ -1585,25 +2082,37 @@ function jetlagz_disable_product_gallery_slider()
     if (!is_product()) {
         return;
     }
-?>
-    <script>
-        // Block FlexSlider on desktop - completely disable it
-        (function() {
+
+    // Enqueue inline script that runs after jQuery but before WooCommerce scripts
+    wp_add_inline_script('jquery', '
+        // Block FlexSlider only on desktop (1024px+) - tablets use default slider
+        (function($) {
             if (window.innerWidth >= 1024) {
                 // Override jQuery.fn.flexslider to make it do nothing
-                if (typeof jQuery !== 'undefined') {
-                    jQuery.fn.flexslider = function() {
-                        console.log('FlexSlider blocked on desktop');
-                        return this; // Return jQuery object for chaining
-                    };
-                }
+                $.fn.flexslider = function() {
+                    return this; // Return jQuery object for chaining
+                };
 
-                // Also block WooCommerce params just in case
+                // Also block WooCommerce params
                 window.wc_single_product_params = window.wc_single_product_params || {};
                 window.wc_single_product_params.flexslider_enabled = false;
             }
-        })();
+        })(jQuery);
+    ');
+}
+add_action('wp_enqueue_scripts', 'jetlagz_disable_product_gallery_slider', 5);
 
+/**
+ * Product gallery grid layout for tablets and desktop
+ * Kept as separate function for clarity
+ */
+function jetlagz_product_gallery_grid_layout()
+{
+    if (!is_product()) {
+        return;
+    }
+?>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
 
             // Mobile: Let WooCommerce handle gallery normally
@@ -1913,7 +2422,7 @@ function jetlagz_disable_product_gallery_slider()
     </script>
 <?php
 }
-add_action('wp_head', 'jetlagz_disable_product_gallery_slider', 1);
+add_action('wp_head', 'jetlagz_product_gallery_grid_layout', 20);
 
 /**
  * Prevent layout shift - reserve space for gallery in head
@@ -1945,7 +2454,7 @@ function jetlagz_product_gallery_reserve_space()
 add_action('wp_head', 'jetlagz_product_gallery_reserve_space', 1);
 
 /**
- * Sticky sidebar effect for product page (desktop 1024px+)
+ * Sticky sidebar effect for product page (tablet 768px+ and desktop)
  * Shorter div sticks to top, unsticks when bottom edges align
  */
 function jetlagz_sticky_product_sidebar()
@@ -1956,6 +2465,7 @@ function jetlagz_sticky_product_sidebar()
 ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Only desktop (1024px+) - tablets use default layout
             if (window.innerWidth < 1024) {
                 return;
             }
@@ -1977,7 +2487,7 @@ function jetlagz_sticky_product_sidebar()
                 var container = gallery.parentElement;
                 var wrapper = document.createElement('div');
                 wrapper.className = 'product-main-wrapper';
-                wrapper.style.cssText = 'display:flex;align-items:flex-start;gap:2%;flex-wrap:nowrap;';
+                wrapper.style.cssText = 'display:flex;align-items:flex-start;gap:2%;flex-wrap:nowrap;justify-content:space-between;';
 
                 // Batch DOM operations
                 container.insertBefore(wrapper, gallery);
@@ -1988,14 +2498,20 @@ function jetlagz_sticky_product_sidebar()
                 gallery.style.cssText += 'width:46%;flex-shrink:0;';
                 summary.style.cssText += 'width:42%;flex-shrink:0;position:sticky;top:20px;align-self:flex-start;';
 
-                // Fix overflow on specific ancestors only (not all)
+                // Fix overflow on ALL ancestors including body - critical for sticky to work
                 requestAnimationFrame(function() {
                     var parent = wrapper.parentElement;
-                    var maxDepth = 5; // Limit iterations
                     var depth = 0;
 
-                    while (parent && parent !== document.body && depth < maxDepth) {
-                        parent.style.overflow = 'visible';
+                    // Fix overflow all the way up to body
+                    while (parent && depth < 20) {
+                        var currentOverflow = window.getComputedStyle(parent).overflow;
+                        var currentOverflowY = window.getComputedStyle(parent).overflowY;
+
+                        if (currentOverflow !== 'visible' || currentOverflowY !== 'visible') {
+                            parent.style.overflow = 'visible';
+                        }
+
                         parent = parent.parentElement;
                         depth++;
                     }
@@ -2031,7 +2547,7 @@ function jetlagz_sticky_product_sidebar()
                     }
 
                     if (window.innerWidth < 1024) {
-                        // Reset on mobile
+                        // Reset on mobile and tablet
                         gallery.style.position = '';
                         gallery.style.top = '';
                         gallery.style.alignSelf = '';
@@ -2039,7 +2555,7 @@ function jetlagz_sticky_product_sidebar()
                         summary.style.top = '';
                         summary.style.alignSelf = '';
                     } else {
-                        // Reapply on desktop
+                        // Reapply on desktop only
                         var galleryHeight = gallery.offsetHeight;
                         var summaryHeight = summary.offsetHeight;
 
@@ -2337,20 +2853,38 @@ function jetlagz_add_color_data_to_variations()
 add_action('woocommerce_before_single_product', 'jetlagz_add_color_data_to_variations');
 
 /**
- * Add size guide link below variations table
+ * Add size guide link below variations table or before add to cart button
  */
 function jetlagz_add_size_guide_link()
 {
     global $product;
 
-    if (!$product || !$product->is_type('variable')) {
+    if (!$product) {
         return;
     }
 
-    // Get size guide content from ACF options
-    $size_guide_content = get_field('size_guide_content', 'option');
+    // Sprawdź aktualny hook i typ produktu
+    $current_filter = current_filter();
 
-    if (!$size_guide_content) {
+    // Jeśli to hook after_variations_table, wyświetl tylko dla produktów zmiennych
+    if ($current_filter === 'woocommerce_after_variations_table' && !$product->is_type('variable')) {
+        return;
+    }
+
+    // Jeśli to hook before_add_to_cart_button, wyświetl tylko dla produktów prostych
+    if ($current_filter === 'woocommerce_before_add_to_cart_button' && $product->is_type('variable')) {
+        return;
+    }
+
+    // Check if ACF is available
+    if (!function_exists('get_field')) {
+        return;
+    }
+
+    // Get size guide content from current product
+    $size_guide_content = get_field('size_guide_content');
+
+    if (!$size_guide_content || trim($size_guide_content) === '') {
         return;
     }
     ?>
@@ -2363,7 +2897,8 @@ function jetlagz_add_size_guide_link()
 
     <script>
         jQuery(document).ready(function($) {
-            $('.size-guide-toggle').on('click', function(e) {
+            // Usuń poprzednie event handlery aby uniknąć duplikatów
+            $('.size-guide-toggle').off('click').on('click', function(e) {
                 e.preventDefault();
                 var $content = $(this).next('.size-guide-content');
                 $content.slideToggle(300);
@@ -2373,7 +2908,10 @@ function jetlagz_add_size_guide_link()
     </script>
 <?php
 }
-add_action('woocommerce_before_add_to_cart_button', 'jetlagz_add_size_guide_link', 30);
+// Dla produktów zmiennych (z wariantami) - wyświetl po tabeli variations
+add_action('woocommerce_after_variations_table', 'jetlagz_add_size_guide_link', 10);
+// Dla produktów prostych - wyświetl przed przyciskiem dodaj do koszyka
+add_action('woocommerce_before_add_to_cart_button', 'jetlagz_add_size_guide_link', 10);
 
 /**
  * Add shipping countdown timer (shows until 15:00, resets at midnight)
@@ -2615,6 +3153,11 @@ function jetlagz_add_gift_wrapping_fee($cart)
         return;
     }
 
+    // Check if ACF is available
+    if (!function_exists('get_field')) {
+        return;
+    }
+
     // Get gift wrapping settings from ACF
     $gift_wrapping_group = get_field('gift_wrapping_field', 'option');
 
@@ -2805,3 +3348,841 @@ function jetlagz_load_more_reviews()
 }
 add_action('wp_ajax_load_more_reviews', 'jetlagz_load_more_reviews');
 add_action('wp_ajax_nopriv_load_more_reviews', 'jetlagz_load_more_reviews');
+
+/**
+ * Add custom date field to comment edit screen in admin
+ */
+function jetlagz_add_comment_date_field($comment)
+{
+    $comment_date = get_comment_date('Y-m-d\TH:i', $comment->comment_ID);
+?>
+    <fieldset>
+        <legend><?php _e('Data komentarza'); ?></legend>
+        <table class="form-table editcomment">
+            <tbody>
+                <tr>
+                    <td>
+                        <label for="jetlagz_comment_date"><?php _e('Data i godzina publikacji:'); ?></label>
+                        <input type="datetime-local"
+                            id="jetlagz_comment_date"
+                            name="jetlagz_comment_date"
+                            value="<?php echo esc_attr($comment_date); ?>"
+                            style="width: 250px;">
+                        <p class="description">Zmień datę i godzinę publikacji komentarza/opinii.</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </fieldset>
+<?php
+}
+add_action('add_meta_boxes_comment', function () {
+    add_meta_box(
+        'jetlagz_comment_date',
+        __('Edycja daty komentarza'),
+        'jetlagz_add_comment_date_field',
+        'comment',
+        'normal',
+        'high'
+    );
+});
+
+/**
+ * Save custom comment date
+ */
+function jetlagz_save_comment_date($comment_id)
+{
+    if (!isset($_POST['jetlagz_comment_date']) || empty($_POST['jetlagz_comment_date'])) {
+        return;
+    }
+
+    // Verify user has permission to edit comments
+    if (!current_user_can('edit_comment', $comment_id)) {
+        return;
+    }
+
+    $new_date = sanitize_text_field($_POST['jetlagz_comment_date']);
+
+    // Convert datetime-local format to MySQL datetime format
+    $datetime = DateTime::createFromFormat('Y-m-d\TH:i', $new_date);
+
+    if ($datetime) {
+        $mysql_date = $datetime->format('Y-m-d H:i:s');
+
+        // Update comment date
+        global $wpdb;
+        $wpdb->update(
+            $wpdb->comments,
+            array(
+                'comment_date' => $mysql_date,
+                'comment_date_gmt' => get_gmt_from_date($mysql_date)
+            ),
+            array('comment_ID' => $comment_id),
+            array('%s', '%s'),
+            array('%d')
+        );
+
+        // Clear comment cache
+        clean_comment_cache($comment_id);
+    }
+}
+add_action('edit_comment', 'jetlagz_save_comment_date');
+
+/**
+ * Automatically set 5 stars rating when adding new product review
+ */
+function jetlagz_set_default_rating($comment_id, $comment_approved, $commentdata)
+{
+    // Check if this is a product review
+    if (isset($commentdata['comment_post_ID'])) {
+        $post = get_post($commentdata['comment_post_ID']);
+
+        // Only for product post type
+        if ($post && $post->post_type === 'product') {
+            // Check if rating is not already set
+            $existing_rating = get_comment_meta($comment_id, 'rating', true);
+
+            // If no rating exists, set it to 5
+            if (empty($existing_rating)) {
+                update_comment_meta($comment_id, 'rating', 5);
+            }
+        }
+    }
+}
+add_action('comment_post', 'jetlagz_set_default_rating', 10, 3);
+
+/**
+ * Automatic Product Status Management based on Stock Availability
+ * Changes product status to draft/private when no variants are in stock
+ * Changes product status to publish when variants become available
+ */
+
+/**
+ * Check if product has any variations in stock
+ */
+function jetlagz_product_has_stock_available($product_id)
+{
+    $product = wc_get_product($product_id);
+
+    if (!$product) {
+        return false;
+    }
+
+    // For simple products
+    if ($product->is_type('simple')) {
+        return $product->is_in_stock();
+    }
+
+    // For variable products
+    if ($product->is_type('variable')) {
+        $variations = $product->get_children();
+
+        if (empty($variations)) {
+            return false;
+        }
+
+        // Check if any variation is in stock
+        foreach ($variations as $variation_id) {
+            $variation = wc_get_product($variation_id);
+            if ($variation && $variation->is_in_stock()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // For other product types, use default stock status
+    return $product->is_in_stock();
+}
+
+/**
+ * Update product status based on stock availability
+ */
+function jetlagz_update_product_status_by_stock($product_id, $desired_status = 'auto')
+{
+    $product = wc_get_product($product_id);
+
+    if (!$product) {
+        return false;
+    }
+
+    $has_stock = jetlagz_product_has_stock_available($product_id);
+    $current_status = get_post_status($product_id);
+
+    // Skip if product is in trash or other non-standard status
+    if (in_array($current_status, ['trash', 'auto-draft'])) {
+        return false;
+    }
+
+    $new_status = null;
+
+    if ($desired_status === 'auto') {
+        // Automatic mode - set status based on stock availability
+        if ($has_stock && in_array($current_status, ['draft', 'private'])) {
+            // Product has stock and is currently hidden - make it public
+            $new_status = 'publish';
+        } elseif (!$has_stock && $current_status === 'publish') {
+            // Product has no stock and is currently published - hide it
+            // Check theme option for preferred hidden status
+            $hidden_status = get_theme_option('woocommerce.out_of_stock_status', 'draft');
+            $new_status = in_array($hidden_status, ['draft', 'private']) ? $hidden_status : 'draft';
+        }
+    } else {
+        // Manual mode - use desired status regardless of stock
+        if ($current_status !== $desired_status) {
+            $new_status = $desired_status;
+        }
+    }
+
+    if ($new_status && $new_status !== $current_status) {
+        // Update product status
+        wp_update_post([
+            'ID' => $product_id,
+            'post_status' => $new_status
+        ]);
+
+        // Log the change if enabled
+        $log_changes = get_theme_option('woocommerce.log_status_changes', true);
+        if ($log_changes) {
+            error_log("Jetlagz Auto-Status: Product #{$product_id} changed from '{$current_status}' to '{$new_status}' (stock available: " . ($has_stock ? 'yes' : 'no') . ")");
+        }
+
+        // Clear product cache
+        wc_delete_product_transients($product_id);
+
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Hook into product save to update status based on stock
+ */
+function jetlagz_auto_update_product_status_on_save($product_id)
+{
+    // Check if auto-management is enabled
+    $auto_manage = get_theme_option('woocommerce.auto_manage_product_status', true);
+
+    if (!$auto_manage) {
+        return;
+    }
+
+    // Avoid infinite loops
+    if (wp_is_post_revision($product_id)) {
+        return;
+    }
+
+    // Only for products
+    if (get_post_type($product_id) !== 'product') {
+        return;
+    }
+
+    // Check frequency setting
+    $frequency = get_theme_option('woocommerce.check_stock_frequency', 'on_save');
+
+    if ($frequency === 'on_save') {
+        // Update product status immediately
+        jetlagz_update_product_status_by_stock($product_id);
+    } else {
+        // Schedule for later processing
+        wp_schedule_single_event(time() + 30, 'jetlagz_delayed_product_status_update', [$product_id]);
+    }
+}
+
+/**
+ * Hook into variation save to update parent product status
+ */
+function jetlagz_auto_update_parent_product_status($variation_id)
+{
+    // Check if auto-management is enabled
+    $auto_manage = get_theme_option('woocommerce.auto_manage_product_status', true);
+
+    if (!$auto_manage) {
+        return;
+    }
+
+    $variation = wc_get_product($variation_id);
+    if ($variation && $variation->is_type('variation')) {
+        $parent_id = $variation->get_parent_id();
+        if ($parent_id) {
+            $frequency = get_theme_option('woocommerce.check_stock_frequency', 'on_save');
+
+            if ($frequency === 'on_save') {
+                // Small delay to ensure variation data is saved
+                wp_schedule_single_event(time() + 5, 'jetlagz_delayed_product_status_update', [$parent_id]);
+            } else {
+                // Schedule for later processing
+                wp_schedule_single_event(time() + 60, 'jetlagz_delayed_product_status_update', [$parent_id]);
+            }
+        }
+    }
+}
+
+/**
+ * Delayed product status update (used with wp_schedule_single_event)
+ */
+function jetlagz_delayed_product_status_update($product_id)
+{
+    jetlagz_update_product_status_by_stock($product_id);
+}
+
+/**
+ * Bulk update all products status based on stock availability
+ */
+function jetlagz_bulk_update_products_status($limit = -1)
+{
+    $args = [
+        'post_type' => 'product',
+        'post_status' => ['publish', 'draft', 'private'],
+        'posts_per_page' => $limit,
+        'fields' => 'ids'
+    ];
+
+    $product_ids = get_posts($args);
+    $updated_count = 0;
+    $checked_count = 0;
+
+    foreach ($product_ids as $product_id) {
+        $checked_count++;
+        if (jetlagz_update_product_status_by_stock($product_id)) {
+            $updated_count++;
+        }
+
+        // Prevent memory issues on large stores
+        if ($checked_count % 50 == 0) {
+            sleep(1); // Small delay every 50 products
+        }
+    }
+
+    // Log the bulk update
+    $log_changes = get_theme_option('woocommerce.log_status_changes', true);
+    if ($log_changes) {
+        error_log("Jetlagz Auto-Status: Bulk update completed - checked {$checked_count} products, updated {$updated_count}");
+    }
+
+    return $updated_count;
+}
+
+/**
+ * Scheduled bulk update (for hourly/daily frequency)
+ */
+function jetlagz_scheduled_product_status_update()
+{
+    $auto_manage = get_theme_option('woocommerce.auto_manage_product_status', true);
+
+    if (!$auto_manage) {
+        return;
+    }
+
+    // Update up to 100 products per scheduled run to avoid timeouts
+    jetlagz_bulk_update_products_status(100);
+}
+
+/**
+ * Setup scheduled events based on frequency setting
+ */
+function jetlagz_setup_scheduled_events()
+{
+    $frequency = get_theme_option('woocommerce.check_stock_frequency', 'on_save');
+
+    // Clear existing scheduled events
+    wp_clear_scheduled_hook('jetlagz_scheduled_product_status_update');
+
+    // Schedule new events based on frequency
+    if ($frequency === 'hourly') {
+        if (!wp_next_scheduled('jetlagz_scheduled_product_status_update')) {
+            wp_schedule_event(time(), 'hourly', 'jetlagz_scheduled_product_status_update');
+        }
+    } elseif ($frequency === 'daily') {
+        if (!wp_next_scheduled('jetlagz_scheduled_product_status_update')) {
+            wp_schedule_event(time(), 'daily', 'jetlagz_scheduled_product_status_update');
+        }
+    }
+}
+
+/**
+ * Clean up scheduled events on theme deactivation
+ */
+function jetlagz_cleanup_scheduled_events()
+{
+    wp_clear_scheduled_hook('jetlagz_scheduled_product_status_update');
+    wp_clear_scheduled_hook('jetlagz_delayed_product_status_update');
+}
+
+/**
+ * Add hooks for automatic status management
+ */
+add_action('save_post_product', 'jetlagz_auto_update_product_status_on_save', 20, 1);
+add_action('woocommerce_save_product_variation', 'jetlagz_auto_update_parent_product_status', 10, 1);
+add_action('woocommerce_variation_set_stock_status', 'jetlagz_auto_update_parent_product_status', 10, 1);
+add_action('jetlagz_delayed_product_status_update', 'jetlagz_delayed_product_status_update', 10, 1);
+
+// Hook into stock level changes
+add_action('woocommerce_product_set_stock', function ($product) {
+    if (is_a($product, 'WC_Product_Variation')) {
+        jetlagz_auto_update_parent_product_status($product->get_id());
+    } else {
+        jetlagz_auto_update_product_status_on_save($product->get_id());
+    }
+}, 10, 1);
+
+/**
+ * Add admin interface for manual bulk update
+ */
+function jetlagz_add_bulk_stock_status_update_admin()
+{
+    if (!current_user_can('manage_woocommerce')) {
+        return;
+    }
+
+    $config = get_theme_config();
+    $woo_config = $config['woocommerce'];
+
+    // Handle settings update
+    if (isset($_POST['jetlagz_save_settings']) && wp_verify_nonce($_POST['_wpnonce'], 'jetlagz_settings')) {
+        // This would normally save to options, but we're using theme config
+        // For now, just show a message about configuration location
+        add_action('admin_notices', function () {
+            echo '<div class="notice notice-info is-dismissible">';
+            echo '<p><strong>Informacja:</strong> Ustawienia są konfigurowane w pliku theme-config.php. Aby je zmienić, edytuj sekcję "woocommerce" w tym pliku.</p>';
+            echo '</div>';
+        });
+    }
+
+    // Handle bulk update request
+    if (isset($_POST['jetlagz_bulk_update_stock_status']) && wp_verify_nonce($_POST['_wpnonce'], 'jetlagz_bulk_update')) {
+        $updated_count = jetlagz_bulk_update_products_status();
+        add_action('admin_notices', function () use ($updated_count) {
+            echo '<div class="notice notice-success is-dismissible">';
+            echo '<p><strong>Sukces!</strong> Zaktualizowano status ' . $updated_count . ' produktów na podstawie dostępności magazynowej.</p>';
+            echo '</div>';
+        });
+    }
+
+    // Get statistics
+    $total_products = wp_count_posts('product');
+    $published_products = $total_products->publish ?? 0;
+    $draft_products = $total_products->draft ?? 0;
+    $private_products = $total_products->private ?? 0;
+
+    // Check scheduled events
+    $next_scheduled = wp_next_scheduled('jetlagz_scheduled_product_status_update');
+    $frequency = get_theme_option('woocommerce.check_stock_frequency', 'on_save');
+
+?>
+    <div class="wrap">
+        <h1>📦 Zarządzanie statusem produktów</h1>
+        <p class="description">
+            Automatycznie ukryj produkty, które nie mają dostępnych wariantów, i pokaż je ponownie gdy pojawią się w magazynie.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin: 20px 0;">
+
+            <!-- Main Settings -->
+            <div class="postbox">
+                <h2 class="hndle">⚙️ Ustawienia automatycznego zarządzania</h2>
+                <div class="inside">
+                    <form method="post">
+                        <?php wp_nonce_field('jetlagz_settings'); ?>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">Status automatycznego zarządzania</th>
+                                <td>
+                                    <?php $auto_manage = $woo_config['auto_manage_product_status']; ?>
+                                    <span class="dashicons dashicons-<?php echo $auto_manage ? 'yes-alt' : 'dismiss'; ?>" style="color: <?php echo $auto_manage ? 'green' : 'red'; ?>;"></span>
+                                    <strong><?php echo $auto_manage ? 'WŁĄCZONE' : 'WYŁĄCZONE'; ?></strong>
+                                    <p class="description">
+                                        <?php if ($auto_manage): ?>
+                                            Produkty bez dostępnych wariantów są automatycznie ukrywane.
+                                        <?php else: ?>
+                                            Automatyczne zarządzanie jest wyłączone. Włącz w theme-config.php.
+                                        <?php endif; ?>
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Status dla produktów bez magazynu</th>
+                                <td>
+                                    <code><?php echo ucfirst($woo_config['out_of_stock_status']); ?></code>
+                                    <p class="description">
+                                        Produkty bez dostępnych wariantów będą miały status:
+                                        <strong><?php echo $woo_config['out_of_stock_status'] === 'draft' ? 'Szkic' : 'Prywatny'; ?></strong>
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Częstotliwość sprawdzania</th>
+                                <td>
+                                    <code><?php echo ucfirst($frequency); ?></code>
+                                    <p class="description">
+                                        <?php
+                                        switch ($frequency) {
+                                            case 'on_save':
+                                                echo 'Status jest sprawdzany natychmiastowo podczas zapisywania produktu lub wariantu.';
+                                                break;
+                                            case 'hourly':
+                                                echo 'Status wszystkich produktów jest sprawdzany co godzinę.';
+                                                break;
+                                            case 'daily':
+                                                echo 'Status wszystkich produktów jest sprawdzany codziennie.';
+                                                break;
+                                        }
+                                        ?>
+                                    </p>
+                                    <?php if ($frequency !== 'on_save'): ?>
+                                        <p class="description">
+                                            <strong>Następne sprawdzenie:</strong>
+                                            <?php
+                                            if ($next_scheduled) {
+                                                echo date('Y-m-d H:i:s', $next_scheduled);
+                                            } else {
+                                                echo '<em>Nie zaplanowane</em>';
+                                            }
+                                            ?>
+                                        </p>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Logowanie zmian</th>
+                                <td>
+                                    <?php $log_enabled = $woo_config['log_status_changes']; ?>
+                                    <span class="dashicons dashicons-<?php echo $log_enabled ? 'yes-alt' : 'dismiss'; ?>" style="color: <?php echo $log_enabled ? 'green' : 'red'; ?>;"></span>
+                                    <strong><?php echo $log_enabled ? 'WŁĄCZONE' : 'WYŁĄCZONE'; ?></strong>
+                                    <p class="description">
+                                        <?php if ($log_enabled): ?>
+                                            Wszystkie zmiany statusu są zapisywane w logach systemu.
+                                        <?php else: ?>
+                                            Logowanie zmian statusu jest wyłączone.
+                                        <?php endif; ?>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p class="description">
+                            <strong>💡 Wskazówka:</strong> Aby zmienić te ustawienia, edytuj sekcję <code>'woocommerce'</code>
+                            w pliku <code>inc/theme-config.php</code>.
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="postbox">
+                <h2 class="hndle">📊 Statystyki produktów</h2>
+                <div class="inside">
+                    <table class="widefat">
+                        <tr>
+                            <td><strong>Opublikowane:</strong></td>
+                            <td><span class="count" style="color: green;"><?php echo $published_products; ?></span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Szkice:</strong></td>
+                            <td><span class="count" style="color: orange;"><?php echo $draft_products; ?></span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Prywatne:</strong></td>
+                            <td><span class="count" style="color: red;"><?php echo $private_products; ?></span></td>
+                        </tr>
+                        <tr style="border-top: 2px solid #ddd;">
+                            <td><strong>Razem:</strong></td>
+                            <td><span class="count"><strong><?php echo ($published_products + $draft_products + $private_products); ?></strong></span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Actions -->
+        <div class="postbox">
+            <h2 class="hndle">🔧 Działania ręczne</h2>
+            <div class="inside">
+                <form method="post">
+                    <?php wp_nonce_field('jetlagz_bulk_update'); ?>
+                    <p>
+                        Ręcznie sprawdź i zaktualizuj status wszystkich produktów na podstawie ich dostępności magazynowej.
+                    </p>
+                    <p class="submit">
+                        <input type="submit" name="jetlagz_bulk_update_stock_status" class="button button-primary"
+                            value="🔄 Zaktualizuj wszystkie produkty teraz"
+                            onclick="return confirm('Czy na pewno chcesz zaktualizować status wszystkich produktów? Ta operacja może potrwać kilka minut.');" />
+                    </p>
+                    <p class="description">
+                        <strong>⚠️ Uwaga:</strong> Ta operacja może zająć kilka minut w zależności od liczby produktów w sklepie.
+                        Produkty bez dostępnych wariantów zostaną ukryte, a produkty z dostępnymi wariantami zostaną opublikowane.
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <style>
+            .count {
+                font-size: 18px;
+                font-weight: bold;
+            }
+
+            .postbox h2.hndle {
+                font-size: 16px;
+                padding: 12px;
+            }
+
+            .postbox .inside {
+                padding: 15px;
+            }
+        </style>
+    </div>
+<?php
+}
+
+// Add admin menu for stock status management
+add_action('admin_menu', function () {
+    add_submenu_page(
+        'edit.php?post_type=product',
+        'Status produktów - Auto-zarządzanie',
+        '🔄 Status produktów',
+        'manage_woocommerce',
+        'jetlagz-product-status',
+        'jetlagz_add_bulk_stock_status_update_admin'
+    );
+});
+
+// Hook into stock level changes
+add_action('woocommerce_product_set_stock', function ($product) {
+    if (is_a($product, 'WC_Product_Variation')) {
+        jetlagz_auto_update_parent_product_status($product->get_id());
+    } else {
+        jetlagz_auto_update_product_status_on_save($product->get_id());
+    }
+}, 10, 1);
+
+// Add scheduled event hooks
+add_action('jetlagz_scheduled_product_status_update', 'jetlagz_scheduled_product_status_update');
+
+// Setup scheduled events on theme activation
+add_action('after_setup_theme', 'jetlagz_setup_scheduled_events');
+
+// Clean up on theme switch
+add_action('switch_theme', 'jetlagz_cleanup_scheduled_events');
+
+// Hook into WooCommerce stock status changes
+add_action('woocommerce_variation_set_stock_status', function ($variation_id, $stock_status, $variation) {
+    jetlagz_auto_update_parent_product_status($variation_id);
+}, 10, 3);
+
+add_action('woocommerce_product_set_stock_status', function ($product_id, $stock_status, $product) {
+    jetlagz_auto_update_product_status_on_save($product_id);
+}, 10, 3);
+
+/**
+ * Add stock availability dropdown trigger after out of stock message
+ */
+function jetlagz_add_stock_availability_dropdown()
+{
+    global $product;
+
+    if (!$product) {
+        echo '<!-- Debug: No product found -->';
+        return;
+    }
+
+    if ($product->is_in_stock()) {
+        echo '<!-- Debug: Product is in stock, not showing dropdown -->';
+        return;
+    }
+
+    echo '<!-- Debug: Rendering stock availability dropdown -->';
+    echo '<div class="stock-availability-wrapper">';
+    echo '<span class="stock-availability-trigger">';
+    echo 'Sprawdź dostępność ';
+    echo '<span class="icon">▼</span>';
+    echo '</span>';
+
+    // Add dropdown content with Contact Form 7
+    echo '<div class="stock-availability-dropdown">';
+    echo '<div class="stock-availability-content">';
+    echo '<h4>Poszukujesz tego rozmiaru?</h4>';
+    echo '<p>Zostaw e-mail – sprawdzimy dostępność u producenta i damy Ci znać, czy możemy go sprowadzić.</p>';
+    echo '<div class="cf7-form-wrapper">';
+    echo do_shortcode('[contact-form-7 id="3ef1ab3" title="Niedostępny wariant"]');
+    echo '</div>';
+    echo '</div>';
+    echo '</div>';
+
+    // Add product info as JavaScript variables for hidden fields
+    echo '<script>';
+    echo 'window.stockAvailabilityProductInfo = {';
+    echo '"productName": "' . esc_js($product->get_name()) . '",';
+    echo '"productId": ' . $product->get_id();
+    echo '};';
+    echo '</script>';
+
+    echo '</div>';
+    echo '<!-- Debug: End stock availability dropdown -->';
+}
+add_action('woocommerce_single_product_summary', 'jetlagz_add_stock_availability_dropdown', 25);
+
+// Fallback - also try after stock info
+add_action('woocommerce_single_product_summary', 'jetlagz_add_stock_availability_dropdown_fallback', 30);
+
+/**
+ * Fallback stock availability dropdown
+ */
+function jetlagz_add_stock_availability_dropdown_fallback()
+{
+    global $product;
+
+    if (!$product) {
+        return;
+    }
+
+    // Only show if main function didn't show and product is out of stock
+    if (!$product->is_in_stock()) {
+        echo '<!-- Fallback dropdown -->';
+        jetlagz_add_stock_availability_dropdown();
+    }
+}
+
+/**
+ * Modify stock status display to include availability dropdown inline
+ */
+function jetlagz_custom_stock_html($html, $product)
+{
+    if (!$product->is_in_stock()) {
+        // Create complete dropdown HTML
+        $dropdown_html = '<div class="stock-availability-wrapper">
+            <span class="stock-availability-trigger">
+                Sprawdź dostępność <span class="icon">▼</span>
+            </span>
+            <div class="stock-availability-dropdown">
+                <div class="stock-availability-content">
+                    <h4>Poszukujesz tego rozmiaru?</h4>
+                    <p>Zostaw e-mail – sprawdzimy dostępność u producenta i damy Ci znać, czy możemy go sprowadzić.</p>
+                    <div class="cf7-form-wrapper">
+                        ' . do_shortcode('[contact-form-7 id="3ef1ab3" title="Niedostępny wariant"]') . '
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+        window.stockAvailabilityProductInfo = {
+            "productName": "' . esc_js($product->get_name()) . '",
+            "productId": ' . $product->get_id() . '
+        };
+        </script>';
+
+        // Modyfikuj HTML żeby dodać wrapper dla dropdown
+        $html = preg_replace(
+            '/<p class="stock out-of-stock"[^>]*>(.*?)<\/p>/',
+            '<p class="stock out-of-stock">$1</p>' . $dropdown_html,
+            $html
+        );
+    }
+    return $html;
+}
+add_filter('woocommerce_get_stock_html', 'jetlagz_custom_stock_html', 10, 2);
+
+/**
+ * Ensure WooCommerce session is initialized on product pages.
+ *
+ * InPost Pay's woocommerceizi.js fetches basket_binding_api_key and
+ * place_product_card REST endpoints with credentials: "same-origin".
+ * Both endpoints require an active WC session cookie to return data.
+ *
+ * Without this, InPost Pay only works when crosssell is configured because
+ * the crosssell AJAX call (jetlagz_get_cart_product_ids) touches WC()->cart
+ * on DOMContentLoaded, which creates the session cookie before window.load.
+ * On pages without crosssell, no session exists and the REST calls return empty.
+ *
+ * This hook runs on template_redirect (before output) so the Set-Cookie header
+ * is included in the initial page response — no race conditions.
+ */
+function jetlagz_ensure_wc_session_for_inpost_pay()
+{
+    if (!is_product()) {
+        return;
+    }
+
+    if (!function_exists('WC') || !WC()->session) {
+        return;
+    }
+
+    if (!WC()->session->has_session()) {
+        WC()->session->set_customer_session_cookie(true);
+    }
+}
+add_action('template_redirect', 'jetlagz_ensure_wc_session_for_inpost_pay');
+
+/**
+ * Fix InPost Pay button not rendering on product pages.
+ *
+ * The plugin's REST endpoint place_product_card/{id} returns empty HTML for all
+ * products. The woocommerceizi.js sets placeholder innerHTML to this empty response,
+ * so the <inpost-izi-button> custom element never appears and the SDK has nothing
+ * to render.
+ *
+ * This fix monitors the placeholder after the plugin's init sequence completes.
+ * If the placeholder is still empty (no <inpost-izi-button> inside), we inject one
+ * with the correct attributes and call IPPwidget.refresh() so the SDK picks it up.
+ */
+function jetlagz_inpost_pay_button_fallback()
+{
+    if (!is_product()) {
+        return;
+    }
+    ?>
+    <script>
+    (function() {
+        function ensureInPostButton() {
+            var placeholders = document.querySelectorAll('.izi-widget-placeholder.izi-widget-product');
+            if (!placeholders.length) return;
+
+            placeholders.forEach(function(el) {
+                // Skip if button already exists inside
+                if (el.querySelector('inpost-izi-button')) return;
+
+                var productId = el.getAttribute('data-product-id');
+                if (!productId) return;
+
+                // Get language from IPPWidgetOptions or default to 'pl'
+                var lang = (window.IPPWidgetOptions && window.IPPWidgetOptions.language) ? window.IPPWidgetOptions.language : 'pl';
+
+                // Create the inpost-izi-button element the SDK expects
+                var btn = document.createElement('inpost-izi-button');
+                btn.setAttribute('binding_place', 'PRODUCT_CARD');
+                btn.setAttribute('data-product-id', productId);
+                btn.setAttribute('language', lang);
+
+                el.appendChild(btn);
+            });
+
+            // Tell the SDK to pick up the new button elements
+            if (window.IPPwidget && typeof window.IPPwidget.refresh === 'function') {
+                window.IPPwidget.refresh();
+            }
+        }
+
+        // Run after the plugin's window.load handler has finished
+        // woocommerceizi.js runs on window.load, so we add our check slightly after
+        window.addEventListener('load', function() {
+            // First attempt: 500ms after load (plugin init should be done)
+            setTimeout(ensureInPostButton, 500);
+            // Second attempt: 2s after load (in case AJAX key fetch was slow)
+            setTimeout(ensureInPostButton, 2000);
+        });
+
+        // Also handle dynamic re-renders (cart changes, fragment refreshes)
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.jQuery) {
+                jQuery(document.body).on('wc_fragments_refreshed', function() {
+                    setTimeout(ensureInPostButton, 300);
+                });
+            }
+        });
+    })();
+    </script>
+    <?php
+}
+add_action('wp_footer', 'jetlagz_inpost_pay_button_fallback', 99);
