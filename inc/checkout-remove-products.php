@@ -184,7 +184,14 @@ function universal_ajax_remove_checkout_product()
     $cart_item_key = sanitize_text_field($_POST['cart_item_key']);
 
     if (WC()->cart->remove_cart_item($cart_item_key)) {
+        // Clear cached shipping rates so WC recalculates available methods
+        $packages = WC()->cart->get_shipping_packages();
+        foreach (array_keys($packages) as $package_key) {
+            WC()->session->set('shipping_for_package_' . $package_key, false);
+        }
+
         WC()->cart->calculate_totals();
+        WC()->cart->calculate_shipping();
 
         // Sprawdź czy koszyk jest pusty
         $cart_empty = WC()->cart->is_empty();

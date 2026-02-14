@@ -28,10 +28,32 @@ function universal_theme_customize_header()
     remove_action('storefront_header', 'storefront_search', 40);
     remove_action('storefront_header', 'storefront_site_search', 40);
 
+    // Dodaj topbar przed headerem
+    add_action('storefront_before_header', 'universal_theme_topbar', 5);
+
     // Dodaj custom header layout
     add_action('storefront_header', 'universal_theme_custom_header_content', 10);
 }
 add_action('init', 'universal_theme_customize_header');
+
+/**
+ * Top Bar - wyświetlany przed headerem
+ */
+function universal_theme_topbar()
+{
+?>
+    <!-- Top Bar - tylko desktop -->
+    <div class="universal-topbar">
+        <div class="wrapper !py-0">
+            <div class="topbar-content">
+                <span class="topbar-item">Darmowa dostawa od 299 zł</span>
+                <span class="topbar-item">Wysyłka w 24h!</span>
+                <span class="topbar-item">Darmowy zwrot do 30 dni</span>
+            </div>
+        </div>
+    </div>
+<?php
+}
 
 /**
  * Custom header content - wszystkie elementy w jednym rzędzie
@@ -93,6 +115,17 @@ function universal_theme_custom_header_content()
                 <?php endif; ?>
             </div>
 
+            <!-- Wishlist -->
+            <div class="universal-header-wishlist">
+                <?php if (class_exists('WooCommerce')) : ?>
+                    <a href="<?php echo esc_url(home_url('/wishlist/')); ?>" class="universal-wishlist-link" title="<?php esc_attr_e('Ulubione', 'universal-theme'); ?>">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </a>
+                <?php endif; ?>
+            </div>
+
             <!-- Cart -->
             <div class="universal-header-cart">
                 <?php if (class_exists('WooCommerce')) : ?>
@@ -130,7 +163,21 @@ function universal_theme_custom_header_content()
                                                         <?php endif; ?>
                                                     </h4>
                                                     <div class="cart-item-quantity">
-                                                        <?php echo sprintf('%s × %s', $cart_item['quantity'], WC()->cart->get_product_price($_product)); ?>
+                                                        <?php if (!empty($cart_item['jetlagz_is_gift'])) :
+                                                            $orig_product = wc_get_product($product_id);
+                                                            $regular_price = $orig_product ? $orig_product->get_regular_price() : 0;
+                                                            if (empty($regular_price) && $orig_product) {
+                                                                $regular_price = $orig_product->get_price();
+                                                            }
+                                                            $gift_price = floatval($cart_item['jetlagz_gift_rule']['price'] ?? 0.10);
+                                                            if ($regular_price && floatval($regular_price) > $gift_price) : ?>
+                                                                1 × <del class="gift-original-price"><?php echo wc_price($regular_price); ?></del> <ins class="gift-price"><?php echo wc_price($gift_price); ?></ins>
+                                                            <?php else : ?>
+                                                                1 × <?php echo wc_price($gift_price); ?>
+                                                            <?php endif; ?>
+                                                        <?php else : ?>
+                                                            <?php echo sprintf('%s × %s', $cart_item['quantity'], WC()->cart->get_product_price($_product)); ?>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                                 <div class="cart-item-remove">
@@ -465,7 +512,21 @@ function header_cart_dropdown_fragments($fragments)
                                     <?php endif; ?>
                                 </h4>
                                 <div class="cart-item-quantity">
-                                    <?php echo sprintf('%s × %s', $cart_item['quantity'], WC()->cart->get_product_price($_product)); ?>
+                                    <?php if (!empty($cart_item['jetlagz_is_gift'])) :
+                                        $orig_product = wc_get_product($product_id);
+                                        $regular_price = $orig_product ? $orig_product->get_regular_price() : 0;
+                                        if (empty($regular_price) && $orig_product) {
+                                            $regular_price = $orig_product->get_price();
+                                        }
+                                        $gift_price = floatval($cart_item['jetlagz_gift_rule']['price'] ?? 0.10);
+                                        if ($regular_price && floatval($regular_price) > $gift_price) : ?>
+                                            1 × <del class="gift-original-price"><?php echo wc_price($regular_price); ?></del> <ins class="gift-price"><?php echo wc_price($gift_price); ?></ins>
+                                        <?php else : ?>
+                                            1 × <?php echo wc_price($gift_price); ?>
+                                        <?php endif; ?>
+                                    <?php else : ?>
+                                        <?php echo sprintf('%s × %s', $cart_item['quantity'], WC()->cart->get_product_price($_product)); ?>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <div class="cart-item-remove">
@@ -514,3 +575,25 @@ function header_cart_dropdown_fragments($fragments)
     return $fragments;
 }
 add_filter('woocommerce_add_to_cart_fragments', 'header_cart_dropdown_fragments');
+
+/**
+ * Add Microsoft Clarity tracking script to head
+ */
+function universal_theme_add_clarity_script()
+{
+?>
+    <script type="text/javascript">
+        (function(c, l, a, r, i, t, y) {
+            c[a] = c[a] || function() {
+                (c[a].q = c[a].q || []).push(arguments)
+            };
+            t = l.createElement(r);
+            t.async = 1;
+            t.src = "https://www.clarity.ms/tag/" + i;
+            y = l.getElementsByTagName(r)[0];
+            y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", "uyqoitwcio");
+    </script>
+<?php
+}
+add_action('wp_head', 'universal_theme_add_clarity_script');

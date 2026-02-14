@@ -15,7 +15,9 @@
 	z-index: 9998;
 	opacity: 0;
 	visibility: hidden;
-	transition: opacity 0.3s ease, visibility 0.3s ease;
+	transition:
+		opacity 0.3s ease,
+		visibility 0.3s ease;
 }
 
 .slide-in-cart-overlay.active {
@@ -247,7 +249,7 @@
 }
 
 .free-shipping-link {
-	color: #059669;
+	color: black;
 	text-decoration: none;
 	font-weight: 600;
 	font-size: 14px;
@@ -312,4 +314,49 @@
 		width: 60px;
 		height: 60px;
 	}
+}
+
+/* Gift product styling in slide-in cart */
+.slide-in-cart-item.is-gift-item {
+	background: linear-gradient(135deg, #fdfaf3 0%, #fef9ee 100%);
+	border: 1px solid #e8d5a8;
+	border-radius: 8px;
+	padding: 0.75rem;
+}
+
+.slide-in-cart .gift-badge {
+	display: inline-block;
+	background: linear-gradient(135deg, #c9a96e, #b8944f);
+	color: #fff;
+	font-size: 9px;
+	font-weight: 700;
+	padding: 1px 6px;
+	border-radius: 3px;
+	margin-right: 4px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	vertical-align: middle;
+}
+
+.slide-in-cart .gift-original-price {
+	color: #999;
+	font-size: 0.85em;
+	text-decoration: line-through;
+	margin-right: 3px;
+}
+
+.slide-in-cart .gift-price {
+	color: #c9a96e;
+	font-weight: 700;
+	text-decoration: none;
+}
+
+.slide-in-cart .gift-quantity {
+	display: inline-block;
+	padding: 2px 8px;
+	background: #f0ead6;
+	border-radius: 4px;
+	font-weight: 600;
+	font-size: 12px;
+	color: #8a7340;
 }

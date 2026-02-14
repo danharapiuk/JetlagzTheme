@@ -195,6 +195,11 @@ function render_slide_in_cart()
         return;
     }
 
+    // Sprawdź czy ACF jest aktywne
+    if (!function_exists('get_field')) {
+        return;
+    }
+
     // Pobierz ustawienia z ACF
     $cart_title = get_field('cart_title', 'option') ?: 'Zawartość koszyka';
     $free_shipping_enabled = get_field('free_shipping_enabled', 'option');
@@ -218,13 +223,13 @@ function render_slide_in_cart()
         <div class="slide-in-cart-header">
             <h3 class="slide-in-cart-title"><?php echo esc_html($cart_title); ?></h3>
             <button class="slide-in-cart-close" aria-label="Zamknij koszyk">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="https://www.w3.org/2000/svg">
                     <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
             </button>
         </div>
 
-        <div class="slide-in-cart-content">
+        <div class="slide-in-cart-content h-full flex flex-col">
             <?php if (WC()->cart->is_empty()) : ?>
                 <div class="slide-in-cart-empty">
                     <p>Twój koszyk jest pusty</p>
@@ -240,8 +245,10 @@ function render_slide_in_cart()
                         $product_image = $product->get_image('thumbnail');
                         $product_url = get_permalink($product_id);
                         $item_total = $product_price * $quantity;
+                        $is_gift = !empty($cart_item['jetlagz_is_gift']);
+                        $gift_rule = $is_gift ? ($cart_item['jetlagz_gift_rule'] ?? []) : [];
                     ?>
-                        <div class="slide-in-cart-item" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">
+                        <div class="slide-in-cart-item<?php echo $is_gift ? ' is-gift-item' : ''; ?>" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">
                             <div class="cart-item-image">
                                 <a href="<?php echo esc_url($product_url); ?>">
                                     <?php echo $product_image; ?>
@@ -249,19 +256,52 @@ function render_slide_in_cart()
                             </div>
                             <div class="cart-item-details">
                                 <a href="<?php echo esc_url($product_url); ?>" class="cart-item-name">
+                                    <?php if ($is_gift) : ?><span class="gift-badge">🎁 PREZENT</span> <?php endif; ?>
                                     <?php echo esc_html($product_name); ?>
                                 </a>
                                 <div class="cart-item-price">
-                                    <?php echo wc_price($product_price); ?>
+                                    <?php if ($is_gift) :
+                                        $original_product = wc_get_product($product_id);
+                                        $regular_price = $original_product ? $original_product->get_regular_price() : 0;
+                                        if (empty($regular_price) && $original_product) {
+                                            $regular_price = $original_product->get_price();
+                                        }
+                                        $gift_price = floatval($gift_rule['price'] ?? 0.10);
+                                        if ($regular_price && floatval($regular_price) > $gift_price) : ?>
+                                            <del class="gift-original-price"><?php echo wc_price($regular_price); ?></del>
+                                            <ins class="gift-price"><?php echo wc_price($gift_price); ?></ins>
+                                        <?php else : ?>
+                                            <?php echo wc_price($gift_price); ?>
+                                        <?php endif; ?>
+                                    <?php else : ?>
+                                        <?php echo wc_price($product_price); ?>
+                                    <?php endif; ?>
                                 </div>
-                                <div class="cart-item-quantity">
-                                    <button class="qty-btn qty-minus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">−</button>
-                                    <span class="qty-value"><?php echo esc_html($quantity); ?></span>
-                                    <button class="qty-btn qty-plus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">+</button>
-                                </div>
+                                <?php if (!$is_gift) : ?>
+                                    <div class="cart-item-quantity">
+                                        <button class="qty-btn qty-minus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">−</button>
+                                        <span class="qty-value"><?php echo esc_html($quantity); ?></span>
+                                        <button class="qty-btn qty-plus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">+</button>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <div class="cart-item-total">
-                                <?php echo wc_price($item_total); ?>
+                                <?php if ($is_gift) :
+                                    $original_product = isset($original_product) ? $original_product : wc_get_product($product_id);
+                                    $regular_price = $original_product ? $original_product->get_regular_price() : 0;
+                                    if (empty($regular_price) && $original_product) {
+                                        $regular_price = $original_product->get_price();
+                                    }
+                                    $gift_price = floatval($gift_rule['price'] ?? 0.10);
+                                    if ($regular_price && floatval($regular_price) > $gift_price) : ?>
+                                        <del class="gift-original-price"><?php echo wc_price($regular_price); ?></del>
+                                        <ins class="gift-price"><?php echo wc_price($gift_price); ?></ins>
+                                    <?php else : ?>
+                                        <?php echo wc_price($gift_price); ?>
+                                    <?php endif; ?>
+                                <?php else : ?>
+                                    <?php echo wc_price($item_total); ?>
+                                <?php endif; ?>
                             </div>
                             <button class="cart-item-remove" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="Usuń">×</button>
                         </div>
@@ -304,7 +344,7 @@ function render_slide_in_cart()
                 </div>
 
                 <?php if ($trust_badges && is_array($trust_badges)) : ?>
-                    <div class="slide-in-cart-trust-badges">
+                    <div class="slide-in-cart-trust-badges mt-auto">
                         <?php foreach ($trust_badges as $badge) :
                             if (isset($badge['badge_image'])) :
                                 $image = $badge['badge_image'];
@@ -549,6 +589,11 @@ function ajax_remove_slide_cart_item()
 add_filter('woocommerce_add_to_cart_fragments', 'slide_in_cart_fragments');
 function slide_in_cart_fragments($fragments)
 {
+    // Sprawdź czy ACF jest aktywne
+    if (!function_exists('get_field')) {
+        return $fragments;
+    }
+
     ob_start();
 
     // Pobierz ustawienia z ACF
@@ -569,7 +614,7 @@ function slide_in_cart_fragments($fragments)
     $free_shipping_reached = $cart_total >= $free_shipping_threshold;
 
 ?>
-    <div class="slide-in-cart-content">
+    <div class="slide-in-cart-content h-full flex flex-col">
         <?php if (WC()->cart->is_empty()) : ?>
             <div class="slide-in-cart-empty">
                 <p>Twój koszyk jest pusty</p>
@@ -585,8 +630,10 @@ function slide_in_cart_fragments($fragments)
                     $product_image = $product->get_image('thumbnail');
                     $product_url = get_permalink($product_id);
                     $item_total = $product_price * $quantity;
+                    $is_gift = !empty($cart_item['jetlagz_is_gift']);
+                    $gift_rule = $is_gift ? ($cart_item['jetlagz_gift_rule'] ?? []) : [];
                 ?>
-                    <div class="slide-in-cart-item" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">
+                    <div class="slide-in-cart-item<?php echo $is_gift ? ' is-gift-item' : ''; ?>" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">
                         <div class="cart-item-image">
                             <a href="<?php echo esc_url($product_url); ?>">
                                 <?php echo $product_image; ?>
@@ -594,19 +641,52 @@ function slide_in_cart_fragments($fragments)
                         </div>
                         <div class="cart-item-details">
                             <a href="<?php echo esc_url($product_url); ?>" class="cart-item-name">
+                                <?php if ($is_gift) : ?><span class="gift-badge">🎁 PREZENT</span> <?php endif; ?>
                                 <?php echo esc_html($product_name); ?>
                             </a>
                             <div class="cart-item-price">
-                                <?php echo wc_price($product_price); ?>
+                                <?php if ($is_gift) :
+                                    $original_product = wc_get_product($product_id);
+                                    $regular_price = $original_product ? $original_product->get_regular_price() : 0;
+                                    if (empty($regular_price) && $original_product) {
+                                        $regular_price = $original_product->get_price();
+                                    }
+                                    $gift_price = floatval($gift_rule['price'] ?? 0.10);
+                                    if ($regular_price && floatval($regular_price) > $gift_price) : ?>
+                                        <del class="gift-original-price"><?php echo wc_price($regular_price); ?></del>
+                                        <ins class="gift-price"><?php echo wc_price($gift_price); ?></ins>
+                                    <?php else : ?>
+                                        <?php echo wc_price($gift_price); ?>
+                                    <?php endif; ?>
+                                <?php else : ?>
+                                    <?php echo wc_price($product_price); ?>
+                                <?php endif; ?>
                             </div>
-                            <div class="cart-item-quantity">
-                                <button class="qty-btn qty-minus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">−</button>
-                                <span class="qty-value"><?php echo esc_html($quantity); ?></span>
-                                <button class="qty-btn qty-plus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">+</button>
-                            </div>
+                            <?php if (!$is_gift) : ?>
+                                <div class="cart-item-quantity">
+                                    <button class="qty-btn qty-minus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">−</button>
+                                    <span class="qty-value"><?php echo esc_html($quantity); ?></span>
+                                    <button class="qty-btn qty-plus" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">+</button>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div class="cart-item-total">
-                            <?php echo wc_price($item_total); ?>
+                            <?php if ($is_gift) :
+                                $original_product = isset($original_product) ? $original_product : wc_get_product($product_id);
+                                $regular_price = $original_product ? $original_product->get_regular_price() : 0;
+                                if (empty($regular_price) && $original_product) {
+                                    $regular_price = $original_product->get_price();
+                                }
+                                $gift_price = floatval($gift_rule['price'] ?? 0.10);
+                                if ($regular_price && floatval($regular_price) > $gift_price) : ?>
+                                    <del class="gift-original-price"><?php echo wc_price($regular_price); ?></del>
+                                    <ins class="gift-price"><?php echo wc_price($gift_price); ?></ins>
+                                <?php else : ?>
+                                    <?php echo wc_price($gift_price); ?>
+                                <?php endif; ?>
+                            <?php else : ?>
+                                <?php echo wc_price($item_total); ?>
+                            <?php endif; ?>
                         </div>
                         <button class="cart-item-remove" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="Usuń">×</button>
                     </div>
@@ -649,7 +729,7 @@ function slide_in_cart_fragments($fragments)
             </div>
 
             <?php if ($trust_badges && is_array($trust_badges)) : ?>
-                <div class="slide-in-cart-trust-badges">
+                <div class="slide-in-cart-trust-badges mt-auto">
                     <?php foreach ($trust_badges as $badge) :
                         if (isset($badge['badge_image'])) :
                             $image = $badge['badge_image'];

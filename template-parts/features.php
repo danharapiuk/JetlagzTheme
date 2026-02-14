@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Pobierz repeater z ACF Options (pole o nazwie 'features')
-$features = get_field('features', 'option');
+$features = safe_get_field('features', 'option');
 
 // Jeśli brak danych - nie wyświetlaj
 if (!$features || empty($features)) {
@@ -21,10 +21,10 @@ if (!$features || empty($features)) {
 ?>
 
 <section class="features-section py-16 md:py-20 mb-16 md:mb-20 bg-white">
-    <div class="container mx-auto px-4">
-        <div class="flex flex-wrap mx-4 gap-8 justify-center">
+    <div class="wrapper mx-auto px-4">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap mx-4 gap-8 justify-center">
             <?php foreach ($features as $feature): ?>
-                <div class="max-w-[185px]">
+                <div class="sm:max-w-[185px]">
                     <?php if (!empty($feature['icon'])):
                         // Obsługa różnych Return Format ACF
                         if (is_array($feature['icon'])) {

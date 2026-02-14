@@ -93,26 +93,30 @@ add_action('woocommerce_review_order_before_payment', function () {
 
         <!-- Global Gift Wrapping Section -->
         <?php
-        $gift_wrapping_group = get_field('gift_wrapping_field', 'option');
-        if ($gift_wrapping_group && isset($gift_wrapping_group['gift_wrapping_enabled']) && $gift_wrapping_group['gift_wrapping_enabled']) {
-            $gift_wrapping_label = $gift_wrapping_group['gift_wrapping_label'] ?: 'Zapakować na prezent?';
-            $gift_wrapping_price = $gift_wrapping_group['gift_wrapping_price'] ?: 12;
-            $is_checked = WC()->session->get('global_gift_wrapping_enabled', false);
+        if (function_exists('get_field')) {
+            $gift_wrapping_group = get_field('gift_wrapping_field', 'option');
+            if ($gift_wrapping_group && isset($gift_wrapping_group['gift_wrapping_enabled']) && $gift_wrapping_group['gift_wrapping_enabled']) {
+                $gift_wrapping_label = $gift_wrapping_group['gift_wrapping_label'] ?: 'Zapakować na prezent?';
+                $gift_wrapping_price = $gift_wrapping_group['gift_wrapping_price'] ?: 12;
+                $is_checked = WC()->session->get('global_gift_wrapping_enabled', false);
         ?>
-            <div class="universal-gift-wrapping-section">
-                <label class="gift-wrapping-global-label">
-                    <input
-                        type="checkbox"
-                        id="global-gift-wrapping-checkbox"
-                        class="gift-wrapping-global-checkbox"
-                        <?php checked($is_checked, true); ?> />
-                    <span class="gift-wrapping-global-text">
-                        🎁 <?php echo esc_html($gift_wrapping_label); ?>
-                        <span class="gift-wrapping-global-price">+<?php echo number_format($gift_wrapping_price, 0, ',', ' '); ?> zł</span>
-                    </span>
-                </label>
-            </div>
-        <?php } ?>
+                <div class="universal-gift-wrapping-section">
+                    <label class="gift-wrapping-global-label">
+                        <input
+                            type="checkbox"
+                            id="global-gift-wrapping-checkbox"
+                            class="gift-wrapping-global-checkbox"
+                            <?php checked($is_checked, true); ?> />
+                        <span class="gift-wrapping-global-text">
+                            🎁 <?php echo esc_html($gift_wrapping_label); ?>
+                            <span class="gift-wrapping-global-price">+<?php echo number_format($gift_wrapping_price, 0, ',', ' '); ?> zł</span>
+                        </span>
+                    </label>
+                </div>
+        <?php
+            }
+        } // End function_exists check
+        ?>
     </div>
 
     <!-- Custom Coupon Form - Pod listą produktów -->
@@ -120,7 +124,7 @@ add_action('woocommerce_review_order_before_payment', function () {
         <h4 class="coupon-title"><?php echo __('Kod rabatowy', 'universal-theme'); ?></h4>
         <div class="universal-coupon-form">
             <div class="coupon-input-wrapper">
-                <svg class="coupon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg class="coupon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="https://www.w3.org/2000/svg">
                     <path d="M9 5H7C6.46957 5 5.96086 5.21071 5.58579 5.58579C5.21071 5.96086 5 6.46957 5 7V9C6.10457 9 7 9.89543 7 11C7 12.1046 6.10457 13 5 13V15C5 15.5304 5.21071 16.0391 5.58579 16.4142C5.96086 16.7893 6.46957 17 7 17H9M9 5V19M9 5H17C17.5304 5 18.0391 5.21071 18.4142 5.58579C18.7893 5.96086 19 6.46957 19 7V9C17.8954 9 17 9.89543 17 11C17 12.1046 17.8954 13 19 13V15C19 15.5304 18.7893 16.0391 18.4142 16.4142C18.0391 16.7893 17.5304 17 17 17H9M9 19H17C17.5304 19 18.0391 18.7893 18.4142 18.4142C18.7893 18.0391 19 17.5304 19 17V15M9 19H7C6.46957 19 5.96086 18.7893 5.58579 18.4142C5.21071 18.0391 5 17.5304 5 17V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
                 <input type="text" id="coupon_code" placeholder="<?php echo __('Wpisz kod rabatowy', 'universal-theme'); ?>" value="">

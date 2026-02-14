@@ -6,7 +6,7 @@
  * Content is pulled from Options Page
  */
 
-$faq_items = get_field('faq', 'option');
+$faq_items = safe_get_field('faq', 'option');
 
 if (!$faq_items || !is_array($faq_items) || empty($faq_items)) {
     return;
@@ -14,18 +14,18 @@ if (!$faq_items || !is_array($faq_items) || empty($faq_items)) {
 ?>
 
 <div class="product-faq-section mt-12 md:mt-20 text-black">
-    <h2 class="text-2xl font-semibold mb-6 text-center">Produktowe FAQ</h2>
+    <h2 class="text-2xl font-semibold mb-6 text-center">FAQ</h2>
 
-    <div class="faq-accordion space-y-4 max-w-3xl mx-auto">
+    <div class="faq-accordion max-w-4xl mx-auto">
         <?php foreach ($faq_items as $index => $item): ?>
             <?php if (!empty($item['title'])): ?>
                 <div class="faq-item border-b border-gray-200 overflow-hidden">
                     <button
-                        class="faq-question w-full text-left px-6 py-4 flex justify-between items-center hover:bg-transparent"
+                        class="faq-question text-sm sm:text-base w-full text-left py-4 flex justify-between items-center hover:bg-transparent"
                         data-faq-index="<?php echo $index; ?>"
                         aria-expanded="false"
                         aria-controls="faq-answer-<?php echo $index; ?>">
-                        <span class="font-medium text-base pr-4"><?php echo esc_html($item['title']); ?></span>
+                        <span class="font-medium text-sm sm:text-base pr-4"><?php echo esc_html($item['title']); ?></span>
                         <svg class="faq-icon w-5 h-5 flex-shrink-0 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -35,7 +35,7 @@ if (!$faq_items || !is_array($faq_items) || empty($faq_items)) {
                         id="faq-answer-<?php echo $index; ?>"
                         class="faq-answer overflow-hidden transition-all duration-300 max-h-0"
                         aria-hidden="true">
-                        <div class="px-6 py-4 text-sm font-light">
+                        <div class="pb-4 text-xs sm:text-sm font-light">
                             <?php if (!empty($item['description'])): ?>
                                 <div class="prose prose-sm max-w-none">
                                     <?php echo wp_kses_post($item['description']); ?>

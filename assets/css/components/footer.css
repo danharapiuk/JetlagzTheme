@@ -1,6 +1,6 @@
 /* Scroll to Top Button Styles */
 #scrollToTopBtn {
-	background: #f9a2bc;
+	background: #90334E;
 	color: #fff;
 	border: none;
 	border-radius: 50%;
@@ -9,14 +9,14 @@
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	cursor: pointer;
 	position: fixed;
-	right: 2rem;
+	right: 0.5rem;
 	bottom: 2.5rem;
 	z-index: 9999;
 	transition: background 0.2s;
 	display: block !important; /* DEBUG: always show button */
 }
 #scrollToTopBtn:hover {
-	background: #e07a9e;
+	background: #A23756;
 }
 /* Footer styles for Jetlagz-theme */
 

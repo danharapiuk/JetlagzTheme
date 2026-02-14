@@ -235,6 +235,7 @@ body {
 .site-footer {
 	flex-shrink: 0;
 	margin-top: auto;
+	padding-bottom: 20px !important;
 }
 
 /* === RESPONSYWNOŚĆ === */
@@ -438,7 +439,7 @@ body {
 }
 
 .remove-product {
-	background: #e74c3c;
+	background: #6a263a;
 	color: white;
 	padding: 8px 12px;
 	border-radius: var(--theme-border-radius);
@@ -452,7 +453,7 @@ body {
 }
 
 .remove-product:hover {
-	background: #c0392b;
+	background: #6a263a;
 	transform: translateY(-1px);
 	color: white;
 	text-decoration: none;
@@ -516,6 +517,14 @@ body {
 		font-size: 0.8rem;
 	}
 
+	.product-title {
+		display: block;
+		font-size: 10px !important;
+		color: var(--theme-text-dark);
+		margin-bottom: var(--theme-spacing-xs);
+		line-height: 1.3;
+	}
+
 	.product-info {
 		flex-direction: column;
 		align-items: center;
@@ -545,6 +554,10 @@ body {
 		padding: 6px;
 		min-width: 32px;
 		justify-content: center;
+	}
+
+	.storefront-breadcrumb {
+		padding: 0 16px !important;
 	}
 }
 
@@ -594,16 +607,10 @@ form.universal-search-form {
 
 .storefront-breadcrumb {
 	max-width: 1380px !important;
-	margin: 0 auto !important;
-	padding: 2rem 16px !important;
-}
-
-.woocommerce-info {
-	background-color: #000000;
+	padding: 2rem 16px;
 }
 
 .woocommerce-message,
-.woocommerce-info,
 .woocommerce-error,
 .woocommerce-noreviews,
 p.no-comments {
@@ -614,30 +621,34 @@ p.no-comments {
 	border-top: none !important;
 }
 
-.storefront-breadcrumb {
-	width: 100%;
-	padding-bottom: 50px !important;
-}
-
 .wrapper {
 	max-width: 1380px;
 	margin-left: auto;
 	margin-right: auto;
 	padding: 2rem 16px;
 }
+
 @media (min-width: 1440px) {
 	.wrapper {
 		padding: 0;
 	}
-	.storefront-breadcrumb, .single-product #content {
+	.storefront-breadcrumb,
+	.single-product #content {
 		padding-left: 0 !important;
 		padding-right: 0 !important;
-	} 
+	}
+
+	.storefront-breadcrumb {
+		width: 100%;
+		padding-bottom: 50px;
+		margin: 0 auto !important;
+	}
 }
 
 h2.title {
 	font-size: 32px;
 	margin-bottom: 12px;
+	letter-spacing: -1px;;
 }
 
 .category-item.active {
@@ -658,4 +669,29 @@ input[type='url']:focus,
 input[type='password']:focus,
 input[type='search']:focus {
 	outline: none !important;
+}
+
+.yith-add-to-wishlist-button-block button:hover {
+	background-color: transparent !important;
+}
+
+#post-339 h1 {
+	font-size: 24px;
+	text-align: center;
+	padding-bottom: 50px;
+}
+
+.wishlist-title-container {
+	display: none;
+}
+
+.entry-header h1.entry-title {
+	font-size: 24px;
+	text-align: center;
+	padding-bottom: 50px;
+	font-family: 'Inter', 'sans-serif';
+}
+
+.product-price {
+	font-family: 'Arial', sans-serif;
 }

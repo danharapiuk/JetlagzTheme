@@ -107,6 +107,12 @@ function get_theme_config()
             'products_per_row' => 4,
             'product_gallery_zoom' => true,
             'product_gallery_lightbox' => true,
+
+            // Automatic Product Status Management
+            'auto_manage_product_status' => true,      // Automatycznie zarządzaj statusem produktów na podstawie dostępności
+            'out_of_stock_status' => 'draft',          // Status dla produktów bez dostępnych wariantów ('draft' lub 'private')
+            'check_stock_frequency' => 'on_save',      // Częstotliwość sprawdzania ('on_save', 'hourly', 'daily')
+            'log_status_changes' => true,              // Loguj zmiany statusu produktów
         ),
 
         // One-Click Checkout

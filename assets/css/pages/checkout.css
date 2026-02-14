@@ -219,6 +219,19 @@
 	text-decoration: none;
 }
 
+#customer_details, .checkout-crosssell-wrapper{
+	max-width: 1380px;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 2rem 16px;
+}
+
+@media (min-width: 1440px) {
+	.entry-content, .checkout-crosssell-wrapper {
+		padding: 0;
+	}
+}
+
 .checkout-crosssell-wrapper .crosssell-add-btn {
 	width: 100%;
 	display: flex;
@@ -290,18 +303,17 @@
 
 .checkout-crosssell-grid h3.product-title {
 	font-size: 14px;
-    font-weight: 300;
-    text-transform: uppercase;
-    margin-bottom: 0;
-    color: #333;
-    line-height: 1.4;
-    text-align: left;
-    flex: 1 1 50%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	font-weight: 300;
+	text-transform: uppercase;
+	margin-bottom: 0;
+	color: #333;
+	line-height: 1.4;
+	text-align: left;
+	flex: 1 1 50%;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
-
 
 #apaczka_pl_geowidget_classic {
 	margin-left: 0;
@@ -577,4 +589,63 @@ ul#shipping_method li label {
 
 .checkout-item-name {
 	max-width: 350px;
+}
+
+/* ========================================
+   FAKTURA VAT - POLE NIP
+   ======================================== */
+
+/* Pole NIP - stylizacja */
+#billing_nip_field {
+	margin-top: 15px !important;
+}
+
+#billing_nip_field input {
+	font-family: monospace !important;
+	letter-spacing: 1px !important;
+}
+
+/* ========================================
+   MOBILE RESPONSIVE - POLA ADRESOWE 1 KOLUMNA
+   ======================================== */
+
+@media (max-width: 640px) {
+	/* Pola adresowe w 1 kolumnie na mobile */
+	#billing_address_1_field,
+	#billing_address_2_field,
+	#billing_postcode_field,
+	#billing_city_field {
+		width: 100% !important;
+	}
+
+	.coupon-input-wrapper {
+		width: 100%;
+	}
+}
+
+p.billing_nip_field label {
+	font-size: 12px !important;
+	font-weight: 400 !important;
+}
+
+textarea#order_comments {
+	font-size: 12px;
+}
+
+#order_comments_field label {
+	color: black;
+	font-weight: 700;
+	padding-top: 25px;
+}
+
+#payment .payment_methods li img {
+	max-height: none;
+}
+
+.tpay-pbl-container .tpay-pbl .tpay-item>div>div {
+	padding: 10px !important;
+}
+
+.tpay_blik-payment-form #blik0-code {
+	background-color: white;
 }

@@ -17,6 +17,7 @@
             this.lazyLoading();
             this.productGallery();
             this.cartUpdates();
+            this.stockAvailabilityDropdown();
         },
 
         // Preloader
@@ -236,6 +237,201 @@
                     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
                 );
             }
+        },
+
+        // Stock Availability Dropdown
+        stockAvailabilityDropdown: function() {
+            // Toggle dropdown przy kliknięciu w trigger
+            $(document).on('click', '.stock-availability-trigger', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const $trigger = $(this);
+                const $wrapper = $trigger.closest('.stock-availability-wrapper');
+                const $dropdown = $wrapper.find('.stock-availability-dropdown');
+                
+                if ($dropdown.length === 0) {
+                    return;
+                }
+                
+                // Toggle dropdown
+                $dropdown.toggleClass('show');
+                $trigger.toggleClass('active');
+                
+                // Jeśli dropdown został otwarty, wypełnij ukryte pola
+                if ($dropdown.hasClass('show')) {
+                    // Znajdź informację o rozmiarze z różnych źródeł
+                    let sizeInfo = '';
+                    
+                    // Próba 1: WooCommerce variations form - select dla rozmiaru
+                    const $sizeSelect = $('select[name*="attribute_pa_rozmiar"], select[name*="attribute_pa_size"], select[name*="pa_rozmiar"], select[name*="pa_size"]');
+                    if ($sizeSelect.length && $sizeSelect.val()) {
+                        sizeInfo = $sizeSelect.find('option:selected').text().trim();
+                    }
+                    
+                    // Próba 2: Sprawdź inne selektory wariantów
+                    if (!sizeInfo) {
+                        const $selectedVariation = $('.variations select:visible option:selected').not('[value=""]');
+                        if ($selectedVariation.length) {
+                            sizeInfo = $selectedVariation.text().trim();
+                        }
+                    }
+                    
+                    // Próba 3: Sprawdź czy jest informacja o wariancie w summary
+                    if (!sizeInfo) {
+                        const $variationDescription = $('.woocommerce-variation-description, .single_variation_wrap .woocommerce-variation');
+                        if ($variationDescription.length) {
+                            const variationText = $variationDescription.text();
+                            const sizeMatch = variationText.match(/rozmiar[:\s]*([A-Z0-9\/\-\s]+)/i);
+                            if (sizeMatch) {
+                                sizeInfo = sizeMatch[1].trim();
+                            }
+                        }
+                    }
+                    
+                    // Fallback: jeśli nadal nie ma rozmiaru, sprawdź czy to produkt bez wariantów
+                    if (!sizeInfo) {
+                        // Sprawdź tytuł produktu czy zawiera rozmiar
+                        const productTitle = $('.product_title.entry-title').text();
+                        const titleSizeMatch = productTitle.match(/[A-Z]{1,3}$|rozmiar\s+([A-Z0-9\/\-\s]+)/i);
+                        if (titleSizeMatch) {
+                            sizeInfo = titleSizeMatch[1] || titleSizeMatch[0];
+                        } else {
+                            sizeInfo = 'Rozmiar nie został wybrany';
+                        }
+                    }
+                    
+                    // Dodaj ukryte pole do formularza CF7 z informacją o rozmiarze
+                    const $form = $dropdown.find('.wpcf7-form');
+                    if ($form.length) {
+                        // Usuń istniejące ukryte pole jeśli istnieje
+                        $form.find('input[name="requested-size"]').remove();
+                        $form.find('input[name="product-name"]').remove();
+                        
+                        // Dodaj nowe ukryte pola
+                        const productTitle = $('.product_title.entry-title').text() || 'Nieznany produkt';
+                        $form.append(`<input type="hidden" name="requested-size" value="${sizeInfo}">`);
+                        $form.append(`<input type="hidden" name="product-name" value="${productTitle}">`);
+                    }
+                }
+            });
+            
+            // Zamknij dropdown przy kliknięciu poza nim (ale nie podczas submitu formularza)
+            $(document).on('click', function(e) {
+                const $target = $(e.target);
+                
+                // Nie zamykaj jeśli kliknięto w formularzu lub jeśli formularz jest w trakcie wysyłania
+                if (!$target.closest('.stock-availability-wrapper').length && 
+                    !$target.closest('.wpcf7-form').length &&
+                    !$('.wpcf7-form').hasClass('submitting')) {
+                    $('.stock-availability-dropdown').removeClass('show');
+                    $('.stock-availability-trigger').removeClass('active');
+                }
+            });
+            
+            // Debug - sprawdź wszystkie eventy CF7
+            $(document).on('wpcf7submit wpcf7mailsent wpcf7mailfailed', '.wpcf7-form', function(event) {
+                console.log('CF7 Event:', event.type, event);
+            });
+            
+            // Obsługa sukcesu Contact Form 7 - próbuj różne eventy
+            $(document).on('wpcf7mailsent wpcf7submit', '.wpcf7-form', function(event) {
+                console.log('CF7 Success event triggered:', event.type);
+                
+                // Sprawdź czy formularz został pomyślnie wysłany
+                const isSuccess = event.type === 'wpcf7mailsent' || 
+                                (event.type === 'wpcf7submit' && 
+                                 $(this).closest('.wpcf7').hasClass('sent'));
+                
+                if (!isSuccess) {
+                    console.log('Not a success event, skipping');
+                    return;
+                }
+                
+                console.log('Showing success message');
+                
+                const $dropdown = $(this).closest('.stock-availability-dropdown');
+                const $trigger = $('.stock-availability-trigger.active');
+                
+                // Zatrzymaj inne eventy które mogłyby zamknąć dropdown
+                event.stopPropagation();
+                event.preventDefault();
+                
+                // Pokaż komunikat sukcesu
+                $(this).parent().html(`
+                    <div style="text-align: center; color: #28a745; padding: 30px;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">✓</div>
+                        <h4 style="margin: 0 0 10px 0; color: #28a745; font-size: 18px;">Mail został wysłany!</h4>
+                        <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.4;">
+                            Sprawdzimy dostępność tego rozmiaru u producenta<br>
+                            i powiadomimy Cię mailem gdy będzie dostępny w naszym sklepie.
+                        </p>
+                        <div style="margin-top: 15px; font-size: 12px; color: #999;">
+                            To okno zamknie się za 5 sekund...
+                        </div>
+                    </div>
+                `);
+                
+                // Zamknij dropdown po 5 sekundach
+                setTimeout(() => {
+                    console.log('Closing dropdown after success');
+                    $dropdown.removeClass('show');
+                    $trigger.removeClass('active');
+                }, 5000);
+            });
+            
+            // Fallback - sprawdzaj status formularza co sekundę
+            setInterval(function() {
+                $('.wpcf7-mail-sent-ok:visible').each(function() {
+                    const $message = $(this);
+                    const $dropdown = $message.closest('.stock-availability-dropdown');
+                    const $trigger = $('.stock-availability-trigger.active');
+                    
+                    if ($dropdown.length && !$dropdown.data('success-shown')) {
+                        console.log('Fallback: Found success message, showing custom message');
+                        $dropdown.data('success-shown', true);
+                        
+                        $message.closest('.cf7-form-wrapper').html(`
+                            <div style="text-align: center; color: #28a745; padding: 30px;">
+                                <div style="font-size: 48px; margin-bottom: 15px;">✓</div>
+                                <h4 style="margin: 0 0 10px 0; color: #28a745; font-size: 18px;">Mail został wysłany!</h4>
+                                <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.4;">
+                                    Sprawdzimy dostępność tego rozmiaru u producenta<br>
+                                    i powiadomimy Cię mailem gdy będzie dostępny w naszym sklepie.
+                                </p>
+                                <div style="margin-top: 15px; font-size: 12px; color: #999;">
+                                    To okno zamknie się za 5 sekund...
+                                </div>
+                            </div>
+                        `);
+                        
+                        setTimeout(() => {
+                            $dropdown.removeClass('show');
+                            $trigger.removeClass('active');
+                        }, 5000);
+                    }
+                });
+            }, 1000);
+            
+            // Obsługa błędu Contact Form 7
+            $(document).on('wpcf7mailfailed', '.wpcf7-form', function(event) {
+                const $dropdown = $(this).closest('.stock-availability-dropdown');
+                
+                // Pokaż komunikat błędu
+                $(this).parent().html(`
+                    <div style="text-align: center; color: #dc3545; padding: 30px;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">✗</div>
+                        <h4 style="margin: 0 0 10px 0; color: #dc3545; font-size: 18px;">Wystąpił błąd</h4>
+                        <p style="margin: 0 0 15px 0; color: #666; font-size: 14px; line-height: 1.4;">
+                            Nie udało się wysłać wiadomości.<br>
+                            Spróbuj ponownie lub skontaktuj się z nami bezpośrednio.
+                        </p>
+                        <button onclick="location.reload()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                            Spróbuj ponownie
+                        </button>
+                    </div>
+                `);
+            });
         }
     };
 

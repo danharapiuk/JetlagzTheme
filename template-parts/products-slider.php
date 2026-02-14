@@ -57,8 +57,7 @@ if (!$products_query || !$products_query->have_posts()) {
                                     </span>
                                 <?php endif; ?>
                             </div>
-
-                            <div class="product-info-row">
+                            <div>
                                 <h3 class="product-title">
                                     <?php
                                     // Wyświetl tylko część nazwy do myślnika
@@ -82,8 +81,34 @@ if (!$products_query || !$products_query->have_posts()) {
                                     ?>
                                 </h3>
 
-                                <div class="product-price">
-                                    <?php echo $product->get_price_html(); ?>
+                                <div class="product-info-row">
+                                    <div class="stars">
+                                        <?php
+                                        $rating_count = $product->get_rating_count();
+                                        $average_rating = $product->get_average_rating();
+
+                                        if ($rating_count > 0) :
+                                            // Format rating: 5/5 (bez przecinka) lub 4.7/5 (z przecinkiem)
+                                            $rating_display = ($average_rating == 5) ? '5/5' : number_format($average_rating, 1, '.', '') . '/5';
+                                        ?>
+                                            <span class="rating-number"><?php echo $rating_display; ?></span>
+                                            <span class="rating-count">(<?php echo $rating_count; ?>)</span>
+                                            <span class="rating-stars">
+                                                <?php
+                                                for ($i = 1; $i <= 5; $i++) {
+                                                    if ($i <= round($average_rating)) {
+                                                        echo '<span class="star filled">★</span>';
+                                                    } else {
+                                                        echo '<span class="star empty">★</span>';
+                                                    }
+                                                }
+                                                ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="product-price">
+                                        <?php echo $product->get_price_html(); ?>
+                                    </div>
                                 </div>
                             </div>
                         </a>
@@ -92,17 +117,19 @@ if (!$products_query || !$products_query->have_posts()) {
             <?php endwhile; ?>
         </div>
 
-        <!-- Navigation arrows -->
-        <div class="swiper-button-prev"></div>
-        <div class="swiper-button-next"></div>
+        <!-- Navigation arrows (not for recently-viewed which has custom navigation) -->
+        <?php if ($slider_class !== 'recently-viewed-swiper'): ?>
+            <div class="swiper-button-prev"></div>
+            <div class="swiper-button-next"></div>
+        <?php endif; ?>
     </div>
 </div>
 
 <?php wp_reset_postdata(); ?>
 
 <?php if (!wp_script_is('swiper-js', 'enqueued')): ?>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" id="swiper-js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" id="swiper-css">
+    <script src="<?php echo get_stylesheet_directory_uri(); ?>/assets/js/swiper-bundle.min.js" id="swiper-js"></script>
+    <link rel="stylesheet" href="<?php echo get_stylesheet_directory_uri(); ?>/assets/css/swiper-bundle.min.css" id="swiper-css">
 <?php endif; ?>
 
 <script>
@@ -112,14 +139,9 @@ if (!$products_query || !$products_query->have_posts()) {
         const swiperElement = document.querySelector('.' + swiperClass);
 
         if (swiperElement && !swiperElement.swiper) {
-            const swiper = new Swiper('.' + swiperClass, {
-                slidesPerView: 1,
-                spaceBetween: 20,
-                navigation: {
-                    nextEl: '.' + swiperClass + ' .swiper-button-next',
-                    prevEl: '.' + swiperClass + ' .swiper-button-prev',
-                    disabledClass: 'swiper-button-disabled',
-                },
+            const swiperConfig = {
+                slidesPerView: 2.15,
+                spaceBetween: 6,
                 breakpoints: {
                     640: {
                         slidesPerView: 2,
@@ -134,27 +156,41 @@ if (!$products_query || !$products_query->have_posts()) {
                         spaceBetween: 40,
                     },
                 },
-                on: {
-                    init: function() {
-                        const prevBtn = this.el.querySelector('.swiper-button-prev');
-                        if (this.isBeginning && prevBtn) {
-                            prevBtn.style.display = 'none';
-                        }
-                    },
-                    slideChange: function() {
-                        const prevBtn = this.el.querySelector('.swiper-button-prev');
-                        const nextBtn = this.el.querySelector('.swiper-button-next');
+            };
 
-                        if (prevBtn) {
-                            prevBtn.style.display = this.isBeginning ? 'none' : 'flex';
-                        }
+            // Add navigation only for non-recently-viewed sliders
+            if (swiperClass !== 'recently-viewed-swiper') {
+                swiperConfig.navigation = {
+                    nextEl: '.' + swiperClass + ' .swiper-button-next',
+                    prevEl: '.' + swiperClass + ' .swiper-button-prev',
+                    disabledClass: 'swiper-button-disabled',
+                };
+            }
 
-                        if (nextBtn) {
-                            nextBtn.style.display = this.isEnd ? 'none' : 'flex';
-                        }
-                    },
-                },
-            });
+            const swiper = new Swiper('.' + swiperClass, swiperConfig);
+
+            // Handle button visibility only for sliders with navigation
+            if (swiperClass !== 'recently-viewed-swiper') {
+                swiper.on('init', function() {
+                    const prevBtn = this.el.querySelector('.swiper-button-prev');
+                    if (this.isBeginning && prevBtn) {
+                        prevBtn.style.display = 'none';
+                    }
+                });
+
+                swiper.on('slideChange', function() {
+                    const prevBtn = this.el.querySelector('.swiper-button-prev');
+                    const nextBtn = this.el.querySelector('.swiper-button-next');
+
+                    if (prevBtn) {
+                        prevBtn.style.display = this.isBeginning ? 'none' : 'flex';
+                    }
+
+                    if (nextBtn) {
+                        nextBtn.style.display = this.isEnd ? 'none' : 'flex';
+                    }
+                });
+            }
         }
     });
 </script>

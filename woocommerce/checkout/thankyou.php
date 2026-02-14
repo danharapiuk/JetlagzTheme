@@ -67,7 +67,7 @@ defined('ABSPATH') || exit;
             <!-- PŁATNOŚĆ NIEUDANA / OCZEKUJĄCA -->
             <div class="thankyou-payment-failed font-inter">
                 <div class="payment-failed-hero">
-                    <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="60" height="60" viewBox="0 0 100 100" fill="none" xmlns="https://www.w3.org/2000/svg">
                         <circle cx="50" cy="50" r="48" stroke="#f59e0b" stroke-width="4" fill="none" />
                         <path d="M50 30v25M50 65v5" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" />
                     </svg>

@@ -186,6 +186,9 @@ jQuery(document).ready(function($) {
                     // ⭐ WAŻNE: Odświeżenie TOTALS na ekranie
                     refreshCheckoutTotals();
                     
+                    // ⭐ Wymuś przeliczenie shipping (np. darmowa wysyłka od 299 zł)
+                    $('body').trigger('update_checkout');
+                    
                     // Pokaż sukces
                     showNotification(response.data.message || 'Ilość zaktualizowana', 'success');
                     
@@ -392,6 +395,9 @@ jQuery(document).ready(function($) {
                         
                         // ⭐ Odświeżenie TOTALS
                         refreshCheckoutTotals();
+                        
+                        // ⭐ Wymuś przeliczenie shipping (np. darmowa wysyłka od 299 zł)
+                        $('body').trigger('update_checkout');
                         
                         // Ukryj modal
                         hideRemoveConfirmModal();

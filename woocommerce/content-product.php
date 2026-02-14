@@ -56,28 +56,32 @@ if (!empty($gallery_image_ids)) {
 
             <div class="product-info-row">
                 <h3 class="product-title">
-                    <?php
-                    // Wyświetl tylko część nazwy do myślnika
-                    $full_title = html_entity_decode(get_the_title(), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-                    if (strpos($full_title, '–') !== false) {
-                        $title_parts = explode('–', $full_title, 2);
-                        echo esc_html(trim($title_parts[0]));
-                    } elseif (strpos($full_title, '—') !== false) {
-                        $title_parts = explode('—', $full_title, 2);
-                        echo esc_html(trim($title_parts[0]));
-                    } elseif (strpos($full_title, ' - ') !== false) {
-                        $title_parts = explode(' - ', $full_title, 2);
-                        echo esc_html(trim($title_parts[0]));
-                    } elseif (strpos($full_title, '-') !== false) {
-                        $title_parts = explode('-', $full_title, 2);
-                        echo esc_html(trim($title_parts[0]));
-                    } else {
-                        echo esc_html($full_title);
-                    }
-                    ?>
+                    <?php echo esc_html(get_the_title()); ?>
                 </h3>
+                <div class="stars">
+                    <?php
+                    $rating_count = $product->get_rating_count();
+                    $average_rating = $product->get_average_rating();
 
+                    if ($rating_count > 0) :
+                        // Format rating: 5/5 (bez przecinka) lub 4.7/5 (z przecinkiem)
+                        $rating_display = ($average_rating == 5) ? '5/5' : number_format($average_rating, 1, '.', '') . '/5';
+                    ?>
+                        <span class="rating-number"><?php echo $rating_display; ?></span>
+                        <span class="rating-count">(<?php echo $rating_count; ?>)</span>
+                        <span class="rating-stars">
+                            <?php
+                            for ($i = 1; $i <= 5; $i++) {
+                                if ($i <= round($average_rating)) {
+                                    echo '<span class="star filled">★</span>';
+                                } else {
+                                    echo '<span class="star empty">★</span>';
+                                }
+                            }
+                            ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
                 <div class="product-price">
                     <?php echo $product->get_price_html(); ?>
                 </div>

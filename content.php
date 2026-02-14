@@ -10,8 +10,8 @@ get_header();
 
 
 
-$content = get_field('content');
-$image = get_field('image');
+$content = safe_get_field('content');
+$image = safe_get_field('image');
 $image_url = '';
 $image_alt = '';
 

@@ -10,7 +10,7 @@ wp_enqueue_style('about-page-styles', get_stylesheet_directory_uri() . '/assets/
 get_header();
 
 // Pobierz pola ACF z grupy 'about'
-$about = get_field('about');
+$about = safe_get_field('about');
 $about_info = $about['info'] ?? null;
 $about_image = $about['image'] ?? null;
 $about_bottom_image = $about['bottom_image'] ?? null;

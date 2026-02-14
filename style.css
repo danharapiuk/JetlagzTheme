@@ -7,7 +7,7 @@
  Template:     storefront
  Version:      1.0.0
  License:      GNU General Public License v2 or later
- License URI:  http://www.gnu.org/licenses/gpl-2.0.html
+ License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  Text Domain:  universal-theme
  Tags:         woocommerce, ecommerce, storefront, responsive, customizable
 
@@ -1405,7 +1405,6 @@ input[type='submit']:hover {
 	width: 100% !important;
 	margin-left: auto !important;
 	margin-right: auto !important;
-
 }
 
 .site-main {
@@ -1429,12 +1428,9 @@ input[type='submit']:hover {
 /* Free Shipping Progress */
 .free-shipping-progress,
 .free-shipping-achieved {
-	background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-	color: white;
+	color: black;
 	padding: 1.5rem;
 	border-radius: var(--border-radius);
-	margin-bottom: 1.5rem;
-	box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
 }
 
 .shipping-progress-header {
@@ -1570,8 +1566,6 @@ input[type='submit']:hover {
 }
 
 .crosssell-product-item {
-	border: 2px solid transparent;
-	padding: 1rem;
 	text-align: center;
 	transition: all 0.3s ease;
 	position: relative;
@@ -1639,7 +1633,6 @@ input[type='submit']:hover {
 .crosssell-product-actions {
 	margin-top: 1rem;
 }
-
 
 .crosssell-add-btn:hover:not(.disabled) {
 	transform: translateY(-1px) !important;
@@ -1895,7 +1888,7 @@ input[type='submit']:hover {
 	border-radius: 8px;
 }
 
-.universal-checkout-review-title h3{
+.universal-checkout-review-title h3 {
 	font-size: 20px;
 	font-weight: 700;
 	margin: 0 0 16px 0;
@@ -1928,11 +1921,6 @@ input[type='submit']:hover {
 	position: relative;
 }
 
-.universal-checkout-item:last-child {
-	border-bottom: none;
-}
-
-/* Lewa część: Miniaturka + Nazwa + Cena */
 .checkout-item-left {
 	display: flex;
 	gap: 12px;
@@ -1940,291 +1928,303 @@ input[type='submit']:hover {
 	position: relative;
 }
 
-.checkout-item-thumbnail {
-	width: 70px;
-	height: 70px;
-	border-radius: 4px;
-	overflow: visible;
-	background: #f5f5f5;
-	flex-shrink: 0;
-	position: relative;
-}
-
-.checkout-item-thumbnail img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-
-.checkout-item-details {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.checkout-item-name {
-	font-size: 14px;
-	font-weight: 600;
-	color: #000;
-	line-height: 1.4;
-}
-
-.checkout-item-unit-price {
-	font-size: 16px;
-	font-weight: 700;
-	color: #000;
-}
-
-/* Środek: Ilość */
-.checkout-item-quantity-wrapper {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-	margin-left: auto;
-}
-
-.qty-label {
-	font-size: 13px;
-	color: #666;
-	font-weight: 600;
-}
-
-.checkout-item-quantity-controls {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-}
-
-.checkout-item-quantity-controls .qty-btn {
-	width: 28px;
-	height: 28px;
-	border: 1px solid #ddd;
-	background: white;
-	color: #333;
-	border-radius: 3px;
-	font-size: 16px;
-	font-weight: bold;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.2s ease;
-	padding: 0;
-	line-height: 1;
-}
-
-.checkout-item-quantity-controls .qty-btn:hover {
-	background: #f5f5f5;
-	border-color: #999;
-}
-
-.checkout-item-quantity-controls .qty-display {
-	min-width: 40px;
-	text-align: center;
-	font-weight: 600;
-	font-size: 14px;
-	padding: 4px 8px;
-	border: 1px solid #ddd;
-	border-radius: 3px;
-	background: white;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	user-select: none;
-}
-
-.checkout-item-quantity-controls .qty-display:hover {
-	border-color: black;
-	background: #f0f7ff;
-}
-
-.checkout-item-quantity-controls .qty-input {
-	min-width: 40px;
-	text-align: center;
-	font-weight: 600;
-	font-size: 14px;
-	padding: 4px 6px;
-	border: 2px solid black;
-	border-radius: 3px;
-	background: white;
-	outline: none;
-}
-
-/* Prawa część: Cena całkowita + Remove */
-.checkout-item-right {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-end;
-	gap: 8px;
-}
-
-.checkout-item-remove-btn {
-	position: absolute;
-	top: -8px;
-	right: -8px;
-	background: #dc3545;
-	color: white;
-	border: none;
-	width: 24px;
-	height: 24px;
-	border-radius: 50%;
-	font-size: 16px;
-	font-weight: bold;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.2s ease;
-	padding: 0;
-	line-height: 1;
-	opacity: 0;
-	visibility: hidden;
-	box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-	z-index: 10;
-}
-
-.universal-checkout-item:hover .checkout-item-remove-btn {
-	opacity: 1;
-	visibility: visible;
-}
-
-.checkout-item-remove-btn:hover {
-	background: #c82333;
-	transform: scale(1.15);
-}
-
-.checkout-item-total-price {
-	font-size: 18px;
-	font-weight: 700;
-	color: #000;
-}
-
-/* Ceny */
-.checkout-item-prices {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	text-align: right;
-}
-
-.checkout-item-price-unit,
-.checkout-item-price-total {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.checkout-item-price-unit .label,
-.checkout-item-price-total .label {
-	font-size: 12px;
-	color: #666;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.checkout-item-price-unit .price,
-.checkout-item-price-total .price {
-	font-size: 16px;
-	font-weight: 700;
-	color: #333;
-}
-
-.checkout-item-price-total .price {
-	color: black;
-	font-size: 18px;
-}
-
-/* Responsive: Tablet */
-@media (max-width: 1024px) {
+@media (max-width: 639px) {
 	.universal-checkout-item {
-		grid-template-columns: 70px 1fr 120px;
-		gap: 12px;
-		padding: 12px;
+		display: block;
+	}
+
+	.universal-checkout-item:last-child {
+		border-bottom: none;
+	}
+
+	/* Lewa część: Miniaturka + Nazwa + Cena */
+	.checkout-item-left {
+		align-items: flex-start;
 	}
 
 	.checkout-item-thumbnail {
 		width: 70px;
 		height: 70px;
+		border-radius: 4px;
+		overflow: visible;
+		background: #f5f5f5;
+		flex-shrink: 0;
+		position: relative;
+	}
+
+	.checkout-item-thumbnail img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.checkout-item-details {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 	}
 
 	.checkout-item-name {
 		font-size: 14px;
-	}
-
-	.checkout-item-prices {
-		font-size: 14px;
-	}
-}
-
-/* Responsive: Mobile */
-@media (max-width: 767px) {
-	.universal-checkout-review-title {
-		font-size: 18px;
-	}
-
-	.universal-checkout-review-title .subtitle {
-		font-size: 12px;
-	}
-
-	.universal-checkout-item {
-		grid-template-columns: 1fr;
-		gap: 12px;
-		padding: 12px;
-	}
-
-	.checkout-item-left {
-		gap: 10px;
-	}
-
-	.checkout-item-thumbnail {
-		width: 60px;
-		height: 60px;
-	}
-
-	.checkout-item-name {
-		font-size: 13px;
+		font-weight: 600;
+		color: #000;
+		line-height: 1.4;
 	}
 
 	.checkout-item-unit-price {
-		font-size: 14px;
+		font-size: 16px;
+		font-weight: 700;
+		color: #000;
 	}
 
+	/* Środek: Ilość */
 	.checkout-item-quantity-wrapper {
+		display: flex;
 		flex-direction: row;
-		justify-content: flex-start;
-		gap: 10px;
+		align-items: center;
+		gap: 8px;
+		margin-left: auto;
+	}
+
+	.qty-label {
+		font-size: 13px;
+		color: #666;
+		font-weight: 600;
+	}
+
+	.checkout-item-quantity-controls {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.checkout-item-quantity-controls .qty-btn {
+		width: 28px;
+		height: 28px;
+		border: 1px solid #ddd;
+		background: white;
+		color: #333;
+		border-radius: 3px;
+		font-size: 16px;
+		font-weight: bold;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+		padding: 0;
+		line-height: 1;
+	}
+
+	.checkout-item-quantity-controls .qty-btn:hover {
+		background: #f5f5f5;
+		border-color: #999;
+	}
+
+	.checkout-item-quantity-controls .qty-display {
+		min-width: 40px;
+		text-align: center;
+		font-weight: 600;
+		font-size: 14px;
+		padding: 4px 8px;
+		border: 1px solid #ddd;
+		border-radius: 3px;
+		background: white;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		user-select: none;
+	}
+
+	.checkout-item-quantity-controls .qty-display:hover {
+		border-color: black;
+		background: #f0f7ff;
+	}
+
+	.checkout-item-quantity-controls .qty-input {
+		min-width: 40px;
+		text-align: center;
+		font-weight: 600;
+		font-size: 14px;
+		padding: 4px 6px;
+		border: 2px solid black;
+		border-radius: 3px;
+		background: white;
+		outline: none;
+	}
+
+	/* Prawa część: Cena całkowita + Remove */
+	.checkout-item-right {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 8px;
 	}
 
 	.checkout-item-remove-btn {
-		width: 20px;
-		height: 20px;
-		font-size: 14px;
+		position: absolute;
+		top: -8px;
+		right: -8px;
+		background: #dc3545;
+		color: white;
+		border: none;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		font-size: 16px;
+		font-weight: bold;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+		padding: 0;
+		line-height: 1;
+		opacity: 0;
+		visibility: hidden;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+		z-index: 10;
+	}
+
+	.universal-checkout-item:hover .checkout-item-remove-btn {
+		opacity: 1;
+		visibility: visible;
+	}
+
+	.checkout-item-remove-btn:hover {
+		background: #c82333;
+		transform: scale(1.15);
 	}
 
 	.checkout-item-total-price {
-		font-size: 16px;
+		font-size: 18px;
+		font-weight: 700;
+		color: #000;
 	}
 
-	.universal-coupon-wrapper {
-		padding: 12px;
-		margin: 16px 0;
-	}
-
-	.coupon-title {
-		font-size: 14px;
-		margin-bottom: 10px;
-	}
-
-	.universal-coupon-form {
+	/* Ceny */
+	.checkout-item-prices {
+		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 8px;
+		text-align: right;
 	}
 
-	.universal-coupon-apply-btn {
-		width: 100%;
+	.checkout-item-price-unit,
+	.checkout-item-price-total {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
 	}
-}
-.universal-coupon-apply-btn {
+
+	.checkout-item-price-unit .label,
+	.checkout-item-price-total .label {
+		font-size: 12px;
+		color: #666;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.checkout-item-price-unit .price,
+	.checkout-item-price-total .price {
+		font-size: 16px;
+		font-weight: 700;
+		color: #333;
+	}
+
+	.checkout-item-price-total .price {
+		color: black;
+		font-size: 18px;
+	}
+
+	/* Responsive: Tablet */
+	@media (max-width: 1024px) {
+		.universal-checkout-item {
+			grid-template-columns: 70px 1fr 120px;
+			gap: 12px;
+			padding: 12px;
+		}
+
+		.checkout-item-thumbnail {
+			width: 70px;
+			height: 70px;
+		}
+
+		.checkout-item-name {
+			font-size: 14px;
+		}
+
+		.checkout-item-prices {
+			font-size: 14px;
+		}
+	}
+
+	/* Responsive: Mobile */
+	@media (max-width: 767px) {
+		.universal-checkout-review-title {
+			font-size: 18px;
+		}
+
+		.checkout-item-quantity-wrapper {
+			padding-top: 20px;
+		}
+
+		.universal-checkout-review-title .subtitle {
+			font-size: 12px;
+		}
+
+		.universal-checkout-item {
+			grid-template-columns: 1fr;
+			gap: 12px;
+			padding: 12px;
+		}
+
+		.checkout-item-left {
+			gap: 10px;
+		}
+
+		.checkout-item-thumbnail {
+			width: 60px;
+			height: 60px;
+		}
+
+		.checkout-item-name {
+			font-size: 13px;
+		}
+
+		.checkout-item-unit-price {
+			font-size: 14px;
+		}
+
+		.checkout-item-remove-btn {
+			width: 20px;
+			height: 20px;
+			font-size: 14px;
+		}
+
+		.checkout-item-total-price {
+			font-size: 16px;
+		}
+
+		.universal-coupon-wrapper {
+			padding: 12px;
+			margin: 16px 0;
+		}
+
+		.coupon-title {
+			font-size: 14px;
+			margin-bottom: 10px;
+		}
+
+		.universal-coupon-form {
+			flex-direction: column;
+			gap: 10px;
+		}
+
+		.universal-coupon-apply-btn {
+			width: 100%;
+		}
+	}
+	.universal-coupon-apply-btn {
 		justify-content: space-between;
 	}
 
@@ -2249,6 +2249,13 @@ input[type='submit']:hover {
 	.checkout-item-price-total .price {
 		font-size: 15px;
 	}
+}
+
+.checkout-item-quantity-controls {
+	flex-direction: row;
+	justify-content: flex-start;
+	gap: 10px;
+	display: flex;
 }
 
 /* === REMOVE BUTTON STYLES === */

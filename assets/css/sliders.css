@@ -15,7 +15,16 @@
 .bestsellers-slider-wrapper,
 .products-slider-wrapper {
 	position: relative;
-	overflow: visible;
+	/* overflow: hidden; */
+}
+
+@media (max-width: 1439px) {
+	.swiper.bestsellers-swiper,
+	.swiper.new-products-swiper,
+	.swiper.related-products-swiper {
+		padding-left: 16px;
+		padding-right: 16px;
+	}
 }
 
 /* Product Cards */
@@ -48,6 +57,7 @@
 
 .product-price {
 	color: var(--theme-accent);
+	display: flex;
 }
 
 .add-to-cart-btn {
@@ -70,12 +80,40 @@
 .new-products-swiper .swiper-button-next,
 .related-products-swiper .swiper-button-prev,
 .related-products-swiper .swiper-button-next {
-	color: #000;
-	width: 40px;
-	height: 40px;
-	background: white;
+	width: 44px;
+	height: 44px;
 	border-radius: 50%;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	border: 1px solid #d1d5db;
+	background: white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+	cursor: pointer;
+	color: #6b7280;
+	margin-top: 0;
+	top: -60px !important;
+}
+
+.bestsellers-swiper .swiper-button-prev:hover,
+.bestsellers-swiper .swiper-button-next:hover,
+.new-products-swiper .swiper-button-prev:hover,
+.new-products-swiper .swiper-button-next:hover,
+.related-products-swiper .swiper-button-prev:hover,
+.related-products-swiper .swiper-button-next:hover {
+	background: #f3f4f6;
+	border-color: #9ca3af;
+	color: #374151;
+}
+
+.bestsellers-swiper .swiper-button-prev:disabled,
+.bestsellers-swiper .swiper-button-next:disabled,
+.new-products-swiper .swiper-button-prev:disabled,
+.new-products-swiper .swiper-button-next:disabled,
+.related-products-swiper .swiper-button-prev:disabled,
+.related-products-swiper .swiper-button-next:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .bestsellers-swiper .swiper-button-prev:after,
@@ -84,18 +122,8 @@
 .new-products-swiper .swiper-button-next:after,
 .related-products-swiper .swiper-button-prev:after,
 .related-products-swiper .swiper-button-next:after {
-	font-size: 20px;
-}
-
-.bestsellers-swiper .swiper-button-prev,
-.bestsellers-swiper .swiper-button-next,
-.new-products-swiper .swiper-button-prev,
-.new-products-swiper .swiper-button-next,
-.related-products-swiper .swiper-button-prev,
-.related-products-swiper .swiper-button-next {
-	display: flex;
-	align-items: center;
-	justify-content: center;
+	font-size: 16px;
+	font-weight: bold;
 }
 
 .swiper-slide {
@@ -108,7 +136,22 @@
 	overflow: visible !important;
 }
 
+.swiper-slide {
+	margin-right: 8px !important;
+}
+
+@media (min-width: 640px) {
+	.swiper-slide {
+		margin-right: 16px !important;
+	}
+}
+
+.swiper-button-prev {
+	right: 60px !important;
+	left: auto !important;
+}
+
 .swiper-button-next {
-	right: 70px !important;
-	top: 40% !important;
+	right: 0;
+	left: auto !important;
 }

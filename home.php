@@ -11,29 +11,29 @@ wp_enqueue_style('home-page-styles', get_stylesheet_directory_uri() . '/assets/c
 get_header(); ?>
 
 <?php
-$hero = get_field('hero');
+$hero = safe_get_field('hero');
 if (!$hero) {
     $hero = array('title' => '', 'images' => array());
 }
 ?>
 
 
-<section class="h-screen overflow-x-hidden relative flex items-center justify-center" id="hero-section">
+<section class="h-screen overflow-x-hidden relative flex items-center justify-center font-inter" id="hero-section">
     <div id="hero-title-wrapper" class="absolute z-0 left-0 flex transition-opacity duration-700 ease-in-out">
-        <h1 class="hero-title-text uppercase font-black text-[400px] text-black whitespace-nowrap">
+        <h1 class="hero-title-text uppercase font-black text-[400px] text-[#6A263A] whitespace-nowrap">
             <?php echo !empty($hero['title']) ? esc_html($hero['title']) : ''; ?>
         </h1>
-        <h1 class="hero-title-text uppercase font-black text-[400px] text-black whitespace-nowrap">
+        <h1 class="hero-title-text uppercase font-bold text-[200px] sm:text-[400px] text-[#6A263A] whitespace-nowrap">
             <?php echo !empty($hero['title']) ? esc_html($hero['title']) : ''; ?>
         </h1>
-        <h1 class="hero-title-text uppercase font-black text-[400px] text-black whitespace-nowrap">
+        <h1 class="hero-title-text uppercase font-bold text-[400px] text-[#6A263A] whitespace-nowrap">
             <?php echo !empty($hero['title']) ? esc_html($hero['title']) : ''; ?>
         </h1>
     </div>
 
     <?php if (isset($hero['images']) && is_array($hero['images']) && count($hero['images']) > 0) : ?>
         <div class="hero-image-container absolute inset-0 flex items-center justify-center z-10">
-            <div class="relative w-[400px] h-[600px]">
+            <div class="relative w-[50%] h-[50%] sm:w-[400px] sm:h-[600px]">
                 <?php
                 $img_counter = 0;
                 foreach ($hero['images'] as $image) :
@@ -110,13 +110,29 @@ if (!$hero) {
     });
 </script>
 
+<script>
+    // Zmiana tytułu strony gdy użytkownik przełączy kartę
+    document.addEventListener('DOMContentLoaded', function() {
+        const originalTitle = document.title;
+        const newTitle = "Wróć do nas! 👋"; // Dostosuj tekst według potrzeb
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                document.title = newTitle;
+            } else {
+                document.title = originalTitle;
+            }
+        });
+    });
+</script>
+
 <?php get_template_part('template-parts/product-categories'); ?>
 
 <section class="bestsellers py-16 md:py-20 overflow-hidden">
     <div class="wrapper mx-auto">
         <h2 class="title">Bestsellery</h2>
     </div>
-    <div class="bestsellers-slider-container">
+    <div class="bestsellers-slider-container wrapper-mobile">
         <?php get_template_part('template-parts/bestsellers-slider'); ?>
     </div>
 </section>
@@ -132,6 +148,11 @@ if (!$hero) {
 
 <section class="">
     <?php jetlagz_inject_template_part('features'); ?>
+</section>
+
+<section class="wrapper flex flex-col-reverse sm:flex-row gap-12 max-w-4xl mx-auto my-20 px-4 sm:items-end">
+    <div class=""><img class="w-full h-1/2" src="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/newsletter.png" alt="Newsletter"></div>
+    <div class="klaviyo-form-T8xFYE"></div>
 </section>
 
 <section class="video-section">

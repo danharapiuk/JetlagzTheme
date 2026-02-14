@@ -26,8 +26,71 @@ require_once THEME_DIR . '/inc/web-styles.php';
 // ACF Options Pages dla Template Parts
 require_once THEME_DIR . '/inc/acf-options-pages.php';
 
+// ACF Product Fields (Stara nazwa, etc.)
+require_once THEME_DIR . '/inc/acf-product-fields.php';
+
 // Template Parts Helper Functions
 require_once THEME_DIR . '/inc/template-parts-helper.php';
+
+/**
+ * Fix dla błędu tpay-woocommerce plugin
+ * Naprawia TypeError: array_key_exists(): Argument #2 ($array) must be of type array, false given
+ */
+function jetlagz_fix_tpay_error()
+{
+  // Usuwamy hook tpay jeśli powoduje błędy
+  if (function_exists('tpay_add_checkout_fee_for_gateway')) {
+    remove_action('woocommerce_cart_calculate_fees', 'tpay_add_checkout_fee_for_gateway');
+  }
+}
+add_action('init', 'jetlagz_fix_tpay_error', 5);
+
+/**
+ * Safe ACF get_field wrapper function
+ * Returns empty string/array if ACF is not active
+ */
+function safe_get_field($selector, $post_id = false)
+{
+  if (!function_exists('get_field')) {
+    return '';
+  }
+  return get_field($selector, $post_id);
+}
+
+/**
+ * Safe ACF have_rows wrapper function
+ * Returns false if ACF is not active
+ */
+function safe_have_rows($selector, $post_id = false)
+{
+  if (!function_exists('have_rows')) {
+    return false;
+  }
+  return have_rows($selector, $post_id);
+}
+
+/**
+ * Safe ACF get_sub_field wrapper function
+ * Returns empty string if ACF is not active
+ */
+function safe_get_sub_field($selector)
+{
+  if (!function_exists('get_sub_field')) {
+    return '';
+  }
+  return get_sub_field($selector);
+}
+
+/**
+ * Safe ACF the_row wrapper function
+ * Does nothing if ACF is not active
+ */
+function safe_the_row()
+{
+  if (function_exists('the_row')) {
+    the_row();
+  }
+}
 
 /**
  * Zezwól na upload plików SVG do biblioteki mediów
@@ -530,11 +593,12 @@ function universal_theme_enqueue_assets()
   ));
 
   // Universal sliders styles - loaded on all pages that use product sliders
+  $sliders_css_path = get_stylesheet_directory() . '/assets/css/sliders.css';
   wp_enqueue_style(
     'universal-sliders-styles',
     get_stylesheet_directory_uri() . '/assets/css/sliders.css',
     array(),
-    $theme_version
+    filemtime($sliders_css_path) . '.' . substr(md5_file($sliders_css_path), 0, 8)
   );
 }
 add_action('wp_enqueue_scripts', 'universal_theme_enqueue_assets');
@@ -572,7 +636,7 @@ function universal_page_specific_styles()
     // Swiper CSS
     wp_enqueue_style(
       'swiper-css',
-      'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css',
+      get_stylesheet_directory_uri() . '/assets/css/swiper-bundle.min.css',
       array(),
       '11.0.0'
     );
@@ -581,13 +645,13 @@ function universal_page_specific_styles()
       'universal-product-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/product.css',
       array(),
-      $theme_version . '-v3'
+      filemtime(get_stylesheet_directory() . '/assets/css/pages/product.css')
     );
 
     // Swiper JS
     wp_enqueue_script(
       'swiper-js',
-      'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js',
+      get_stylesheet_directory_uri() . '/assets/js/swiper-bundle.min.js',
       array(),
       '11.0.0',
       true
@@ -725,13 +789,15 @@ add_filter('woocommerce_cart_shipping_method_full_label', function ($label, $met
   // Mapowanie słów kluczowych → URL logo
   // UWAGA: Bardziej specyficzne słowa kluczowe (np. inpost, dpd) muszą być PRZED ogólnymi (flat_rate)
   $shipping_logos = array(
-    'inpost'        => get_stylesheet_directory_uri() . '/assets/images/shipping/inpost.png',
     'dpd'           => get_stylesheet_directory_uri() . '/assets/images/shipping/dpd.png',
     'apaczka'       => get_stylesheet_directory_uri() . '/assets/images/shipping/apaczka.png',
     'free_shipping' => get_stylesheet_directory_uri() . '/assets/images/shipping/free-shipping.png',
     'local_pickup'  => get_stylesheet_directory_uri() . '/assets/images/shipping/pickup.png',
     'flat_rate'     => get_stylesheet_directory_uri() . '/assets/images/shipping/flat-rate.png',
   );
+
+  // Słowa kluczowe, dla których logo jest ZA nazwą (nie przed)
+  $logo_after = array('dpd');
 
   // Pobierz ID metody i label
   $method_id = $method->get_method_id();
@@ -750,9 +816,12 @@ add_filter('woocommerce_cart_shipping_method_full_label', function ($label, $met
       $logo_path = str_replace(get_stylesheet_directory_uri(), get_stylesheet_directory(), $logo_url);
 
       if (file_exists($logo_path)) {
-        // Dodaj logo przed tekstem
-        $logo_html = '<img src="' . esc_url($logo_url) . '" alt="' . esc_attr($method->get_label()) . '" class="shipping-method-logo" style="width: 40px; height: 40px; object-fit: contain; margin-right: 10px; vertical-align: middle;">';
-        $label = $logo_html . $label;
+        $logo_html = '<img src="' . esc_url($logo_url) . '" alt="' . esc_attr($method->get_label()) . '" class="shipping-method-logo" style="width: 40px; height: 40px; object-fit: contain; margin-right: 10px; margin-left: 10px; vertical-align: middle;">';
+        if (in_array($keyword, $logo_after)) {
+          $label = $label . $logo_html;
+        } else {
+          $label = $logo_html . $label;
+        }
         break; // Znaleziono logo, przerwij pętlę
       }
     }
@@ -931,6 +1000,7 @@ require_once THEME_DIR . '/inc/woocommerce-functions.php';
 require_once THEME_DIR . '/inc/theme-functions.php';
 require_once THEME_DIR . '/inc/woocommerce-checkout-functions.php';
 require_once THEME_DIR . '/inc/checkout-table-custom.php';
+require_once THEME_DIR . '/inc/checkout-custom-fields.php';
 // Disabled: checkout crosssell functions moved to backup (not used).
 // require_once THEME_DIR . '/inc/checkout-crosssell-functions.php';
 // Disabled: checkout blocks / layout includes (aggressive cleanup). Backups kept.
@@ -941,6 +1011,7 @@ require_once THEME_DIR . '/inc/admin-panel.php';
 require_once THEME_DIR . '/inc/header-functions.php';
 require_once THEME_DIR . '/inc/checkout-remove-products.php';
 require_once THEME_DIR . '/inc/slide-in-cart.php';
+require_once THEME_DIR . '/inc/gift-products.php';
 // require_once THEME_DIR . '/inc/checkout-layout-hooks.php'; // Ponownie włączamy dla blocks
 
 // Temporary test removed during aggressive cleanup. Backup available at functions.php.bak
@@ -997,7 +1068,7 @@ function universal_checkout_login_notice()
         transition: opacity 0.3s ease;
       }
     </style>
-    <div class="woocommerce-info checkout-login-notice" style="margin-bottom: 20px;">
+    <div class="woocommerce-info checkout-login-notice text-white" style="margin-bottom: 20px;">
       Masz już konto? <a href="<?php echo esc_url($login_url); ?>">Kliknij tutaj aby się zalogować</a> i automatycznie uzupełnić dane.
     </div>
     <script>
@@ -1046,6 +1117,16 @@ function universal_change_cart_button_text($text, $domain)
 }
 add_filter('gettext', 'universal_change_cart_button_text', 10, 2);
 add_filter('ngettext', 'universal_change_cart_button_text', 10, 2);
+
+// Polskie tłumaczenie tekstu polityki prywatności na checkout
+add_filter('woocommerce_get_privacy_policy_text', function ($text, $type) {
+  if ($type === 'checkout') {
+    $privacy_page_id = get_option('wp_page_for_privacy_policy', 0);
+    $privacy_link    = $privacy_page_id ? '<a href="' . esc_url(get_permalink($privacy_page_id)) . '" class="woocommerce-privacy-policy-link" target="_blank">politykę prywatności</a>' : 'politykę prywatności';
+    return 'Twoje dane osobowe będą wykorzystywane do obsługi zamówienia, wsparcia Twojego doświadczenia na tej stronie oraz do innych celów opisanych w naszej ' . $privacy_link . '.';
+  }
+  return $text;
+}, 10, 2);
 
 // AJAX Handlers for Cart Quantity Updates
 function universal_update_cart_quantity()
@@ -1136,8 +1217,16 @@ function universal_update_cart_quantity()
   }
 
   if ($result !== false) {
-    // Recalculate totals
+    // Clear cached shipping rates so WC recalculates available methods
+    // (important when cart total crosses free shipping threshold)
+    $packages = WC()->cart->get_shipping_packages();
+    foreach (array_keys($packages) as $package_key) {
+      WC()->session->set('shipping_for_package_' . $package_key, false);
+    }
+
+    // Recalculate totals (will also recalculate shipping with fresh cache)
     WC()->cart->calculate_totals();
+    WC()->cart->calculate_shipping();
 
     // Force persistent save to database
     WC()->cart->persistent_cart_update();
@@ -1760,10 +1849,10 @@ add_action('wp_ajax_nopriv_custom_register', 'universal_custom_register_handler'
 /**
  * Temporary preview function for Thank You page
  * Access: 
- * - Paid logged in: http://localhost:10109/?preview_thankyou=1&force_status=paid
- * - Paid guest: http://localhost:10109/?preview_thankyou=1&force_status=paid&force_guest=1
- * - Unpaid version: http://localhost:10109/?preview_thankyou=1&force_status=unpaid
- * - Actual status: http://localhost:10109/?preview_thankyou=1
+ * - Paid logged in: https://localhost:10109/?preview_thankyou=1&force_status=paid
+ * - Paid guest: https://localhost:10109/?preview_thankyou=1&force_status=paid&force_guest=1
+ * - Unpaid version: https://localhost:10109/?preview_thankyou=1&force_status=unpaid
+ * - Actual status: https://localhost:10109/?preview_thankyou=1
  */
 function preview_thankyou_page()
 {
@@ -1776,7 +1865,7 @@ function preview_thankyou_page()
 
       // Check if we should force guest mode (simulate logged out user)
       $force_guest = isset($_GET['force_guest']) && $_GET['force_guest'] == '1';
-      
+
       if ($force_guest) {
         // Set global variable to override logged in check
         global $preview_force_guest;
@@ -1804,7 +1893,7 @@ function preview_thankyou_page()
       }
     } else {
       // Create a temporary fake order for preview
-      wp_die('Brak zamówień. Najpierw złóż testowe zamówienie lub użyj: http://localhost:10109/checkout/order-received/ID/?key=ORDER_KEY');
+      wp_die('Brak zamówień. Najpierw złóż testowe zamówienie lub użyj: https://localhost:10109/checkout/order-received/ID/?key=ORDER_KEY');
     }
 
     get_header();
@@ -1930,6 +2019,55 @@ function assign_order_after_login($user_login, $user)
   }
 }
 add_action('wp_login', 'assign_order_after_login', 10, 2);
+
+/**
+ * Dodaj przycisk Wishlist obok przycisku "Dodaj do koszyka"
+ */
+function add_wishlist_button_after_add_to_cart()
+{
+  echo do_shortcode('[yith_wcwl_add_to_wishlist]');
+}
+// Na stronie pojedynczego produktu
+add_action('woocommerce_after_add_to_cart_button', 'add_wishlist_button_after_add_to_cart', 10);
+// Na kartach produktów w sklepie (po przycisku "Dodaj do koszyka")
+add_action('woocommerce_after_shop_loop_item', 'add_wishlist_button_after_add_to_cart', 15);
+
+/**
+ * Tłumaczenia dla YITH Wishlist
+ */
+function custom_yith_wishlist_translations($translated_text, $text, $domain)
+{
+  if ($domain === 'yith-woocommerce-wishlist') {
+    $translations = array(
+      'Unit price' => 'Cena',
+      'Product name' => 'Nazwa produktu',
+      'Stock status' => 'Dostępność',
+      'Stock Status' => 'Dostępność',
+      'No products added to the wishlist' => 'Brak produktów na liście życzeń',
+      'No products were added to the wishlist' => 'Nie dodano żadnych produktów do listy życzeń',
+      'Add to cart' => 'Dodaj do koszyka',
+      'Add to Cart' => 'Dodaj do koszyka',
+      'Remove' => 'Usuń',
+      'Add to Wishlist' => 'Dodaj do ulubionych',
+      'Browse Wishlist' => 'Zobacz ulubione',
+      'Product added!' => 'Produkt dodany!',
+      'In stock' => 'Dostępny',
+      'Out of stock' => 'Niedostępny',
+      'Wishlist' => 'Ulubione',
+      'My wishlist' => 'Moje ulubione',
+      'View' => 'Zobacz',
+      'Date added' => 'Data dodania',
+      'Price' => 'Cena',
+    );
+
+    if (isset($translations[$text])) {
+      return $translations[$text];
+    }
+  }
+
+  return $translated_text;
+}
+add_filter('gettext', 'custom_yith_wishlist_translations', 20, 3);
 
 // === KONIEC FUNCTIONS.PHP ===
 // Wszystkie funkcje template checkout zostały usunięte - powrót do Storefront + CSS hooks

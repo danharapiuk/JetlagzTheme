@@ -42,7 +42,7 @@ do_action('woocommerce_before_main_content');
 <?php
 get_template_part('template-parts/product-categories');
 ?>
-
+<div class="wrapper">
 <!-- Filters Overlay -->
 <div class="shop-filters-overlay"></div>
 
@@ -379,6 +379,8 @@ do_action('woocommerce_after_main_content');
  *
  * @hooked woocommerce_get_sidebar - 10
  */
-do_action('woocommerce_sidebar');
+do_action('woocommerce_sidebar');?>
+</div>
+<?php
 
 get_footer('shop');

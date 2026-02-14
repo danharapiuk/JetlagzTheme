@@ -4132,57 +4132,58 @@ function jetlagz_inpost_pay_button_fallback()
     if (!is_product()) {
         return;
     }
-    ?>
+?>
     <script>
-    (function() {
-        function ensureInPostButton() {
-            var placeholders = document.querySelectorAll('.izi-widget-placeholder.izi-widget-product');
-            if (!placeholders.length) return;
+        (function() {
+            function ensureInPostButton() {
+                var placeholders = document.querySelectorAll('.izi-widget-placeholder.izi-widget-product');
+                if (!placeholders.length) return;
 
-            placeholders.forEach(function(el) {
-                // Skip if button already exists inside
-                if (el.querySelector('inpost-izi-button')) return;
+                placeholders.forEach(function(el) {
+                    // Skip if button already exists inside
+                    if (el.querySelector('inpost-izi-button')) return;
 
-                var productId = el.getAttribute('data-product-id');
-                if (!productId) return;
+                    var productId = el.getAttribute('data-product-id');
+                    if (!productId) return;
 
-                // Get language from IPPWidgetOptions or default to 'pl'
-                var lang = (window.IPPWidgetOptions && window.IPPWidgetOptions.language) ? window.IPPWidgetOptions.language : 'pl';
+                    // Get language from IPPWidgetOptions or default to 'pl'
+                    var lang = (window.IPPWidgetOptions && window.IPPWidgetOptions.language) ? window.IPPWidgetOptions.language : 'pl';
 
-                // Create the inpost-izi-button element the SDK expects
-                var btn = document.createElement('inpost-izi-button');
-                btn.setAttribute('binding_place', 'PRODUCT_CARD');
-                btn.setAttribute('data-product-id', productId);
-                btn.setAttribute('language', lang);
+                    // Create the inpost-izi-button element the SDK expects
+                    var btn = document.createElement('inpost-izi-button');
+                    btn.setAttribute('binding_place', 'PRODUCT_CARD');
+                    btn.setAttribute('data-product-id', productId);
+                    btn.setAttribute('language', lang);
+                    btn.setAttribute('variation', 'primary');
 
-                el.appendChild(btn);
+                    el.appendChild(btn);
+                });
+
+                // Tell the SDK to pick up the new button elements
+                if (window.IPPwidget && typeof window.IPPwidget.refresh === 'function') {
+                    window.IPPwidget.refresh();
+                }
+            }
+
+            // Run after the plugin's window.load handler has finished
+            // woocommerceizi.js runs on window.load, so we add our check slightly after
+            window.addEventListener('load', function() {
+                // First attempt: 500ms after load (plugin init should be done)
+                setTimeout(ensureInPostButton, 500);
+                // Second attempt: 2s after load (in case AJAX key fetch was slow)
+                setTimeout(ensureInPostButton, 2000);
             });
 
-            // Tell the SDK to pick up the new button elements
-            if (window.IPPwidget && typeof window.IPPwidget.refresh === 'function') {
-                window.IPPwidget.refresh();
-            }
-        }
-
-        // Run after the plugin's window.load handler has finished
-        // woocommerceizi.js runs on window.load, so we add our check slightly after
-        window.addEventListener('load', function() {
-            // First attempt: 500ms after load (plugin init should be done)
-            setTimeout(ensureInPostButton, 500);
-            // Second attempt: 2s after load (in case AJAX key fetch was slow)
-            setTimeout(ensureInPostButton, 2000);
-        });
-
-        // Also handle dynamic re-renders (cart changes, fragment refreshes)
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.jQuery) {
-                jQuery(document.body).on('wc_fragments_refreshed', function() {
-                    setTimeout(ensureInPostButton, 300);
-                });
-            }
-        });
-    })();
+            // Also handle dynamic re-renders (cart changes, fragment refreshes)
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.jQuery) {
+                    jQuery(document.body).on('wc_fragments_refreshed', function() {
+                        setTimeout(ensureInPostButton, 300);
+                    });
+                }
+            });
+        })();
     </script>
-    <?php
+<?php
 }
 add_action('wp_footer', 'jetlagz_inpost_pay_button_fallback', 99);

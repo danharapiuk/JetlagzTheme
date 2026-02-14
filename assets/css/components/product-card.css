@@ -44,12 +44,15 @@
 	z-index: 2;
 }
 
-.product-link:hover .product-image-wrapper .product-image-primary {
-	opacity: 0;
-}
+/* Hover effect only on desktop (1024px+) */
+@media (min-width: 1024px) {
+	.product-link:hover .product-image-wrapper .product-image-primary {
+		opacity: 0;
+	}
 
-.product-link:hover .product-image-wrapper .product-image-secondary {
-	opacity: 1;
+	.product-link:hover .product-image-wrapper .product-image-secondary {
+		opacity: 1;
+	}
 }
 
 /* Sale Badge */
@@ -100,15 +103,40 @@
 	font-weight: 500;
 }
 
-/* Product Info Row - Title and Price side by side */
-.product-info-row {
+/* Stars in product-info-row */
+.product-info-row .stars {
 	display: flex;
-	justify-content: space-between;
-    align-items: flex-start;
 	align-items: center;
-	gap: 0.5rem;
-	width: 100%;
-	padding: 0 0.5rem;
+	gap: 0.25rem;
+	font-size: 12px;
+	flex-wrap: nowrap;
+}
+
+.product-info-row .stars .rating-number {
+	font-weight: 500;
+	color: #333;
+}
+
+.product-info-row .stars .rating-count {
+	color: #666;
+}
+
+.product-info-row .stars .rating-stars {
+	display: inline-flex;
+	gap: 1px;
+}
+
+.product-info-row .stars .rating-stars .star {
+	font-size: 12px;
+	line-height: 1;
+}
+
+.product-info-row .stars .rating-stars .star.filled {
+	color: #facc15;
+}
+
+.product-info-row .stars .rating-stars .star.empty {
+	color: #d1d5db;
 }
 
 /* Product Title */
@@ -129,12 +157,12 @@
 /* Product Price */
 .product-price {
 	font-size: 0.875rem;
-	font-weight: 600;
+	font-weight: 300;
 	color: var(--theme-accent, #000);
 	margin-bottom: 0;
-	text-align: right;
 	flex: 0 0 auto;
 	white-space: nowrap;
+	padding-top: 10px;
 }
 
 .product-price del {
@@ -191,4 +219,8 @@
 .woocommerce ul.products li.product .star-rating,
 .woocommerce ul.products li.product .button {
 	display: none !important;
+}
+
+.review-author-info .verfied {
+	font-weight: 300;
 }
