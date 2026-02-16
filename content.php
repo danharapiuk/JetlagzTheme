@@ -5,7 +5,7 @@
  * Template Post Type: page
  */
 
-wp_enqueue_style('about-page-styles', get_stylesheet_directory_uri() . '/assets/css/pages/content.css', array(), filemtime(get_stylesheet_directory() . '/assets/css/pages/content.css'));
+wp_enqueue_style('about-page-styles', get_stylesheet_directory_uri() . '/assets/css/pages/content.css', array('storefront-style'), filemtime(get_stylesheet_directory() . '/assets/css/pages/content.css'));
 get_header();
 
 

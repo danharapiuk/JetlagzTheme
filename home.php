@@ -6,7 +6,7 @@
  */
 
 // Enqueue home page specific styles
-wp_enqueue_style('home-page-styles', get_stylesheet_directory_uri() . '/assets/css/pages/home.css', array(), filemtime(get_stylesheet_directory() . '/assets/css/pages/home.css'));
+wp_enqueue_style('home-page-styles', get_stylesheet_directory_uri() . '/assets/css/pages/home.css', array('storefront-style'), filemtime(get_stylesheet_directory() . '/assets/css/pages/home.css'));
 
 get_header(); ?>
 

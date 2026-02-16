@@ -125,10 +125,16 @@
 	display: inline-flex;
 	gap: 1px;
 }
+.product-info-row .stars {
+	font-size: 10px;
+	padding-top: 3px;
+}
 
-.product-info-row .stars .rating-stars .star {
-	font-size: 12px;
-	line-height: 1;
+@media (min-width: 640px) {
+	.product-info-row .stars .rating-stars .star {
+		font-size: 12px;
+		line-height: 1;
+	}
 }
 
 .product-info-row .stars .rating-stars .star.filled {
@@ -223,4 +229,90 @@
 
 .review-author-info .verfied {
 	font-weight: 300;
+}
+
+/* ========================================
+   WISHLIST HEART BUTTON
+   ======================================== */
+
+.product-card {
+	position: relative;
+}
+
+.wishlist-heart-btn {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+	width: 36px;
+	height: 36px;
+	background: rgba(255, 255, 255, 0.9);
+	border: none;
+	border-radius: 50%;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+	z-index: 20;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	pointer-events: auto !important;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.wishlist-heart-btn:hover {
+	background: #fff;
+	transform: scale(1.1);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.wishlist-heart-btn .heart-icon {
+	color: #666;
+	transition: all 0.2s ease;
+}
+
+.wishlist-heart-btn:hover .heart-icon {
+	color: #e91e63;
+}
+
+.wishlist-heart-btn.in-wishlist .heart-icon {
+	color: #e91e63;
+	fill: #e91e63;
+}
+
+.wishlist-heart-btn.loading {
+	pointer-events: none;
+	opacity: 0.7;
+}
+
+.wishlist-heart-btn.loading .heart-icon {
+	animation: heartPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes heartPulse {
+	0%,
+	100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.2);
+	}
+}
+
+/* Mobile adjustments */
+@media (max-width: 640px) {
+	.wishlist-heart-btn {
+		width: 32px;
+		height: 32px;
+	}
+
+	.wishlist-heart-btn .heart-icon {
+		width: 16px;
+		height: 16px;
+	}
+}
+
+/* Move sale badge to left when wishlist button is present */
+.product-card .sale-badge {
+	left: 0.5rem;
+	right: auto;
 }

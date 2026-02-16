@@ -170,7 +170,6 @@ function universal_logo_max_height_field()
     echo '<input type="number" name="universal_theme_options[logo_max_height]" value="' . esc_attr($max_height) . '" min="30" max="200" step="10" />';
     echo ' px';
     echo '<p class="description">Maksymalna wysokość logo w pikselach (30-200px). Domyślnie: 100px.</p>';
-    echo '<p style="color: blue;"><strong>DEBUG:</strong> Aktualna wartość: ' . intval($max_height) . 'px</p>';
 }
 
 /**
@@ -385,7 +384,8 @@ function universal_theme_hide_site_title($title)
 }
 
 /**
- * CSS dla ukrycia site title i stylowania logo
+ * Dynamiczne CSS dla logo (wartości z panelu admina)
+ * Style statyczne są w assets/css/pages/header.css
  */
 function universal_theme_hide_site_title_css()
 {
@@ -393,77 +393,27 @@ function universal_theme_hide_site_title_css()
     $logo_mobile_url = get_universal_theme_option('logo_mobile');
     $logo_max_height = get_universal_theme_option('logo_max_height', 100);
 
-    // Debug - sprawdź czy funkcja się wykonuje
-    error_log('DEBUG Logo CSS: URL=' . $logo_url . ', Height=' . $logo_max_height);
-
     if (!$logo_url) {
-        error_log('DEBUG Logo CSS: Brak logo URL, nie generuję CSS');
         return;
     }
 
 ?>
     <style type="text/css">
-        /* DEBUG: Sprawdź wartości */
-        /*
-        Logo URL: <?php echo esc_attr($logo_url); ?>
-        Logo Max Height: <?php echo intval($logo_max_height); ?>px
-        Mobile Height: <?php echo intval($logo_max_height * 0.75); ?>px
-        */
-
-        /* Ukryj domyślny site title gdy logo jest dostępne */
-        .site-branding .site-title,
-        .site-branding .site-description {
-            display: none !important;
-        }
-
-        /* Style dla custom logo z dynamiczną wysokością */
+        /* Dynamiczna wysokość logo z ustawień admina */
         .custom-logo {
             max-height: <?php echo intval($logo_max_height); ?>px !important;
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            object-fit: contain;
         }
 
         .custom-logo-mobile {
-            display: none;
             max-height: <?php echo intval($logo_max_height * 0.75); ?>px;
-            /* 75% wysokości desktop logo */
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            object-fit: contain;
         }
 
-        /* Responsive logo */
         @media (max-width: 768px) {
-            .custom-logo-desktop {
-                <?php if ($logo_mobile_url): ?>display: none !important;
-                <?php else: ?>max-height: <?php echo intval($logo_max_height * 0.75); ?>px;
-                /* 75% na mobile */
-                <?php endif; ?>
-            }
-
-            <?php if ($logo_mobile_url): ?>.custom-logo-mobile {
-                display: inline-block !important;
+            <?php if (!$logo_mobile_url): ?>.custom-logo-desktop {
+                max-height: <?php echo intval($logo_max_height * 0.75); ?>px;
             }
 
             <?php endif; ?>
-        }
-
-        /* Storefront compatibility */
-        .site-branding .custom-logo-link {
-            display: block;
-            line-height: 1;
-        }
-
-        .site-header .site-branding {
-            margin-bottom: 0;
-        }
-
-        /* Pozycjonowanie logo */
-        .site-branding {
-            text-align: left;
         }
     </style>
 <?php
@@ -516,68 +466,4 @@ function universal_theme_replace_site_branding()
     return ob_get_clean();
 }
 
-/**
- * CSS dla custom logo
- */
-function universal_theme_logo_styles()
-{
-    $logo_url = get_universal_theme_option('logo');
-
-    if (!$logo_url) {
-        return;
-    }
-
-?>
-    <style type="text/css">
-        /* Ukryj domyślny site title gdy logo jest dostępne */
-        .site-branding .site-title {
-            display: none !important;
-        }
-
-        /* Style dla custom logo */
-        .custom-logo {
-            max-height: 80px;
-            width: auto;
-            height: auto;
-        }
-
-        .custom-logo-mobile {
-            max-height: 60px;
-            width: auto;
-            height: auto;
-        }
-
-        /* Responsive logo */
-        .mobile-logo {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            .desktop-logo {
-                display: none;
-            }
-
-            .mobile-logo {
-                display: inline-block;
-            }
-
-            .custom-logo {
-                max-height: 60px;
-            }
-        }
-
-        /* Storefront compatibility */
-        .site-header .custom-logo-link {
-            display: inline-block;
-            margin-right: 1em;
-        }
-
-        .site-branding .custom-logo-link {
-            display: block;
-            width: fit-content;
-            height: fit-content;
-        }
-    </style>
-<?php
-}
-add_action('wp_head', 'universal_theme_logo_styles');
+/* Funkcja universal_theme_logo_styles() usunięta - style przeniesione do assets/css/pages/header.css */

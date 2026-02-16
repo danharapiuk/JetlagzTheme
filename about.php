@@ -6,7 +6,7 @@
  */
 
 // Enqueue about page specific styles
-wp_enqueue_style('about-page-styles', get_stylesheet_directory_uri() . '/assets/css/pages/about.css', array(), filemtime(get_stylesheet_directory() . '/assets/css/pages/about.css'));
+wp_enqueue_style('about-page-styles', get_stylesheet_directory_uri() . '/assets/css/pages/about.css', array('storefront-style'), filemtime(get_stylesheet_directory() . '/assets/css/pages/about.css'));
 get_header();
 
 // Pobierz pola ACF z grupy 'about'
@@ -32,7 +32,7 @@ if ($about_bottom_image && is_array($about_bottom_image)) {
     <div class="wrapper mx-auto">
         <div class="md:flex md:gap-16 justify-between">
             <?php if ($about_info) : ?>
-                <div class="about-info md:w-2/3 max-w-[560px] pb-12">
+                <div class="about-info md:w-2/3 max-w-[560px] pb-12 font-primary">
                     <?php echo $about_info; ?>
                 </div>
             <?php endif; ?>
@@ -49,7 +49,7 @@ if ($about_bottom_image && is_array($about_bottom_image)) {
 <?php if ($about_bottom_image) : ?>
     <section class="about-bottom-image-section">
         <div class="wrapper mx-auto flex">
-            <div class="w-full mb-[-48px] md:mb-[-68px] lg:mb-[-48px]"><img src="<?php echo esc_url($about_bottom_image_url); ?>" alt="<?php echo esc_attr($about_bottom_image_alt); ?>" class="w-full h-auto"></div>
+            <div class="w-full mb-[-75px] md:mb-[-68px] lg:mb-[-48px]"><img src="<?php echo esc_url($about_bottom_image_url); ?>" alt="<?php echo esc_attr($about_bottom_image_alt); ?>" class="w-full h-auto"></div>
         </div>
     </section>
 <?php endif; ?>

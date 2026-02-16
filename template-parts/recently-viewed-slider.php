@@ -93,21 +93,9 @@ $slider_class = 'recently-viewed-swiper';
 <section class="recently-viewed-section relative py-16">
     <div class="">
         <div class="flex items-center justify-between mb-8">
-            <h2 class="text-2xl md:text-3xl font-bold text-gray-800">
+            <h2 class="text-2xl md:text-3xl font-semibold text-gray-800">
                 <?php echo isset($_COOKIE['woocommerce_recently_viewed']) ? 'Ostatnio oglądane' : 'Polecane produkty'; ?>
             </h2>
-            <div class="slider-navigation flex gap-2">
-                <button class="<?php echo esc_attr($slider_class); ?>-prev slider-nav-btn prev-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </button>
-                <button class="<?php echo esc_attr($slider_class); ?>-next slider-nav-btn next-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </button>
-            </div>
         </div>
 
         <?php
@@ -119,33 +107,3 @@ $slider_class = 'recently-viewed-swiper';
         ?>
     </div>
 </section>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Recently Viewed Swiper
-        const recentlyViewedSwiper = new Swiper('.<?php echo esc_js($slider_class); ?>', {
-            slidesPerView: 2.15,
-            spaceBetween: 6,
-            navigation: {
-                nextEl: '.<?php echo esc_js($slider_class); ?>-next',
-                prevEl: '.<?php echo esc_js($slider_class); ?>-prev',
-            },
-            breakpoints: {
-                640: {
-                    slidesPerView: 2,
-                    spaceBetween: 20
-                },
-                768: {
-                    slidesPerView: 3,
-                    spaceBetween: 30
-                },
-                1024: {
-                    slidesPerView: 4,
-                    spaceBetween: 30
-                }
-            },
-            loop: false,
-            grabCursor: true,
-        });
-    });
-</script>

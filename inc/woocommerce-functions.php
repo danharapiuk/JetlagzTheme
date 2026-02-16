@@ -701,7 +701,6 @@ function jetlagz_display_newsletter_discount()
         .newsletter-discount-wrapper {
             display: flex;
             align-items: center;
-            gap: .5rem;
             margin: 1.5rem 0;
         }
 
@@ -875,7 +874,7 @@ function jetlagz_display_newsletter_discount()
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 0 10px;
+            padding: 0 5px;
             background: rgba(48, 211, 102, 0.2);
             height: 20px;
         }
@@ -894,9 +893,7 @@ function jetlagz_display_newsletter_discount()
         }
 
         @media (max-width: 640px) {
-            .newsletter-discount-wrapper {
-                flex-direction: column;
-            }
+
 
             .newsletter-button-container,
             .newsletter-savings-info {
@@ -1627,7 +1624,7 @@ function jetlagz_display_product_reviews()
         <div class="reviews-container">
             <!-- Left Column - Rating Summary -->
             <div class="reviews-summary md:flex gap-1 w-full lg:!max-w-[45%]" aria-label="Rating Summary">
-                <div class="overall-rating">
+                <div class="overall-rating flex md:block items-end">
                     <div class="rating-score flex gap-1">
                         <span class="score-number" aria-label="Average rating"><?php echo number_format($average_rating, 1); ?></span>
                         <span class="score-max">/ 5</span>
@@ -2921,30 +2918,44 @@ function jetlagz_shipping_countdown_timer()
     if (!is_product()) {
         return;
     }
+
+    // Check if countdown is enabled in ACF options
+    if (function_exists('get_field')) {
+        $countdown_enabled = get_field('shipping_countdown_enabled', 'option');
+        if ($countdown_enabled === false) {
+            return;
+        }
+        $countdown_hour = intval(get_field('shipping_countdown_hour', 'option') ?: 15);
+        $countdown_text = get_field('shipping_countdown_text', 'option') ?: 'Kup do {hour}:00 a paczkę nadamy jeszcze dziś. Pozostało:';
+        $countdown_text = str_replace('{hour}', $countdown_hour, $countdown_text);
+    } else {
+        $countdown_hour = 15;
+        $countdown_text = 'Kup do 15:00 a paczkę nadamy jeszcze dziś. Pozostało:';
+    }
 ?>
     <div class="shipping-countdown" id="shipping-countdown" style="display: none;">
         <p class="countdown-text">
-            Kup do 15:00 a paczkę nadamy jeszcze dziś. Pozostało: <span id="countdown-time" class="countdown-time"></span>
+            <?php echo esc_html($countdown_text); ?> <span id="countdown-time" class="countdown-time"></span>
         </p>
     </div>
 
     <script>
         jQuery(document).ready(function($) {
+            var countdownHour = <?php echo intval($countdown_hour); ?>;
+
             function updateCountdown() {
                 var now = new Date();
                 var currentHour = now.getHours();
-                var currentMinute = now.getMinutes();
-                var currentSecond = now.getSeconds();
 
-                // Jeśli jest po 15:00, ukryj countdown
-                if (currentHour >= 15) {
+                // Jeśli jest po godzinie granicznej, ukryj countdown
+                if (currentHour >= countdownHour) {
                     $('#shipping-countdown').hide();
                     return;
                 }
 
-                // Oblicz czas do 15:00
+                // Oblicz czas do godziny granicznej
                 var deadline = new Date();
-                deadline.setHours(15, 0, 0, 0);
+                deadline.setHours(countdownHour, 0, 0, 0);
 
                 var timeLeft = deadline - now;
 

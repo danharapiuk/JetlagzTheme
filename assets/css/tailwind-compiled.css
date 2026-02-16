@@ -1888,8 +1888,8 @@ select {
   margin-bottom: 2rem;
 }
 
-.mb-\[-48px\] {
-  margin-bottom: -48px;
+.mb-\[-75px\] {
+  margin-bottom: -75px;
 }
 
 .ml-2 {
@@ -2076,6 +2076,10 @@ select {
   max-width: 560px;
 }
 
+.max-w-\[70\%\] {
+  max-width: 70%;
+}
+
 .max-w-\[85\%\] {
   max-width: 85%;
 }
@@ -2142,6 +2146,10 @@ select {
 
 .items-start {
   align-items: flex-start;
+}
+
+.items-end {
+  align-items: flex-end;
 }
 
 .items-center {
@@ -2302,11 +2310,6 @@ select {
   border-color: transparent;
 }
 
-.bg-\[\#010B13\] {
-  --tw-bg-opacity: 1;
-  background-color: rgb(1 11 19 / var(--tw-bg-opacity));
-}
-
 .bg-\[\#51172F\] {
   --tw-bg-opacity: 1;
   background-color: rgb(81 23 47 / var(--tw-bg-opacity));
@@ -2407,6 +2410,11 @@ select {
   padding-right: 1.5rem;
 }
 
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
 .py-12 {
   padding-top: 3rem;
   padding-bottom: 3rem;
@@ -2486,6 +2494,10 @@ select {
   padding-top: 3rem;
 }
 
+.pt-3 {
+  padding-top: 0.75rem;
+}
+
 .pt-6 {
   padding-top: 1.5rem;
 }
@@ -2496,6 +2508,10 @@ select {
 
 .text-center {
   text-align: center;
+}
+
+.font-primary {
+  font-family: var(--theme-font-primary);
 }
 
 .text-2xl {
@@ -2873,6 +2889,10 @@ select {
     max-width: 185px;
   }
 
+  .sm\:max-w-none {
+    max-width: none;
+  }
+
   .sm\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2893,12 +2913,12 @@ select {
     gap: 0.5rem;
   }
 
-  .sm\:gap-6 {
-    gap: 1.5rem;
-  }
-
   .sm\:gap-3 {
     gap: 0.75rem;
+  }
+
+  .sm\:gap-6 {
+    gap: 1.5rem;
   }
 
   .sm\:border-none {
@@ -2908,6 +2928,15 @@ select {
   .sm\:py-0 {
     padding-top: 0px;
     padding-bottom: 0px;
+  }
+
+  .sm\:py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .sm\:pt-0 {
+    padding-top: 0px;
   }
 
   .sm\:text-\[400px\] {
@@ -2943,12 +2972,12 @@ select {
     margin-top: 5rem;
   }
 
-  .md\:flex {
-    display: flex;
+  .md\:block {
+    display: block;
   }
 
-  .md\:h-\[40px\] {
-    height: 40px;
+  .md\:flex {
+    display: flex;
   }
 
   .md\:w-1\/3 {
@@ -2987,12 +3016,21 @@ select {
     align-items: center;
   }
 
+  .md\:justify-start {
+    justify-content: flex-start;
+  }
+
   .md\:justify-between {
     justify-content: space-between;
   }
 
   .md\:gap-16 {
     gap: 4rem;
+  }
+
+  .md\:bg-\[\#010B13\] {
+    --tw-bg-opacity: 1;
+    background-color: rgb(1 11 19 / var(--tw-bg-opacity));
   }
 
   .md\:py-20 {
@@ -3020,6 +3058,11 @@ select {
   .md\:text-base {
     font-size: 1rem;
     line-height: 1.5rem;
+  }
+
+  .md\:text-white {
+    --tw-text-opacity: 1;
+    color: rgb(255 255 255 / var(--tw-text-opacity));
   }
 }
 

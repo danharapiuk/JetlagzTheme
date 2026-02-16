@@ -17,7 +17,7 @@ get_header();
 wp_enqueue_style(
     'universal-login-page-styles',
     get_stylesheet_directory_uri() . '/assets/css/pages/login.css',
-    array(),
+    array('storefront-style'),
     wp_get_theme()->get('Version')
 );
 ?>

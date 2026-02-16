@@ -387,7 +387,7 @@ function enqueue_slide_in_cart_assets()
     wp_enqueue_style(
         'slide-in-cart-styles',
         get_stylesheet_directory_uri() . '/assets/css/slide-in-cart.css',
-        array(),
+        array('storefront-style'),
         '1.0.2' // Cache bust - hide WC message immediately
     );
 

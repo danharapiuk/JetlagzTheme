@@ -15,6 +15,22 @@
 	font-family: var(--theme-font-primary);
 }
 
+.about-info h1,
+.about-info h2,
+.about-info h3,
+.about-info h4 {
+	padding-bottom: 10px;
+	font-weight: 600;
+}
+
+.about-info p {
+	font-weight: 300;
+}
+
+.page-template-about .site-footer {
+	margin-top: 0 !important;
+}
+
 /* === KONTENERY === */
 .universal-container {
 	max-width: var(--theme-container-width);
@@ -621,7 +637,8 @@ p.no-comments {
 	border-top: none !important;
 }
 
-.wrapper {
+.wrapper,
+body.page-template-default .site-content {
 	max-width: 1380px;
 	margin-left: auto;
 	margin-right: auto;
@@ -629,7 +646,8 @@ p.no-comments {
 }
 
 @media (min-width: 1440px) {
-	.wrapper {
+	.wrapper,
+	body.page-template-default .site-content {
 		padding: 0;
 	}
 	.storefront-breadcrumb,
@@ -648,7 +666,7 @@ p.no-comments {
 h2.title {
 	font-size: 32px;
 	margin-bottom: 12px;
-	letter-spacing: -1px;;
+	letter-spacing: -1px;
 }
 
 .category-item.active {
@@ -675,6 +693,10 @@ input[type='search']:focus {
 	background-color: transparent !important;
 }
 
+.klaviyo-form-T8xFYE form {
+	padding: 0 !important;
+}
+
 #post-339 h1 {
 	font-size: 24px;
 	text-align: center;
@@ -694,4 +716,13 @@ input[type='search']:focus {
 
 .product-price {
 	font-family: 'Arial', sans-serif;
+}
+
+@media (max-width: 1023px) {
+	.universal-header-row .universal-header-account,
+	.universal-header-row .universal-header-wishlist,
+	.universal-header-row .universal-header-cart {
+		display: none !important;
+		visibility: hidden !important;
+	}
 }

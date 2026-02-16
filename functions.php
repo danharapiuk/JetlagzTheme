@@ -459,6 +459,14 @@ function universal_theme_enqueue_assets()
     $theme_version
   );
 
+  // Mobile Bottom Navigation Bar
+  wp_enqueue_style(
+    'mobile-bottom-bar',
+    get_stylesheet_directory_uri() . '/assets/css/components/mobile-bottom-bar.css',
+    array('universal-footer'),
+    $theme_version
+  );
+
   // Tailwind CSS
   wp_enqueue_style(
     'universal-theme-tailwind',
@@ -592,12 +600,18 @@ function universal_theme_enqueue_assets()
     'colors' => get_theme_option('colors')
   ));
 
+  // Wishlist AJAX configuration
+  wp_localize_script('universal-theme-script', 'universalThemeAjax', array(
+    'ajaxUrl' => admin_url('admin-ajax.php'),
+    'nonce' => wp_create_nonce('wishlist_toggle_nonce')
+  ));
+
   // Universal sliders styles - loaded on all pages that use product sliders
   $sliders_css_path = get_stylesheet_directory() . '/assets/css/sliders.css';
   wp_enqueue_style(
     'universal-sliders-styles',
     get_stylesheet_directory_uri() . '/assets/css/sliders.css',
-    array(),
+    array('storefront-style'),
     filemtime($sliders_css_path) . '.' . substr(md5_file($sliders_css_path), 0, 8)
   );
 }
@@ -616,7 +630,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-checkout-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/checkout.css',
-      array(),
+      array('storefront-style'),
       $theme_version . '-v3' // Cache refresh
     );
   }
@@ -626,7 +640,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-cart-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/cart.css',
-      array(),
+      array('storefront-style'),
       $theme_version . '-v3'
     );
   }
@@ -644,7 +658,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-product-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/product.css',
-      array(),
+      array('storefront-style'),
       filemtime(get_stylesheet_directory() . '/assets/css/pages/product.css')
     );
 
@@ -663,7 +677,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-shop-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/shop.css',
-      array(),
+      array('storefront-style'),
       $theme_version . '-v3'
     );
 
@@ -682,7 +696,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-login-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/login.css',
-      array(),
+      array('storefront-style'),
       $theme_version . '-v1'
     );
   }
@@ -692,7 +706,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-myaccount-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/myaccount.css',
-      array(),
+      array('storefront-style'),
       $theme_version . '-v1'
     );
   }
@@ -702,7 +716,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-thankyou-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/thankyou.css',
-      array(),
+      array('storefront-style'),
       $theme_version . '-v1'
     );
   }
@@ -712,7 +726,7 @@ function universal_page_specific_styles()
     wp_enqueue_style(
       'universal-order-pay-page-styles',
       get_stylesheet_directory_uri() . '/assets/css/pages/order-pay.css',
-      array(),
+      array('storefront-style'),
       $theme_version . '-v1'
     );
   }
@@ -2021,7 +2035,7 @@ function assign_order_after_login($user_login, $user)
 add_action('wp_login', 'assign_order_after_login', 10, 2);
 
 /**
- * Dodaj przycisk Wishlist obok przycisku "Dodaj do koszyka"
+ * Dodaj przycisk Wishlist obok przycisku "Dodaj do koszyka" (tylko na stronie produktu)
  */
 function add_wishlist_button_after_add_to_cart()
 {
@@ -2029,8 +2043,90 @@ function add_wishlist_button_after_add_to_cart()
 }
 // Na stronie pojedynczego produktu
 add_action('woocommerce_after_add_to_cart_button', 'add_wishlist_button_after_add_to_cart', 10);
-// Na kartach produktów w sklepie (po przycisku "Dodaj do koszyka")
-add_action('woocommerce_after_shop_loop_item', 'add_wishlist_button_after_add_to_cart', 15);
+// Usunięto hook dla shop loop - teraz używamy serduszka na zdjęciu produktu
+
+/**
+ * AJAX handler for wishlist toggle (add/remove)
+ */
+function toggle_wishlist_product_ajax()
+{
+  // Verify nonce - accept both possible nonces
+  $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
+  $valid_nonce = wp_verify_nonce($nonce, 'wishlist_toggle_nonce') || wp_verify_nonce($nonce, 'theme_nonce');
+
+  if (!$valid_nonce) {
+    wp_send_json_error(array('message' => 'Błąd bezpieczeństwa', 'debug' => 'nonce_invalid'));
+  }
+
+  $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+  $remove = isset($_POST['remove']) ? (bool) $_POST['remove'] : false;
+
+  if (!$product_id) {
+    wp_send_json_error(array('message' => 'Brak ID produktu'));
+  }
+
+  // Check if YITH Wishlist is active
+  if (!function_exists('YITH_WCWL')) {
+    wp_send_json_error(array('message' => 'Wishlist plugin nie jest aktywny'));
+  }
+
+  $wishlist = YITH_WCWL();
+
+  if ($remove) {
+    // Remove from wishlist - try multiple methods
+    $removed = false;
+
+    // Method 1: Get default wishlist and remove
+    if (class_exists('YITH_WCWL_Wishlist_Factory')) {
+      $default_wishlist = YITH_WCWL_Wishlist_Factory::get_default_wishlist();
+      if ($default_wishlist) {
+        $wishlist_id = $default_wishlist->get_id();
+        $removed = $wishlist->remove(array(
+          'product_id' => $product_id,
+          'wishlist_id' => $wishlist_id
+        ));
+      }
+    }
+
+    // Method 2: Try with user_id for logged in users
+    if (!$removed && is_user_logged_in()) {
+      $user_id = get_current_user_id();
+      $removed = $wishlist->remove(array(
+        'product_id' => $product_id,
+        'user_id' => $user_id
+      ));
+    }
+
+    // Method 3: Simple remove without extra params
+    if (!$removed) {
+      $removed = $wishlist->remove(array('product_id' => $product_id));
+    }
+
+    // Final check - if product is no longer in wishlist, consider it removed
+    if ($removed || !$wishlist->is_product_in_wishlist($product_id)) {
+      $count = $wishlist->count_products();
+      wp_send_json_success(array('action' => 'removed', 'count' => $count));
+    } else {
+      wp_send_json_error(array('message' => 'Nie udało się usunąć z ulubionych'));
+    }
+  } else {
+    // Add to wishlist
+    $result = $wishlist->add(array('product_id' => $product_id));
+    if ($result) {
+      $count = $wishlist->count_products();
+      wp_send_json_success(array('action' => 'added', 'count' => $count));
+    } else {
+      // Maybe already in wishlist
+      if ($wishlist->is_product_in_wishlist($product_id)) {
+        $count = $wishlist->count_products();
+        wp_send_json_success(array('action' => 'added', 'note' => 'already_in_wishlist', 'count' => $count));
+      }
+      wp_send_json_error(array('message' => 'Nie udało się dodać do ulubionych'));
+    }
+  }
+}
+add_action('wp_ajax_toggle_wishlist_product', 'toggle_wishlist_product_ajax');
+add_action('wp_ajax_nopriv_toggle_wishlist_product', 'toggle_wishlist_product_ajax');
 
 /**
  * Tłumaczenia dla YITH Wishlist

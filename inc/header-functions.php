@@ -238,7 +238,7 @@ function universal_theme_header_styles()
     wp_enqueue_style(
         'universal-header-styles',
         get_stylesheet_directory_uri() . '/assets/css/pages/header.css',
-        array(),
+        array('storefront-style'),
         filemtime(get_stylesheet_directory() . '/assets/css/pages/header.css')
     );
 }
@@ -597,3 +597,71 @@ function universal_theme_add_clarity_script()
 <?php
 }
 add_action('wp_head', 'universal_theme_add_clarity_script');
+
+/**
+ * Mobile Bottom Navigation Bar
+ * Shows on mobile only with: Logo, Wishlist (with count), Cart, My Account
+ * Hides on scroll down, shows on scroll up
+ */
+function jetlagz_mobile_bottom_bar()
+{
+    // Get logo
+    $logo_mobile_url = get_universal_theme_option('logo_mobile');
+    $logo_url = get_universal_theme_option('logo');
+    $logo_to_use = $logo_mobile_url ? $logo_mobile_url : $logo_url;
+
+    // Get wishlist count
+    $wishlist_count = 0;
+    if (function_exists('YITH_WCWL') && YITH_WCWL()) {
+        $wishlist_count = YITH_WCWL()->count_products();
+    }
+
+    // Get cart count
+    $cart_count = WC()->cart ? WC()->cart->get_cart_contents_count() : 0;
+
+    // My account URL
+    $myaccount_url = wc_get_page_permalink('myaccount');
+    $wishlist_url = function_exists('YITH_WCWL') ? YITH_WCWL()->get_wishlist_url() : '/wishlist';
+    $cart_url = wc_get_cart_url();
+?>
+    <nav class="mobile-bottom-bar" id="mobile-bottom-bar">
+        <a href="<?php echo esc_url(home_url('/')); ?>" class="mobile-bar-item mobile-bar-logo">
+            <?php if ($logo_to_use): ?>
+                <img src="<?php echo esc_url($logo_to_use); ?>" alt="<?php echo esc_attr(get_bloginfo('name')); ?>">
+            <?php else: ?>
+                <span class="site-title"><?php bloginfo('name'); ?></span>
+            <?php endif; ?>
+        </a>
+
+        <a href="<?php echo esc_url($wishlist_url); ?>" class="mobile-bar-item mobile-bar-wishlist" data-has-items="<?php echo $wishlist_count > 0 ? 'true' : 'false'; ?>">
+            <span class="bar-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="<?php echo $wishlist_count > 0 ? '#e11d48' : 'none'; ?>" stroke="<?php echo $wishlist_count > 0 ? '#e11d48' : 'currentColor'; ?>" stroke-width="1.5">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+            </span>
+            <span class="bar-count wishlist-count" data-count="<?php echo esc_attr($wishlist_count); ?>"><?php echo esc_html($wishlist_count); ?></span>
+        </a>
+
+        <a href="<?php echo esc_url($cart_url); ?>" class="mobile-bar-item mobile-bar-cart">
+            <span class="bar-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
+            </span>
+            <span class="bar-count cart-count" data-count="<?php echo esc_attr($cart_count); ?>"><?php echo esc_html($cart_count); ?></span>
+        </a>
+
+        <a href="<?php echo esc_url($myaccount_url); ?>" class="mobile-bar-item mobile-bar-account">
+            <span class="bar-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+            </span>
+        </a>
+    </nav>
+<?php
+}
+add_action('wp_footer', 'jetlagz_mobile_bottom_bar', 5);

@@ -22,9 +22,9 @@ if (!$features || empty($features)) {
 
 <section class="features-section py-16 md:py-20 mb-16 md:mb-20 bg-white">
     <div class="wrapper mx-auto px-4">
-        <div class="flex flex-col sm:flex-row sm:flex-wrap mx-4 gap-8 justify-center">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap mx-4 gap-8 justify-center sm:max-w-none">
             <?php foreach ($features as $feature): ?>
-                <div class="sm:max-w-[185px]">
+                <div class="max-w-[70%] sm:max-w-[185px] mx-auto">
                     <?php if (!empty($feature['icon'])):
                         // Obsługa różnych Return Format ACF
                         if (is_array($feature['icon'])) {

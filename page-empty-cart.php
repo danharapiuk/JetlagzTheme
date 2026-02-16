@@ -7,7 +7,7 @@
 
 get_header(); ?>
 
-<div id="primary" class="content-area">
+<div id="primary" class="content-area wrapper">
     <main id="main" class="site-main" role="main">
 
         <div class="empty-cart-container" style="text-align: center; padding: 60px 20px; margin: 0 auto;">

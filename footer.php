@@ -59,12 +59,12 @@
     </div>
 </footer><!-- 
 <#colophon -->
-<div class="bg-[#010B13] w-full">
+<div class="bg-white md:bg-[#010B13] w-full">
     <div class="sm:flex w-full justify-between items-center max-w-[1380px] mx-auto px-4 xl:px-0">
         <?php jetlagz_inject_template_part('payment-icons'); ?>
 
-        <div class="bg-[#010B13] flex sm:flex justify-center">
-            <div class="wrapper !p-0 text-[10px] py-4 text-white opacity-20">
+        <div class="flex sm:flex justify-center">
+            <div class="wrapper !p-0 text-[10px] py-4 text-black md:text-white opacity-20">
                 <?php do_action('storefront_after_footer'); ?>
                 © <?php echo date('Y'); ?> ALMOST DREAM
                 <!-- Scroll to Top Button -->

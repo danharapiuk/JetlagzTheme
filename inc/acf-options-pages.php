@@ -74,6 +74,51 @@ function jetlagz_register_delivery_acf_fields()
                     'ui' => 1,
                 ),
                 array(
+                    'key' => 'field_shipping_countdown_enabled',
+                    'label' => 'Włącz countdown "Kup do 15:00"',
+                    'name' => 'shipping_countdown_enabled',
+                    'type' => 'true_false',
+                    'default_value' => 1,
+                    'ui' => 1,
+                    'instructions' => 'Pokazuje odliczanie "Kup do 15:00 a paczkę nadamy jeszcze dziś" na stronie produktu.',
+                ),
+                array(
+                    'key' => 'field_shipping_countdown_hour',
+                    'label' => 'Godzina graniczna countdown',
+                    'name' => 'shipping_countdown_hour',
+                    'type' => 'number',
+                    'default_value' => 15,
+                    'min' => 1,
+                    'max' => 23,
+                    'instructions' => 'Do której godziny pokazywać countdown (domyślnie 15:00).',
+                    'conditional_logic' => array(
+                        array(
+                            array(
+                                'field' => 'field_shipping_countdown_enabled',
+                                'operator' => '==',
+                                'value' => '1',
+                            ),
+                        ),
+                    ),
+                ),
+                array(
+                    'key' => 'field_shipping_countdown_text',
+                    'label' => 'Tekst countdown',
+                    'name' => 'shipping_countdown_text',
+                    'type' => 'text',
+                    'default_value' => 'Kup do {hour}:00 a paczkę nadamy jeszcze dziś. Pozostało:',
+                    'instructions' => 'Użyj {hour} jako placeholder dla godziny.',
+                    'conditional_logic' => array(
+                        array(
+                            array(
+                                'field' => 'field_shipping_countdown_enabled',
+                                'operator' => '==',
+                                'value' => '1',
+                            ),
+                        ),
+                    ),
+                ),
+                array(
                     'key' => 'field_delivery_cutoff_time',
                     'label' => 'Godzina graniczna zamówienia',
                     'name' => 'delivery_cutoff_time',
@@ -274,7 +319,7 @@ function jetlagz_render_delivery_info()
     <style>
         .delivery-info {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 8px;
             font-size: 12px;
             color: #333;

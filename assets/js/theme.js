@@ -439,6 +439,153 @@
     $(function() {
         UniversalTheme.init();
         
+        // Function to show inline message (defined first for hoisting)
+        function showVariationRequiredMessage($variationsTable) {
+            // Remove any existing message
+            $('.variation-required-message').remove();
+            
+            // Make variations table position relative for absolute positioning
+            $variationsTable.addClass('has-required-message');
+            
+            // Create message element
+            var $message = $('<div class="variation-required-message">' +
+                '<span class="message-text">Wybierz rozmiar przed dodaniem do koszyka</span>' +
+                '</div>');
+            
+            // Append inside variations table wrapper for absolute positioning
+            $variationsTable.append($message);
+            
+            // Animate in
+            setTimeout(function() {
+                $message.addClass('visible');
+            }, 10);
+            
+            // Auto-remove after 60 seconds (temporary for styling - change back to 5000)
+            setTimeout(function() {
+                $message.removeClass('visible');
+                $variationsTable.removeClass('has-required-message');
+                setTimeout(function() {
+                    $message.remove();
+                }, 300);
+            }, 60000);
+        }
+        
+        // Override WooCommerce default alert for variation validation
+        (function() {
+            // Store original window.alert
+            var originalAlert = window.alert;
+            
+            // List of messages to suppress (WooCommerce variation messages)
+            var suppressedMessages = [
+                'wybierz opcje',
+                'select options',
+                'przed dodaniem',
+                'please choose',
+                'please select',
+                'wybierz wariant',
+                'opcje produktu',
+                'uzupełnić wymagane pola',
+                'inpostpay',
+                'inpost pay',
+                'wymagane pola'
+            ];
+            
+            // Override alert to suppress WooCommerce variation messages
+            window.alert = function(message) {
+                if (message && typeof message === 'string') {
+                    var lowerMessage = message.toLowerCase();
+                    for (var i = 0; i < suppressedMessages.length; i++) {
+                        if (lowerMessage.indexOf(suppressedMessages[i]) !== -1) {
+                            // Suppress this alert - our custom handler will show the message
+                            console.log('Suppressed WooCommerce alert:', message);
+                            return;
+                        }
+                    }
+                }
+                // Let other alerts through
+                originalAlert.call(window, message);
+            };
+        })();
+        
+        // Custom variation validation - intercept add to cart without proper variation selection
+        (function() {
+            // Use capturing phase to intercept before WooCommerce
+            document.addEventListener('click', function(e) {
+                var target = e.target;
+                var $target = $(target);
+                
+                // Check if clicked element or its parent is add to cart button
+                // Also check for inpost-izi-button custom element
+                var isInpostButton = target.tagName && target.tagName.toLowerCase() === 'inpost-izi-button';
+                var $button = $target.closest('.single_add_to_cart_button, .inpost-pay-button, [class*="inpost-pay"], inpost-izi-button');
+                
+                if ($button.length === 0 && !isInpostButton) return;
+                
+                // If it's the inpost button, wrap it
+                if (isInpostButton && $button.length === 0) {
+                    $button = $(target);
+                }
+                
+                var $form = $button.closest('form.variations_form, form.cart');
+                
+                // If button is outside form (like InPost), look for form on the page
+                if ($form.length === 0 && (isInpostButton || $button.is('inpost-izi-button'))) {
+                    $form = $('form.variations_form, form.cart').first();
+                }
+                
+                // Check if this is a variable product form
+                if ($form.length && ($form.hasClass('variations_form') || $form.find('.variations').length)) {
+                    var $variationInput = $form.find('input[name="variation_id"]');
+                    var variationId = $variationInput.val();
+                    
+                    // Check if no variation is selected (0 or empty)
+                    if (!variationId || variationId === '0' || variationId === '') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
+                        // Find the variations table and scroll to it
+                        var $variationsTable = $form.find('table.variations, .variations');
+                        
+                        if ($variationsTable.length) {
+                            // Scroll to variations with offset
+                            $('html, body').animate({
+                                scrollTop: $variationsTable.offset().top - 120
+                            }, 400, function() {
+                                // Show inline message above variations
+                                showVariationRequiredMessage($variationsTable);
+                            });
+                        } else {
+                            // Fallback notification if no variations table found
+                            if (typeof UniversalTheme !== 'undefined') {
+                                UniversalTheme.showNotification('Wybierz rozmiar produktu przed dodaniem do koszyka', 'warning');
+                            }
+                        }
+                        
+                        return false;
+                    }
+                }
+            }, true); // Use capture phase
+        })();
+        
+        // Remove message when variation is selected
+        $(document).on('change', '.variations select', function() {
+            $('.variation-required-message').removeClass('visible');
+            $('table.variations, .variations').removeClass('has-required-message');
+            setTimeout(function() {
+                $('.variation-required-message').remove();
+            }, 300);
+        });
+        
+        // Also handle variation button clicks
+        $(document).on('click', '.variation-button', function() {
+            $('.variation-required-message').removeClass('visible');
+            $('table.variations, .variations').removeClass('has-required-message');
+            setTimeout(function() {
+                $('.variation-required-message').remove();
+            }, 300);
+        });
+        
         // Lazy load reviews section when it comes into viewport
         var reviewsSection = document.getElementById('product-reviews');
         
@@ -500,7 +647,6 @@
             slidesPerView: 1,
             spaceBetween: 20,
             centeredSlides: false,
-            width: null,
             navigation: {
                 nextEl: '.reviews-slider-next',
                 prevEl: '.reviews-slider-prev',
@@ -520,7 +666,15 @@
             },
             watchOverflow: true,
             observer: true,
-            observeParents: true
+            observeParents: true,
+            breakpoints: {
+                0: {
+                    spaceBetween: 0
+                },
+                481: {
+                    spaceBetween: 20
+                }
+            }
         });
         
         // Update slider when sorting reviews
@@ -602,6 +756,133 @@
                 .text(isExpanded ? 'Read more' : 'Read less')
                 .attr('aria-expanded', !isExpanded);
         });
+
+    // Wishlist heart button toggle
+    $(document).on('click', '.wishlist-heart-btn', function(e) {
+        console.log('Wishlist button clicked!', this);
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const $btn = $(this);
+        const productId = $btn.data('product-id');
+        const isInWishlist = $btn.hasClass('in-wishlist');
+        
+        // Get AJAX URL and nonce - try multiple sources
+        const ajaxConfig = typeof universalThemeAjax !== 'undefined' ? universalThemeAjax : 
+                          (typeof themeConfig !== 'undefined' ? themeConfig : null);
+        
+        if (!ajaxConfig || !ajaxConfig.ajaxUrl) {
+            console.error('Wishlist: AJAX config not found');
+            return;
+        }
+        
+        // Prevent double clicks
+        if ($btn.hasClass('loading')) {
+            return;
+        }
+        
+        $btn.addClass('loading');
+        
+        $.ajax({
+            url: ajaxConfig.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'toggle_wishlist_product',
+                product_id: productId,
+                remove: isInWishlist ? 1 : 0,
+                nonce: ajaxConfig.nonce
+            },
+            success: function(response) {
+                $btn.removeClass('loading');
+                
+                if (response.success) {
+                    if (response.data.action === 'added') {
+                        $btn.addClass('in-wishlist');
+                        $btn.attr('title', 'Usuń z ulubionych');
+                        $btn.find('.heart-icon').attr('fill', 'currentColor');
+                        if (typeof UniversalTheme !== 'undefined') {
+                            UniversalTheme.showNotification('Dodano do ulubionych! <a href="/wishlist/" class="notification-link">Zobacz ulubione</a>', 'success');
+                        }
+                    } else {
+                        $btn.removeClass('in-wishlist');
+                        $btn.attr('title', 'Dodaj do ulubionych');
+                        $btn.find('.heart-icon').attr('fill', 'none');
+                        if (typeof UniversalTheme !== 'undefined') {
+                            UniversalTheme.showNotification('Usunięto z ulubionych', 'info');
+                        }
+                    }
+                    
+                    // Update all buttons with the same product ID
+                    $(`.wishlist-heart-btn[data-product-id="${productId}"]`).each(function() {
+                        const $otherBtn = $(this);
+                        if (response.data.action === 'added') {
+                            $otherBtn.addClass('in-wishlist');
+                            $otherBtn.attr('title', 'Usuń z ulubionych');
+                            $otherBtn.find('.heart-icon').attr('fill', 'currentColor');
+                        } else {
+                            $otherBtn.removeClass('in-wishlist');
+                            $otherBtn.attr('title', 'Dodaj do ulubionych');
+                            $otherBtn.find('.heart-icon').attr('fill', 'none');
+                        }
+                    });
+                    
+                    // Trigger event for mobile bottom bar update
+                    if (typeof response.data.count !== 'undefined') {
+                        $(document).trigger('wishlist_updated', [response.data.count]);
+                    }
+                } else {
+                    console.error('Wishlist error:', response.data);
+                    if (typeof UniversalTheme !== 'undefined') {
+                        UniversalTheme.showNotification(response.data.message || 'Wystąpił błąd', 'error');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Wishlist AJAX error:', status, error);
+                $btn.removeClass('loading');
+                if (typeof UniversalTheme !== 'undefined') {
+                    UniversalTheme.showNotification('Wystąpił błąd połączenia', 'error');
+                }
+            }
+        });
+    });
+    
+    // ========================================
+    // Mobile Bottom Bar - Update Counts
+    // ========================================
+    (function() {
+        var $mobileBar = $('#mobile-bottom-bar');
+        if ($mobileBar.length === 0) return;
+        
+        // Update wishlist count when products are added/removed
+        $(document).on('wishlist_updated', function(e, count) {
+            var $wishlistCount = $mobileBar.find('.wishlist-count');
+            $wishlistCount.text(count).attr('data-count', count);
+            
+            // Update heart fill state and SVG
+            var $wishlistItem = $mobileBar.find('.mobile-bar-wishlist');
+            var $svg = $wishlistItem.find('svg');
+            
+            if (count > 0) {
+                $wishlistItem.attr('data-has-items', 'true');
+                $svg.attr('fill', '#e11d48').attr('stroke', '#e11d48');
+            } else {
+                $wishlistItem.attr('data-has-items', 'false');
+                $svg.attr('fill', 'none').attr('stroke', 'currentColor');
+            }
+        });
+        
+        // Update cart count when WooCommerce fragments are updated
+        $(document.body).on('added_to_cart removed_from_cart wc_fragments_refreshed', function() {
+            // Try to get cart count from fragments or make AJAX call
+            var $cartCount = $('.header-cart-count, .cart-contents-count').first();
+            if ($cartCount.length) {
+                var count = parseInt($cartCount.text()) || 0;
+                $mobileBar.find('.cart-count').text(count).attr('data-count', count);
+            }
+        });
+    })();
+    
     }); // End of $(function() {
 
     // Udostępnij obiekt globalnie

@@ -121,8 +121,26 @@ header {
 	}
 }
 
+/* === LOGO & BRANDING === */
+
 .universal-header-logo {
 	flex: 0 0 auto;
+}
+
+/* Nadpisanie Storefront defaults dla logo img */
+.site-header .site-logo-anchor img,
+.site-header .site-logo-link img,
+.site-header .custom-logo-link img {
+	width: auto;
+	max-width: 100%;
+}
+
+/* Logo base styles */
+.custom-logo {
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	object-fit: contain;
 }
 
 /* Logo responsive behavior */
@@ -132,9 +150,40 @@ header {
 
 .custom-logo-mobile {
 	display: none;
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	object-fit: contain;
 }
 
-/* Site title styling jeśli nie ma logo */
+/* Site branding layout */
+.site-branding {
+	float: none !important;
+	text-align: left;
+}
+
+.site-branding .custom-logo-link {
+	display: block;
+	line-height: 1;
+	width: fit-content;
+	height: fit-content;
+}
+
+.site-header .custom-logo-link {
+	margin-right: 0;
+}
+
+.site-header .site-branding {
+	margin-bottom: 0;
+}
+
+/* Ukryj site title gdy logo jest aktywne */
+.site-branding .site-title,
+.site-branding .site-description {
+	display: none;
+}
+
+/* Site title styling (fallback gdy nie ma logo) */
 .site-title {
 	color: white;
 	font-size: 1.5rem;
@@ -147,18 +196,31 @@ header {
 	text-decoration: none;
 }
 
+/* Legacy logo link classes (kompatybilność) */
+.mobile-logo {
+	display: none;
+}
+
 /* Na mobile - pokaż mobile logo i ukryj desktop */
 @media (max-width: 768px) {
-	.custom-logo-desktop {
-		display: none !important;
+	.site-header .custom-logo-link .custom-logo-desktop {
+		display: none;
 	}
 
-	.custom-logo-mobile {
-		display: block !important;
-		max-width: 30vw !important;
-		width: auto !important;
-		object-fit: contain !important;
+	.site-header .custom-logo-link .custom-logo-mobile {
+		display: block;
+		width: auto;
+		max-width: none;
+		object-fit: contain;
 		max-height: 50px;
+	}
+
+	.desktop-logo {
+		display: none;
+	}
+
+	.mobile-logo {
+		display: inline-block;
 	}
 
 	.site-title {
@@ -890,22 +952,22 @@ header .col-full .coll-full {
 	padding: 0 !important;
 }
 
-.site-branding {
-	float: none !important;
-}
-
 @media (max-width: 639px) {
 	.universal-cart-dropdown .cart-count,
 	.universal-cart-dropdown .cart-total {
 		display: none;
 	}
 
+	.site-header {
+		padding: 5px 0 !important;
+	}
+
+	#site-header .universal-header-row .universal-mobile-menu-toggle {
+		padding: 0 !important;
+	}
+
 	.universal-header-search {
 		justify-content: flex-end;
 		margin: 0;
 	}
-}
-
-.site-header .custom-logo-link {
-	margin-right: 0 !important;
 }

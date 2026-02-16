@@ -57,6 +57,22 @@ if (!$products_query || !$products_query->have_posts()) {
                                     </span>
                                 <?php endif; ?>
                             </div>
+                        </a>
+                        <?php
+                        // Wishlist button on image
+                        if (function_exists('YITH_WCWL')) {
+                            $wishlist = YITH_WCWL();
+                            $is_in_wishlist = $wishlist->is_product_in_wishlist($product_id);
+                        ?>
+                            <button type="button" class="wishlist-heart-btn<?php echo $is_in_wishlist ? ' in-wishlist' : ''; ?>"
+                                data-product-id="<?php echo esc_attr($product_id); ?>"
+                                title="<?php echo $is_in_wishlist ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'; ?>">
+                                <svg class="heart-icon" width="20" height="20" viewBox="0 0 24 24" fill="<?php echo $is_in_wishlist ? 'currentColor' : 'none'; ?>" stroke="currentColor" stroke-width="2">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        <?php } ?>
+                        <a href="<?php echo esc_url(get_permalink()); ?>" class="product-link product-info-link">
                             <div>
                                 <h3 class="product-title">
                                     <?php
@@ -117,11 +133,9 @@ if (!$products_query || !$products_query->have_posts()) {
             <?php endwhile; ?>
         </div>
 
-        <!-- Navigation arrows (not for recently-viewed which has custom navigation) -->
-        <?php if ($slider_class !== 'recently-viewed-swiper'): ?>
-            <div class="swiper-button-prev"></div>
-            <div class="swiper-button-next"></div>
-        <?php endif; ?>
+        <!-- Navigation arrows -->
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
     </div>
 </div>
 
@@ -142,55 +156,69 @@ if (!$products_query || !$products_query->have_posts()) {
             const swiperConfig = {
                 slidesPerView: 2.15,
                 spaceBetween: 6,
+                freeMode: {
+                    enabled: true,
+                    sticky: false,
+                    momentumRatio: 0.5,
+                    momentumVelocityRatio: 0.5,
+                },
                 breakpoints: {
                     640: {
                         slidesPerView: 2,
+                        slidesPerGroup: 2,
                         spaceBetween: 20,
+                        freeMode: {
+                            enabled: false,
+                        },
                     },
                     768: {
                         slidesPerView: 3,
+                        slidesPerGroup: 3,
                         spaceBetween: 30,
+                        freeMode: {
+                            enabled: false,
+                        },
                     },
                     1024: {
                         slidesPerView: 4,
+                        slidesPerGroup: 4,
                         spaceBetween: 40,
+                        freeMode: {
+                            enabled: false,
+                        },
                     },
                 },
             };
 
-            // Add navigation only for non-recently-viewed sliders
-            if (swiperClass !== 'recently-viewed-swiper') {
-                swiperConfig.navigation = {
-                    nextEl: '.' + swiperClass + ' .swiper-button-next',
-                    prevEl: '.' + swiperClass + ' .swiper-button-prev',
-                    disabledClass: 'swiper-button-disabled',
-                };
-            }
+            // Add navigation for all sliders
+            swiperConfig.navigation = {
+                nextEl: '.' + swiperClass + ' .swiper-button-next',
+                prevEl: '.' + swiperClass + ' .swiper-button-prev',
+                disabledClass: 'swiper-button-disabled',
+            };
 
             const swiper = new Swiper('.' + swiperClass, swiperConfig);
 
-            // Handle button visibility only for sliders with navigation
-            if (swiperClass !== 'recently-viewed-swiper') {
-                swiper.on('init', function() {
-                    const prevBtn = this.el.querySelector('.swiper-button-prev');
-                    if (this.isBeginning && prevBtn) {
-                        prevBtn.style.display = 'none';
-                    }
-                });
+            // Handle button visibility for all sliders
+            swiper.on('init', function() {
+                const prevBtn = this.el.querySelector('.swiper-button-prev');
+                if (this.isBeginning && prevBtn) {
+                    prevBtn.style.display = 'none';
+                }
+            });
 
-                swiper.on('slideChange', function() {
-                    const prevBtn = this.el.querySelector('.swiper-button-prev');
-                    const nextBtn = this.el.querySelector('.swiper-button-next');
+            swiper.on('slideChange', function() {
+                const prevBtn = this.el.querySelector('.swiper-button-prev');
+                const nextBtn = this.el.querySelector('.swiper-button-next');
 
-                    if (prevBtn) {
-                        prevBtn.style.display = this.isBeginning ? 'none' : 'flex';
-                    }
+                if (prevBtn) {
+                    prevBtn.style.display = this.isBeginning ? 'none' : 'flex';
+                }
 
-                    if (nextBtn) {
-                        nextBtn.style.display = this.isEnd ? 'none' : 'flex';
-                    }
-                });
-            }
+                if (nextBtn) {
+                    nextBtn.style.display = this.isEnd ? 'none' : 'flex';
+                }
+            });
         }
     });
 </script>

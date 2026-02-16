@@ -79,7 +79,9 @@
 .new-products-swiper .swiper-button-prev,
 .new-products-swiper .swiper-button-next,
 .related-products-swiper .swiper-button-prev,
-.related-products-swiper .swiper-button-next {
+.related-products-swiper .swiper-button-next,
+.recently-viewed-swiper .swiper-button-prev,
+.recently-viewed-swiper .swiper-button-next {
 	width: 44px;
 	height: 44px;
 	border-radius: 50%;
@@ -100,7 +102,9 @@
 .new-products-swiper .swiper-button-prev:hover,
 .new-products-swiper .swiper-button-next:hover,
 .related-products-swiper .swiper-button-prev:hover,
-.related-products-swiper .swiper-button-next:hover {
+.related-products-swiper .swiper-button-next:hover,
+.recently-viewed-swiper .swiper-button-prev:hover,
+.recently-viewed-swiper .swiper-button-next:hover {
 	background: #f3f4f6;
 	border-color: #9ca3af;
 	color: #374151;
@@ -111,7 +115,9 @@
 .new-products-swiper .swiper-button-prev:disabled,
 .new-products-swiper .swiper-button-next:disabled,
 .related-products-swiper .swiper-button-prev:disabled,
-.related-products-swiper .swiper-button-next:disabled {
+.related-products-swiper .swiper-button-next:disabled,
+.recently-viewed-swiper .swiper-button-prev:disabled,
+.recently-viewed-swiper .swiper-button-next:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 }
@@ -121,7 +127,9 @@
 .new-products-swiper .swiper-button-prev:after,
 .new-products-swiper .swiper-button-next:after,
 .related-products-swiper .swiper-button-prev:after,
-.related-products-swiper .swiper-button-next:after {
+.related-products-swiper .swiper-button-next:after,
+.recently-viewed-swiper .swiper-button-prev:after,
+.recently-viewed-swiper .swiper-button-next:after {
 	font-size: 16px;
 	font-weight: bold;
 }
@@ -132,7 +140,8 @@
 
 .swiper.bestsellers-swiper,
 .swiper.new-products-swiper,
-.swiper.related-products-swiper {
+.swiper.related-products-swiper,
+.swiper.recently-viewed-swiper {
 	overflow: visible !important;
 }
 
@@ -154,4 +163,22 @@
 .swiper-button-next {
 	right: 0;
 	left: auto !important;
+}
+
+@media (max-width: 639px) {
+	.swiper-button-next,
+	.swiper-button-prev {
+		margin-top: -18px !important;
+		width: 30px !important;
+		height: 30px !important;
+	}
+
+	.swiper .swiper-button-next:after,
+	.swiper .swiper-button-prev:after {
+		font-size: 12px;
+	}
+
+	.swiper .swiper-button-prev {
+		right: 50px !important;
+	}
 }

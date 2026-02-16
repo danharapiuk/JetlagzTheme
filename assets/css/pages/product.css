@@ -592,7 +592,8 @@
 	align-items: center;
 	justify-content: center;
 }
-.product-banner-payment-wrapper .info-payments {
+.product-banner-payment-wrapper .info-payments,
+.product-banner-payment-wrapper .info-delivery {
 	display: none;
 }
 
@@ -1538,10 +1539,6 @@ html {
 	margin-bottom: 2rem;
 }
 
-.rating-score {
-	margin-bottom: 0.75rem;
-}
-
 .score-number {
 	font-size: 72px;
 	font-weight: 700;
@@ -1576,6 +1573,8 @@ html {
 	color: #6b7280;
 	font-weight: 500;
 	text-align: left;
+	display: flex;
+	align-items: flex-end;
 }
 
 /* Rating Breakdown */
@@ -1714,7 +1713,6 @@ html {
 .reviews-swiper .swiper-slide {
 	height: auto;
 	display: flex;
-	width: 100%;
 	flex-shrink: 0;
 	box-sizing: border-box;
 }
@@ -1937,10 +1935,6 @@ html {
 	left: auto;
 }
 
-.reviews-list-container .swiper-slide {
-	margin-right: 20px !important;
-}
-
 .reviews-slider-prev::after,
 .reviews-slider-next::after {
 	font-family: 'swiper-icons';
@@ -2100,10 +2094,6 @@ html {
 		padding: 2.5rem 0;
 	}
 
-	.reviews-summary {
-		padding: 2rem 1.5rem;
-	}
-
 	.score-number {
 		font-size: 56px;
 	}
@@ -2184,8 +2174,20 @@ html {
 
 	/* Hide arrows on small screens, keep only pagination */
 	.reviews-swiper {
-		padding: 0;
-		margin: 0;
+		padding: 0 !important;
+		margin: 0 !important;
+		width: 100% !important;
+		overflow: hidden;
+	}
+
+	.reviews-swiper .swiper-wrapper {
+		margin-left: 0 !important;
+	}
+
+	.reviews-swiper .swiper-slide {
+		width: 100% !important;
+		margin-right: 0 !important;
+		flex-shrink: 0;
 	}
 
 	.reviews-slider-prev,
@@ -2338,7 +2340,7 @@ html {
 
 .recently-viewed-section h2 {
 	color: #1f2937;
-	font-weight: 700;
+	font-weight: 600;
 	line-height: 1.2;
 }
 
@@ -2410,4 +2412,70 @@ html {
 
 .storefront-wc-brands-single-product {
 	display: none !important;
+}
+
+/* ========================================
+   VARIATION REQUIRED MESSAGE
+   ======================================== */
+
+/* Make variations table position relative when message is shown */
+table.variations.has-required-message,
+.variations.has-required-message {
+	position: relative;
+}
+
+.variation-required-message {
+	position: absolute;
+	top: -25px;
+	left: 50px;
+	right: 0;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 12px 16px;
+	background: white;
+	border: 1px solid #d6d6d6;
+	border-radius: 8px;
+	opacity: 0;
+	transform: translateY(10px);
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	z-index: 100;
+	width: fit-content;
+}
+
+.variation-required-message.visible {
+	opacity: 1;
+	transform: translateY(0);
+	animation: messagePulse 0.6s ease-in-out 3;
+}
+
+.variation-required-message .message-text {
+	font-size: 14px;
+	font-weight: 300;
+	color: #856404;
+}
+
+/* Pulse animation for the message */
+@keyframes messagePulse {
+	0%,
+	100% {
+		box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+		transform: translateY(0) scale(1);
+	}
+	50% {
+		box-shadow: 0 4px 20px rgba(255, 193, 7, 0.5);
+		transform: translateY(0) scale(1.02);
+	}
+}
+
+/* Bounce animation for the icon */
+@keyframes iconBounce {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-3px);
+	}
 }
