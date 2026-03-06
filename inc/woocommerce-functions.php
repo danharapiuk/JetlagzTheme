@@ -418,7 +418,20 @@ function jetlagz_custom_title_price_wrapper()
         <div class="single-product-info flex justify-between">
             <div class="title-price-wrapper w-full">
                 <?php jetlagz_custom_product_rating_content(); ?>
-                <h1 class="product_title entry-title max-w-[85%]"><?php the_title(); ?></h1>
+                <?php
+                // Check for ACF custom name/description
+                $acf_name = function_exists('get_field') ? get_field('product_name', $product->get_id()) : '';
+                $acf_description = function_exists('get_field') ? get_field('product_description', $product->get_id()) : '';
+
+                if (!empty($acf_name)) :
+                ?>
+                    <h1 class="single-product-title" itemprop="name"><?php echo esc_html($acf_name); ?></h1>
+                    <?php if (!empty($acf_description)) : ?>
+                        <p class="single-product-subtitle" itemprop="description"><?php echo esc_html($acf_description); ?></p>
+                    <?php endif; ?>
+                <?php else : ?>
+                    <h1 class="product_title entry-title max-w-[85%]"><?php the_title(); ?></h1>
+                <?php endif; ?>
                 <p class="price"><?php echo $product->get_price_html(); ?></p>
             </div>
             <div class="producer-logo">
@@ -975,14 +988,8 @@ function jetlagz_display_newsletter_discount()
                 }
             }
 
-            // Debug - sprawdź czy elementy istnieją
-            console.log('Newsletter toggle btn:', $toggleBtn.length);
-            console.log('Newsletter modal:', $modal.length);
-            console.log('Newsletter backdrop:', $backdrop.length);
-
             // Open modal
             $toggleBtn.on('click', function(e) {
-                console.log('Button clicked!');
                 e.preventDefault();
                 e.stopPropagation();
                 $backdrop.addClass('active');
@@ -1141,7 +1148,6 @@ function jetlagz_display_product_videos()
                         }
                     }
                 });
-                console.log('Swiper initialized:', swiper);
             } else {
                 console.error('Swiper not loaded!');
             }
@@ -3529,15 +3535,20 @@ function jetlagz_update_product_status_by_stock($product_id, $desired_status = '
     $new_status = null;
 
     if ($desired_status === 'auto') {
+        // Get preferred hidden status from settings
+        $hidden_status = get_theme_option('woocommerce.out_of_stock_status', 'draft');
+        $hidden_status = in_array($hidden_status, ['draft', 'private']) ? $hidden_status : 'draft';
+        
         // Automatic mode - set status based on stock availability
         if ($has_stock && in_array($current_status, ['draft', 'private'])) {
             // Product has stock and is currently hidden - make it public
             $new_status = 'publish';
         } elseif (!$has_stock && $current_status === 'publish') {
             // Product has no stock and is currently published - hide it
-            // Check theme option for preferred hidden status
-            $hidden_status = get_theme_option('woocommerce.out_of_stock_status', 'draft');
-            $new_status = in_array($hidden_status, ['draft', 'private']) ? $hidden_status : 'draft';
+            $new_status = $hidden_status;
+        } elseif (!$has_stock && in_array($current_status, ['draft', 'private']) && $current_status !== $hidden_status) {
+            // Product has no stock and is hidden but with wrong status - fix it
+            $new_status = $hidden_status;
         }
     } else {
         // Manual mode - use desired status regardless of stock
@@ -3753,11 +3764,31 @@ function jetlagz_add_bulk_stock_status_update_admin()
 
     // Handle settings update
     if (isset($_POST['jetlagz_save_settings']) && wp_verify_nonce($_POST['_wpnonce'], 'jetlagz_settings')) {
-        // This would normally save to options, but we're using theme config
-        // For now, just show a message about configuration location
+        // Save auto_manage_product_status
+        $auto_manage = isset($_POST['auto_manage_product_status']) ? true : false;
+        update_option('jetlagz_woocommerce_auto_manage_product_status', $auto_manage);
+
+        // Save out_of_stock_status
+        $out_of_stock_status = sanitize_text_field($_POST['out_of_stock_status']);
+        if (in_array($out_of_stock_status, ['draft', 'private'])) {
+            update_option('jetlagz_woocommerce_out_of_stock_status', $out_of_stock_status);
+        }
+
+        // Save check_stock_frequency
+        $frequency = sanitize_text_field($_POST['check_stock_frequency']);
+        if (in_array($frequency, ['on_save', 'hourly', 'daily'])) {
+            update_option('jetlagz_woocommerce_check_stock_frequency', $frequency);
+            // Re-setup scheduled events based on new frequency
+            jetlagz_setup_scheduled_events();
+        }
+
+        // Save log_status_changes
+        $log_changes = isset($_POST['log_status_changes']) ? true : false;
+        update_option('jetlagz_woocommerce_log_status_changes', $log_changes);
+
         add_action('admin_notices', function () {
-            echo '<div class="notice notice-info is-dismissible">';
-            echo '<p><strong>Informacja:</strong> Ustawienia są konfigurowane w pliku theme-config.php. Aby je zmienić, edytuj sekcję "woocommerce" w tym pliku.</p>';
+            echo '<div class="notice notice-success is-dismissible">';
+            echo '<p><strong>Sukces!</strong> Ustawienia zostały zapisane.</p>';
             echo '</div>';
         });
     }
@@ -3797,39 +3828,49 @@ function jetlagz_add_bulk_stock_status_update_admin()
                 <div class="inside">
                     <form method="post">
                         <?php wp_nonce_field('jetlagz_settings'); ?>
+                        <?php
+                        // Get current values (from DB or fallback to config)
+                        $auto_manage = get_theme_option('woocommerce.auto_manage_product_status', true);
+                        $out_of_stock_status = get_theme_option('woocommerce.out_of_stock_status', 'draft');
+                        $check_frequency = get_theme_option('woocommerce.check_stock_frequency', 'on_save');
+                        $log_changes = get_theme_option('woocommerce.log_status_changes', true);
+                        ?>
                         <table class="form-table">
                             <tr>
                                 <th scope="row">Status automatycznego zarządzania</th>
                                 <td>
-                                    <?php $auto_manage = $woo_config['auto_manage_product_status']; ?>
-                                    <span class="dashicons dashicons-<?php echo $auto_manage ? 'yes-alt' : 'dismiss'; ?>" style="color: <?php echo $auto_manage ? 'green' : 'red'; ?>;"></span>
-                                    <strong><?php echo $auto_manage ? 'WŁĄCZONE' : 'WYŁĄCZONE'; ?></strong>
+                                    <label>
+                                        <input type="checkbox" name="auto_manage_product_status" value="1" <?php checked($auto_manage, true); ?> />
+                                        Włącz automatyczne zarządzanie statusem
+                                    </label>
                                     <p class="description">
-                                        <?php if ($auto_manage): ?>
-                                            Produkty bez dostępnych wariantów są automatycznie ukrywane.
-                                        <?php else: ?>
-                                            Automatyczne zarządzanie jest wyłączone. Włącz w theme-config.php.
-                                        <?php endif; ?>
+                                        Produkty bez dostępnych wariantów będą automatycznie ukrywane.
                                     </p>
                                 </td>
                             </tr>
                             <tr>
                                 <th scope="row">Status dla produktów bez magazynu</th>
                                 <td>
-                                    <code><?php echo ucfirst($woo_config['out_of_stock_status']); ?></code>
+                                    <select name="out_of_stock_status">
+                                        <option value="draft" <?php selected($out_of_stock_status, 'draft'); ?>>Szkic (draft)</option>
+                                        <option value="private" <?php selected($out_of_stock_status, 'private'); ?>>Prywatny (private)</option>
+                                    </select>
                                     <p class="description">
-                                        Produkty bez dostępnych wariantów będą miały status:
-                                        <strong><?php echo $woo_config['out_of_stock_status'] === 'draft' ? 'Szkic' : 'Prywatny'; ?></strong>
+                                        Produkty bez dostępnych wariantów będą miały ten status.
                                     </p>
                                 </td>
                             </tr>
                             <tr>
                                 <th scope="row">Częstotliwość sprawdzania</th>
                                 <td>
-                                    <code><?php echo ucfirst($frequency); ?></code>
+                                    <select name="check_stock_frequency">
+                                        <option value="on_save" <?php selected($check_frequency, 'on_save'); ?>>Przy zapisie produktu</option>
+                                        <option value="hourly" <?php selected($check_frequency, 'hourly'); ?>>Co godzinę</option>
+                                        <option value="daily" <?php selected($check_frequency, 'daily'); ?>>Codziennie</option>
+                                    </select>
                                     <p class="description">
                                         <?php
-                                        switch ($frequency) {
+                                        switch ($check_frequency) {
                                             case 'on_save':
                                                 echo 'Status jest sprawdzany natychmiastowo podczas zapisywania produktu lub wariantu.';
                                                 break;
@@ -3842,7 +3883,7 @@ function jetlagz_add_bulk_stock_status_update_admin()
                                         }
                                         ?>
                                     </p>
-                                    <?php if ($frequency !== 'on_save'): ?>
+                                    <?php if ($check_frequency !== 'on_save'): ?>
                                         <p class="description">
                                             <strong>Następne sprawdzenie:</strong>
                                             <?php
@@ -3859,23 +3900,19 @@ function jetlagz_add_bulk_stock_status_update_admin()
                             <tr>
                                 <th scope="row">Logowanie zmian</th>
                                 <td>
-                                    <?php $log_enabled = $woo_config['log_status_changes']; ?>
-                                    <span class="dashicons dashicons-<?php echo $log_enabled ? 'yes-alt' : 'dismiss'; ?>" style="color: <?php echo $log_enabled ? 'green' : 'red'; ?>;"></span>
-                                    <strong><?php echo $log_enabled ? 'WŁĄCZONE' : 'WYŁĄCZONE'; ?></strong>
+                                    <label>
+                                        <input type="checkbox" name="log_status_changes" value="1" <?php checked($log_changes, true); ?> />
+                                        Włącz logowanie zmian statusu
+                                    </label>
                                     <p class="description">
-                                        <?php if ($log_enabled): ?>
-                                            Wszystkie zmiany statusu są zapisywane w logach systemu.
-                                        <?php else: ?>
-                                            Logowanie zmian statusu jest wyłączone.
-                                        <?php endif; ?>
+                                        Wszystkie zmiany statusu będą zapisywane w logach systemu (error_log).
                                     </p>
                                 </td>
                             </tr>
                         </table>
 
-                        <p class="description">
-                            <strong>💡 Wskazówka:</strong> Aby zmienić te ustawienia, edytuj sekcję <code>'woocommerce'</code>
-                            w pliku <code>inc/theme-config.php</code>.
+                        <p class="submit">
+                            <input type="submit" name="jetlagz_save_settings" class="button button-primary" value="💾 Zapisz ustawienia" />
                         </p>
                     </form>
                 </div>
@@ -4147,6 +4184,18 @@ function jetlagz_inpost_pay_button_fallback()
     <script>
         (function() {
             function ensureInPostButton() {
+                // IMPORTANT: Don't refresh if InPost popup/widget is open!
+                if (window.inpostClickActive || window.inpostBlockNavigation) {
+                    console.log('[ensureInPostButton] Skipping - InPost click active');
+                    return;
+                }
+
+                // Don't refresh if popup is visible
+                if (document.getElementById('inpostpay-widget-popup')) {
+                    console.log('[ensureInPostButton] Skipping - popup is open');
+                    return;
+                }
+
                 var placeholders = document.querySelectorAll('.izi-widget-placeholder.izi-widget-product');
                 if (!placeholders.length) return;
 
@@ -4171,8 +4220,11 @@ function jetlagz_inpost_pay_button_fallback()
                 });
 
                 // Tell the SDK to pick up the new button elements
+                // But only if no popup is open
                 if (window.IPPwidget && typeof window.IPPwidget.refresh === 'function') {
-                    window.IPPwidget.refresh();
+                    if (!window.inpostClickActive && !document.getElementById('inpostpay-widget-popup')) {
+                        window.IPPwidget.refresh();
+                    }
                 }
             }
 

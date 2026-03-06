@@ -5,11 +5,15 @@
  * Displays all available product categories with images and names
  */
 
-// Get all product categories
+// Get all product categories (exclude "uncategorized")
+$uncategorized = get_term_by('slug', 'uncategorized', 'product_cat');
+$exclude_ids = $uncategorized ? array($uncategorized->term_id) : array();
+
 $categories = get_terms(array(
     'taxonomy' => 'product_cat',
     'hide_empty' => true,
-    'parent' => 0 // Only top-level categories
+    'parent' => 0, // Only top-level categories
+    'exclude' => $exclude_ids
 ));
 
 if (!$categories || is_wp_error($categories)) {

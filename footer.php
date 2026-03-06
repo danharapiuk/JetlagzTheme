@@ -20,7 +20,7 @@
                     <ul>
                         <li><a href="/o-nas">O nas</a></li>
                         <li><a href="/wishlist">Lista życzen</a></li>
-                        <li><a href="/program-lojalnosciowy">Program lojalnościowy</a></li>
+                        <li class="hidden"><a href="/program-lojalnosciowy">Program lojalnościowy</a></li>
 
                     </ul>
                 </div>
@@ -59,7 +59,7 @@
     </div>
 </footer><!-- 
 <#colophon -->
-<div class="bg-white md:bg-[#010B13] w-full">
+<div class="bottom-footer bg-white md:bg-[#DACFC6] w-full">
     <div class="sm:flex w-full justify-between items-center max-w-[1380px] mx-auto px-4 xl:px-0">
         <?php jetlagz_inject_template_part('payment-icons'); ?>
 

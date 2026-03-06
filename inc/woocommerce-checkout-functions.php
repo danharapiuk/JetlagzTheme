@@ -11,6 +11,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Domyślnie odznacz "Wysłać na inny adres?"
+ */
+add_filter('woocommerce_ship_to_different_address_checked', '__return_false');
+
+/**
  * Inicjalizacja one-click checkout
  */
 function universal_theme_init_one_click_checkout()

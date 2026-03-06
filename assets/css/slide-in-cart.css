@@ -4,6 +4,25 @@
 	display: none !important;
 }
 
+/* InPost Pay widget - zawsze na wierzchu */
+.inpost-pay-widget,
+.inpost-izi-widget,
+[class*='inpost-pay'],
+[class*='inpost-izi'],
+inpost-izi-button,
+#inpost-pay-modal,
+#inpost-izi-modal,
+div[id*='inpost'] {
+	z-index: 999999 !important;
+}
+
+/* Gdy widget InPost jest widoczny, body NIE powinno być blokowane */
+body:has(inpost-izi-widget),
+body:has(.inpost-pay-widget),
+body:has([class*='inpost-izi']) {
+	overflow: auto !important;
+}
+
 /* Slide-in Cart Styles */
 .slide-in-cart-overlay {
 	position: fixed;

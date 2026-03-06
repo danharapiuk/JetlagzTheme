@@ -452,6 +452,39 @@ function enqueue_slide_in_cart_assets()
 
             // Listen for WooCommerce AJAX add to cart event
             $(document.body).on('added_to_cart', function(event, fragments, cart_hash, button) {
+                // Nie otwieraj slide-in cart dla przycisków InPost Pay
+                // Sprawdź najpierw globalną flagę ustawianą przez theme.js
+                if (window.inpostClickActive || window.inpostBlockNavigation) {
+                    console.log('[Slide Cart] Skipping - InPost click active');
+                    return;
+                }
+                
+                var isInpostButton = false;
+                
+                if (button) {
+                    // Sprawdź czy button to jQuery object
+                    var \$btn = button.jquery ? button : $(button);
+                    var btnEl = \$btn.length ? \$btn[0] : button;
+                    
+                    // Sprawdź różne warianty przycisku InPost
+                    isInpostButton = (
+                        \$btn.hasClass('inpost-pay-button') ||
+                        \$btn.hasClass('inpost-izi-button') ||
+                        \$btn.closest('[class*=\"inpost\"]').length > 0 ||
+                        \$btn.is('inpost-izi-button') ||
+                        (btnEl && btnEl.tagName && btnEl.tagName.toLowerCase() === 'inpost-izi-button') ||
+                        (btnEl && btnEl.closest && btnEl.closest('[class*=\"inpost\"]'))
+                    );
+                }
+                
+                // Sprawdź też czy widget InPost jest aktualnie otwarty
+                var inpostWidgetOpen = $('inpost-izi-widget:visible, .inpost-pay-widget:visible, [class*=\"inpost-izi\"]:visible').length > 0 ||
+                                       document.querySelector('inpost-izi-widget[style*=\"display: block\"], inpost-izi-widget[style*=\"visibility: visible\"]');
+                
+                if (isInpostButton || inpostWidgetOpen) {
+                    console.log('[Slide Cart] Skipping - InPost button/widget detected');
+                    return;
+                }
                 openSlideInCart();
             });
             

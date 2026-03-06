@@ -73,8 +73,7 @@
 .woocommerce ul.products.columns-3 {
 	display: grid !important;
 	grid-template-columns: repeat(3, 1fr) !important;
-	row-gap: 10px !important;
-	column-gap: 5px !important;
+	gap: 20px 2px !important;
 	margin: 0 !important;
 	padding: 0 !important;
 }
@@ -624,6 +623,8 @@ form.universal-search-form {
 .storefront-breadcrumb {
 	max-width: 1380px !important;
 	padding: 2rem 16px;
+	margin: 0 auto !important;
+	width: 100%;
 }
 
 .woocommerce-message,
@@ -725,4 +726,38 @@ input[type='search']:focus {
 		display: none !important;
 		visibility: hidden !important;
 	}
+
+	footer.bottom-footer {
+		margin-bottom: 40px !important;
+	}
+}
+
+.easypack-parcel-machine .easypack-parcel-machine-label {
+	display: none !important;
+}
+
+.easypack-parcel-machine-select {
+	width: 100% !important	;
+}
+
+.easypack_show_geowidget {
+	margin: 10px !important;
+	max-width: none !important;
+}
+
+.woocommerce-info,
+.woocommerce-noreviews,
+p.no-comments {
+	background-color: #000000 !important;
+}
+
+@media (min-width: 768px) and (max-width: 1439px) {
+	.storefront-breadcrumb {
+		padding-left: 16px !important;
+		padding-right: 16px !important;
+	}
+}
+
+body.default-white {
+	--color-primary: rgb(106, 38, 58) !important;
 }

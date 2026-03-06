@@ -1633,7 +1633,7 @@ input[type='submit']:hover {
 
 .crosssell-product-price {
 	font-weight: 600;
-	color: var(--primary-color);
+	color: black;
 	margin-bottom: 0.5rem;
 }
 

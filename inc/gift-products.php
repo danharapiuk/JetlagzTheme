@@ -459,10 +459,18 @@ function jetlagz_manage_gift_products()
                 'price'        => $rule['price'],
                 'message'      => $rule['message'] ?? '',
             ];
+            
+            // Also mark this gift as "just added" for page reload detection
+            $just_added = WC()->session->get('jetlagz_gifts_just_added', []);
+            $just_added[$product_id] = [
+                'product_name' => $product->get_name(),
+                'message'      => $rule['message'] ?? '',
+            ];
+            WC()->session->set('jetlagz_gifts_just_added', $just_added);
         }
     }
 
-    // Store notifications for frontend
+    // Store notifications for frontend (for AJAX scenarios)
     if (!empty($gifts_added)) {
         WC()->session->set('jetlagz_gift_notifications', $gifts_added);
     }
@@ -608,6 +616,11 @@ function jetlagz_gift_notification_frontend()
         return;
     }
 
+    // Force cart calculation to trigger gift logic BEFORE we read notifications
+    if (WC()->cart && !WC()->cart->is_empty()) {
+        WC()->cart->calculate_totals();
+    }
+
     // Build rules data for JS (only enabled rules)
     $js_rules = [];
     foreach ($rules as $rule) {
@@ -626,9 +639,35 @@ function jetlagz_gift_notification_frontend()
     // Check if there are pending notifications from PHP (page reload after add-to-cart)
     $pending_notifications = [];
     if (WC()->session) {
+        // First check "just added" gifts from previous request (page reload scenario)
+        $just_added = WC()->session->get('jetlagz_gifts_just_added', []);
+        if (!empty($just_added)) {
+            foreach ($just_added as $product_id => $gift_data) {
+                $pending_notifications[] = [
+                    'product_id'   => $product_id,
+                    'product_name' => $gift_data['product_name'],
+                    'message'      => $gift_data['message'] ?? '',
+                ];
+            }
+            WC()->session->set('jetlagz_gifts_just_added', null);
+        }
+        
+        // Then check regular notifications (AJAX scenario)
         $pending = WC()->session->get('jetlagz_gift_notifications');
         if (!empty($pending)) {
-            $pending_notifications = $pending;
+            // Merge but avoid duplicates
+            foreach ($pending as $notif) {
+                $exists = false;
+                foreach ($pending_notifications as $existing) {
+                    if ($existing['product_id'] == $notif['product_id']) {
+                        $exists = true;
+                        break;
+                    }
+                }
+                if (!$exists) {
+                    $pending_notifications[] = $notif;
+                }
+            }
             WC()->session->set('jetlagz_gift_notifications', null);
         }
     }
@@ -641,7 +680,7 @@ function jetlagz_gift_notification_frontend()
             position: fixed;
             top: 20px;
             left: 20px;
-            z-index: 999999;
+            z-index: 9999999;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -868,25 +907,50 @@ function jetlagz_gift_notification_frontend()
             }
 
             // Listen for AJAX add-to-cart events (for live updates without reload)
+            // Use debounce to prevent multiple calls when event fires rapidly
+            var giftCheckPending = false;
+            var giftCheckTimeout = null;
+
+            function checkGiftStatus() {
+                if (giftCheckPending) {
+                    return;
+                }
+                giftCheckPending = true;
+
+                fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>?action=jetlagz_check_gift_status&_wpnonce=<?php echo wp_create_nonce('jetlagz_gift_check'); ?>', {
+                        credentials: 'same-origin'
+                    })
+                    .then(function(r) {
+                        return r.json();
+                    })
+                    .then(function(data) {
+                        if (data.success && data.data && data.data.gifts_added && data.data.gifts_added.length > 0) {
+                            data.data.gifts_added.forEach(function(gift, i) {
+                                setTimeout(function() {
+                                    showGiftToast(gift.product_name, gift.message || '');
+                                }, 200 + (i * 200));
+                            });
+                        }
+                    })
+                    .catch(function(err) {})
+                    .finally(function() {
+                        // Reset after short delay to allow for legitimate subsequent adds
+                        setTimeout(function() {
+                            giftCheckPending = false;
+                        }, 1000);
+                    });
+            }
+
             if (typeof jQuery !== 'undefined') {
                 jQuery(document.body).on('added_to_cart', function(event, fragments, cart_hash, $button) {
-                    // After AJAX add-to-cart, check via our endpoint if a gift was added
-                    fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>?action=jetlagz_check_gift_status&_wpnonce=<?php echo wp_create_nonce('jetlagz_gift_check'); ?>', {
-                            credentials: 'same-origin'
-                        })
-                        .then(function(r) {
-                            return r.json();
-                        })
-                        .then(function(data) {
-                            if (data.success && data.data && data.data.gifts_added) {
-                                data.data.gifts_added.forEach(function(gift, i) {
-                                    setTimeout(function() {
-                                        showGiftToast(gift.product_name, gift.message || '');
-                                    }, 200 + (i * 200));
-                                });
-                            }
-                        })
-                        .catch(function() {});
+
+                    // Debounce - wait a bit for multiple rapid events to settle
+                    if (giftCheckTimeout) {
+                        clearTimeout(giftCheckTimeout);
+                    }
+                    giftCheckTimeout = setTimeout(function() {
+                        checkGiftStatus();
+                    }, 300);
                 });
             }
 
@@ -904,6 +968,11 @@ add_action('wp_footer', 'jetlagz_gift_notification_frontend', 50);
 function jetlagz_ajax_check_gift_status()
 {
     check_ajax_referer('jetlagz_gift_check', '_wpnonce');
+
+    // Ensure cart is calculated so gift logic runs
+    if (WC()->cart) {
+        WC()->cart->calculate_totals();
+    }
 
     $notifications = [];
     if (WC()->session) {

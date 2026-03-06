@@ -54,7 +54,7 @@
 }
 
 .custom-product-rating .star.filled {
-	color: #fbbf24;
+	color: #d5a676;
 }
 
 .custom-product-rating .star.empty {
@@ -91,6 +91,26 @@
 	letter-spacing: -0.05em;
 	margin-top: 0;
 	position: relative;
+}
+
+/* Single Product Title (ACF custom name) */
+.single-product-title {
+	font-size: 32px;
+	font-weight: 400;
+	letter-spacing: -0.05em;
+	margin-top: 0;
+	margin-bottom: 0;
+	max-width: 85%;
+	font-family: 'Playfair Display', serif;
+}
+
+.single-product-subtitle {
+	font-size: 14px;
+	font-weight: 300;
+	color: #a2775a;
+	margin: 4px 0 0 0;
+	line-height: 1.4;
+	max-width: 85%;
 }
 
 /* ========================================
@@ -1361,7 +1381,7 @@ button.single_add_to_cart_button::after {
 	div.woocommerce-product-gallery__wrapper {
 		display: grid !important;
 		grid-template-columns: repeat(2, 1fr) !important;
-		gap: 5px !important;
+		gap: 2px !important;
 		width: 100% !important;
 		transform: none !important;
 		transition: none !important;
@@ -1642,7 +1662,6 @@ html {
 }
 
 .rating-count {
-	font-size: 13px;
 	color: #6b7280;
 	font-weight: 500;
 	text-align: right;
@@ -1700,14 +1719,13 @@ html {
 /* Review Cards */
 .reviews-swiper {
 	position: relative;
-	padding: 0 50px;
-	margin: 0 -50px;
 	overflow: hidden;
-	width: calc(100% + 100px);
+	width: 100%;
 }
 
 .reviews-swiper .swiper-wrapper {
 	display: flex;
+	width: auto;
 }
 
 .reviews-swiper .swiper-slide {
@@ -1715,6 +1733,8 @@ html {
 	display: flex;
 	flex-shrink: 0;
 	box-sizing: border-box;
+	width: 100% !important;
+	min-width: 100% !important;
 }
 
 .review-card {
@@ -1776,7 +1796,7 @@ html {
 }
 
 .review-rating .star.filled {
-	color: #fbbf24;
+	color: #d5a676;
 }
 
 .review-rating .star.empty {
@@ -2126,10 +2146,6 @@ html {
 	}
 
 	/* Reviews Swiper responsive */
-	.reviews-swiper {
-		padding: 0 35px;
-		margin: 0 -35px;
-	}
 
 	.reviews-slider-prev,
 	.reviews-slider-next {
@@ -2173,15 +2189,10 @@ html {
 	}
 
 	/* Hide arrows on small screens, keep only pagination */
-	.reviews-swiper {
-		padding: 0 !important;
-		margin: 0 !important;
-		width: 100% !important;
-		overflow: hidden;
-	}
 
-	.reviews-swiper .swiper-wrapper {
-		margin-left: 0 !important;
+	.reviews-slider-prev,
+	.reviews-slider-next {
+		display: none;
 	}
 
 	.reviews-swiper .swiper-slide {
@@ -2190,10 +2201,14 @@ html {
 		flex-shrink: 0;
 	}
 
-	.reviews-slider-prev,
-	.reviews-slider-next {
-		display: none;
+	.reviews-swiper {
+		width: 100% !important;
+		overflow: hidden;
 	}
+}
+
+.reviews-swiper .swiper-wrapper {
+	margin-left: 0 !important;
 }
 
 /* ========================================

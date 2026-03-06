@@ -160,16 +160,24 @@
 
         // Aktualizacje koszyka
         cartUpdates: function() {
+            var lastNotificationTime = 0;
+            
             // Dodaj animację przy dodawaniu do koszyka
             $(document).on('added_to_cart', function(event, fragments, cart_hash, $button) {
-                $button.addClass('added');
-                
-                setTimeout(function() {
-                    $button.removeClass('added');
-                }, 2000);
+                if ($button && $button.length) {
+                    $button.addClass('added');
+                    
+                    setTimeout(function() {
+                        $button.removeClass('added');
+                    }, 2000);
+                }
 
-                // Pokaż mini powiadomienie
-                UniversalTheme.showNotification('Produkt dodany do koszyka!', 'success');
+                // Pokaż mini powiadomienie - z debounce żeby uniknąć podwójnych
+                var now = Date.now();
+                if (now - lastNotificationTime > 500) {
+                    lastNotificationTime = now;
+                    UniversalTheme.showNotification('Produkt dodany do koszyka!', 'success');
+                }
             });
 
             // Aktualizacja licznika koszyka z animacją
@@ -507,6 +515,263 @@
             };
         })();
         
+        // Prevent page reload when clicking InPost button on product page
+        // The InPost SDK handles everything via AJAX, but something triggers a page reload
+        (function() {
+            window.inpostClickActive = false;
+            window.inpostBlockNavigation = false;
+            
+            // DEBUG: Watch ALL InPost widget changes
+            var inpostObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    // Check added nodes
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) {
+                            var tagName = node.tagName ? node.tagName.toLowerCase() : '';
+                            var className = node.className && typeof node.className === 'string' ? node.className : '';
+                            var id = node.id || '';
+                            
+                            if (tagName.includes('inpost') || className.includes('inpost') || className.includes('izi') || id.includes('inpost')) {
+                                console.log('[InPost DEBUG] Element ADDED:', tagName, className, id);
+                                console.log('[InPost DEBUG] Element:', node);
+                                
+                                // If it's the widget, log its visibility
+                                if (tagName === 'inpost-izi-widget' || className.includes('widget')) {
+                                    console.log('[InPost DEBUG] Widget display:', window.getComputedStyle(node).display);
+                                    console.log('[InPost DEBUG] Widget visibility:', window.getComputedStyle(node).visibility);
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Check removed nodes
+                    mutation.removedNodes.forEach(function(node) {
+                        if (node.nodeType === 1) {
+                            var tagName = node.tagName ? node.tagName.toLowerCase() : '';
+                            var className = node.className && typeof node.className === 'string' ? node.className : '';
+                            var id = node.id || '';
+                            
+                            if (tagName.includes('inpost') || className.includes('inpost') || className.includes('izi') || id.includes('inpost')) {
+                                console.log('[InPost DEBUG] Element REMOVED:', tagName, className, id);
+                                console.log('[InPost DEBUG] Removed from:', mutation.target);
+                                console.trace('[InPost DEBUG] Stack trace for removal:');
+                            }
+                        }
+                    });
+                    
+                    // Check attribute changes on InPost elements
+                    if (mutation.type === 'attributes' && mutation.target.nodeType === 1) {
+                        var tagName = mutation.target.tagName ? mutation.target.tagName.toLowerCase() : '';
+                        var className = mutation.target.className && typeof mutation.target.className === 'string' ? mutation.target.className : '';
+                        
+                        if (tagName.includes('inpost') || className.includes('inpost') || className.includes('izi')) {
+                            console.log('[InPost DEBUG] Attribute changed:', mutation.attributeName, '=', mutation.target.getAttribute(mutation.attributeName));
+                        }
+                    }
+                });
+            });
+            
+            inpostObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class', 'hidden', 'aria-hidden']
+            });
+            
+            // AGGRESSIVE: Override window.location setter
+            // Save original location
+            var currentUrl = window.location.href;
+            
+            // Monitor location changes by polling (backup method)
+            setInterval(function() {
+                if (window.inpostBlockNavigation && window.location.href !== currentUrl) {
+                    console.log('[InPost Fix] Location change detected, reverting!');
+                    console.log('[InPost Fix] Trying to go to:', window.location.href);
+                    // Can't actually revert but log it
+                }
+            }, 100);
+            
+            // Block page navigation when InPost click is active
+            window.addEventListener('beforeunload', function(e) {
+                if (window.inpostClickActive || window.inpostBlockNavigation) {
+                    console.log('[InPost Fix] BLOCKING page unload - InPost is active');
+                    e.preventDefault();
+                    e.returnValue = 'InPost Pay jest aktywny. Czy na pewno chcesz opuścić stronę?';
+                    return e.returnValue;
+                }
+            });
+            
+            // Try to intercept Navigation API (modern browsers)
+            if (typeof navigation !== 'undefined' && navigation.addEventListener) {
+                navigation.addEventListener('navigate', function(e) {
+                    if (window.inpostBlockNavigation && e.canIntercept) {
+                        var destUrl = e.destination.url;
+                        var currentUrl = window.location.href;
+                        
+                        // Only block if trying to navigate to the same product page (refresh)
+                        if (destUrl === currentUrl || destUrl === currentUrl.split('?')[0]) {
+                            console.log('[InPost Fix] Blocking same-page navigation:', destUrl);
+                            e.preventDefault();
+                            return;
+                        }
+                    }
+                });
+            }
+            
+            // Override History API to catch pushState/replaceState redirects
+            var originalPushState = history.pushState;
+            var originalReplaceState = history.replaceState;
+            
+            history.pushState = function() {
+                if (window.inpostClickActive) {
+                    console.log('[InPost Fix] BLOCKED history.pushState');
+                    return;
+                }
+                return originalPushState.apply(this, arguments);
+            };
+            
+            history.replaceState = function() {
+                if (window.inpostClickActive) {
+                    console.log('[InPost Fix] BLOCKED history.replaceState');
+                    return;
+                }
+                return originalReplaceState.apply(this, arguments);
+            };
+            
+            // Override HTMLFormElement.prototype.submit GLOBALLY
+            var originalPrototypeSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function() {
+                if (window.inpostClickActive) {
+                    if (this.classList.contains('cart') || this.classList.contains('variations_form')) {
+                        console.log('[InPost Fix] BLOCKED HTMLFormElement.prototype.submit()');
+                        return false;
+                    }
+                }
+                return originalPrototypeSubmit.call(this);
+            };
+            
+            // Intercept WooCommerce cart_redirect_after_add behavior
+            // This runs BEFORE InPost click to set up blocking
+            // NOTE: We no longer use stopImmediatePropagation to allow gift notification to work
+            $(document.body).on('added_to_cart', function(e, fragments, cart_hash, $button) {
+                if (window.inpostClickActive) {
+                    console.log('[InPost Fix] Blocking cart redirect after added_to_cart');
+                    // Block wc_add_to_cart_params.cart_redirect_after_add
+                    if (typeof wc_add_to_cart_params !== 'undefined') {
+                        wc_add_to_cart_params.cart_redirect_after_add = 'no';
+                    }
+                    // Don't use stopImmediatePropagation() - let gift notification handler run
+                }
+            });
+            
+            // Capture click on InPost button VERY early
+            document.addEventListener('click', function(e) {
+                var target = e.target;
+                var isInpostButton = target.tagName && target.tagName.toLowerCase() === 'inpost-izi-button';
+                var isInsideInpost = target.closest && target.closest('inpost-izi-button, [class*="inpost-izi"], .inpost-pay-button, .izi-widget-placeholder');
+                
+                if (isInpostButton || isInsideInpost) {
+                    console.log('[InPost Fix] InPost button clicked - blocking all navigation');
+                    window.inpostClickActive = true;
+                    window.inpostBlockNavigation = true;
+                    
+                    // Disable cart redirect in WooCommerce params
+                    if (typeof wc_add_to_cart_params !== 'undefined') {
+                        window._originalCartRedirect = wc_add_to_cart_params.cart_redirect_after_add;
+                        wc_add_to_cart_params.cart_redirect_after_add = 'no';
+                    }
+                    
+                    // Find parent form and completely disable submissions
+                    var form = document.querySelector('form.cart, form.variations_form');
+                    if (form) {
+                        form._originalAction = form.action;
+                        form.action = 'javascript:void(0)';
+                        form._originalOnsubmit = form.onsubmit;
+                        form.onsubmit = function(evt) { 
+                            if (window.inpostClickActive) {
+                                console.log('[InPost Fix] Blocked onsubmit');
+                                evt && evt.preventDefault();
+                                return false;
+                            }
+                            return true;
+                        };
+                        
+                        // Restore after delay
+                        setTimeout(function() {
+                            if (form._originalAction) {
+                                form.action = form._originalAction;
+                            }
+                            if (form._originalOnsubmit !== undefined) {
+                                form.onsubmit = form._originalOnsubmit;
+                            }
+                        }, 5000);
+                    }
+                    
+                    // Keep blocking while InPost widget is visible
+                    // Check every 500ms if widget is still open
+                    var checkWidgetInterval = setInterval(function() {
+                        var widgetVisible = document.querySelector('inpost-izi-widget') !== null ||
+                                           document.querySelector('[class*="inpost-izi-modal"]') !== null ||
+                                           document.querySelector('.izi-modal') !== null ||
+                                           document.querySelector('[class*="izi-widget"]') !== null;
+                        
+                        // Also check for any InPost overlay/backdrop
+                        var inpostOverlay = document.querySelector('[class*="inpost"][class*="overlay"]') !== null ||
+                                           document.querySelector('[class*="inpost"][class*="backdrop"]') !== null;
+                        
+                        if (!widgetVisible && !inpostOverlay) {
+                            // Widget closed, release block after short delay
+                            setTimeout(function() {
+                                window.inpostClickActive = false;
+                                window.inpostBlockNavigation = false;
+                                if (typeof wc_add_to_cart_params !== 'undefined' && window._originalCartRedirect !== undefined) {
+                                    wc_add_to_cart_params.cart_redirect_after_add = window._originalCartRedirect;
+                                }
+                                console.log('[InPost Fix] Widget closed - block released');
+                            }, 500);
+                            clearInterval(checkWidgetInterval);
+                        }
+                    }, 500);
+                    
+                    // Fallback: always release after 60 seconds max
+                    setTimeout(function() {
+                        clearInterval(checkWidgetInterval);
+                        window.inpostClickActive = false;
+                        window.inpostBlockNavigation = false;
+                        if (typeof wc_add_to_cart_params !== 'undefined' && window._originalCartRedirect !== undefined) {
+                            wc_add_to_cart_params.cart_redirect_after_add = window._originalCartRedirect;
+                        }
+                        console.log('[InPost Fix] Fallback timeout - block released');
+                    }, 60000);
+                }
+            }, true); // Capture phase
+            
+            // Block form submission at native level (submit event)
+            document.addEventListener('submit', function(e) {
+                if (window.inpostClickActive) {
+                    var form = e.target;
+                    if (form.classList.contains('cart') || form.classList.contains('variations_form')) {
+                        console.log('[InPost Fix] Blocking form submit event');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        return false;
+                    }
+                }
+            }, true);
+            
+            // Also intercept jQuery submit
+            $(document).on('submit', 'form.variations_form, form.cart', function(e) {
+                if (window.inpostClickActive) {
+                    console.log('[InPost Fix] Blocking jQuery form submit');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            });
+        })();
+        
         // Custom variation validation - intercept add to cart without proper variation selection
         (function() {
             // Use capturing phase to intercept before WooCommerce
@@ -645,7 +910,7 @@
         
         var reviewsSwiper = new Swiper('.reviews-swiper', {
             slidesPerView: 1,
-            spaceBetween: 20,
+            spaceBetween: 0,
             centeredSlides: false,
             navigation: {
                 nextEl: '.reviews-slider-next',
@@ -669,13 +934,20 @@
             observeParents: true,
             breakpoints: {
                 0: {
+                    slidesPerView: 1,
                     spaceBetween: 0
                 },
                 481: {
-                    spaceBetween: 20
+                    slidesPerView: 1,
+                    spaceBetween: 0
                 }
             }
         });
+        
+        // Force Swiper to recalculate dimensions
+        setTimeout(function() {
+            reviewsSwiper.update();
+        }, 100);
         
         // Update slider when sorting reviews
         $('#reviews-sort').on('change', function() {

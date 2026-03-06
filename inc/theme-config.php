@@ -179,8 +179,17 @@ function get_theme_config()
 }
 
 // Funkcja pomocnicza do pobierania wartości konfiguracji
+// Najpierw sprawdza wartości zapisane w bazie danych (z panelu admina),
+// jeśli nie ma - pobiera z theme-config.php
 function get_theme_option($key, $default = '')
 {
+    // Sprawdź czy jest nadpisanie w bazie danych
+    $db_option = get_option('jetlagz_' . str_replace('.', '_', $key));
+    if ($db_option !== false) {
+        return $db_option;
+    }
+
+    // Fallback do konfiguracji z pliku
     $config = get_theme_config();
     $keys = explode('.', $key);
     $value = $config;

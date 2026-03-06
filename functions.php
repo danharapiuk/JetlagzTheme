@@ -1338,7 +1338,7 @@ function universal_render_checkout_totals()
       <tbody>
         <!-- Sub total -->
         <tr class="cart-subtotal">
-          <th><?php echo __('Sub total:', 'woocommerce'); ?></th>
+          <th><?php echo __('Wartość produktów:', 'jetlagz-theme'); ?></th>
           <td><?php echo wp_kses_post($subtotal); ?></td>
         </tr>
 

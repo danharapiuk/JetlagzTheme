@@ -22,7 +22,7 @@ if ((!$icons || empty($icons)) && (!$delivery_icons || empty($delivery_icons))) 
 ?>
 <div class="md:flex gap-8 pt-3 sm:pt-0">
     <div class="sm:flex gap-2 items-center">
-        <div class="info-payments text-white opacity-[0.3] text-xs font-light uppercase tracking-wider hidden md:block">Płatności:</div>
+        <div class="info-payments text-xs uppercase tracking-wider hidden md:block">Płatności:</div>
         <div class="flex gap-1 sm:gap-3 flex-wrap justify-center md:justify-start py-1 sm:py-3 payment-icons">
             <?php foreach ($icons as $icon): ?>
                 <?php if (!empty($icon['icon'])):
@@ -41,7 +41,7 @@ if ((!$icons || empty($icons)) && (!$delivery_icons || empty($delivery_icons))) 
         </div>
     </div>
     <div class="gap-2 items-center hidden md:flex">
-        <div class="info-delivery text-white opacity-[0.3] text-xs font-light uppercase tracking-wider">Dostawa:</div>
+        <div class="info-delivery text-xs uppercase tracking-wider">Dostawa:</div>
         <div class="flex gap-1 sm:gap-3 flex-wrap justify-center sm:py-3 payment-icons">
             <?php foreach ($delivery_icons as $icon): ?>
                 <?php if (!empty($icon['icon'])):
