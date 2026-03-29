@@ -1226,7 +1226,7 @@ function universal_update_cart_quantity()
   } else {
     // Update quantity
     $result = WC()->cart->set_quantity($cart_item_key, $quantity, true);
-    $message = 'Quantity updated to ' . $quantity;
+    $message = 'Ilość zaktualizowana: ' . $quantity;
     universal_debug_log("Universal Cart: Setting quantity {$quantity} for item {$cart_item_key}, result: " . ($result ? 'success' : 'failed'));
   }
 
@@ -1546,6 +1546,10 @@ function universal_get_crosssells_ajax()
       $prod = wc_get_product($pid);
       if ($prod && $prod->get_cross_sell_ids()) {
         foreach ($prod->get_cross_sell_ids() as $csid) {
+          // Skip gift products
+          if (function_exists('jetlagz_is_gift_source_product') && jetlagz_is_gift_source_product($csid)) {
+            continue;
+          }
           // avoid duplicates
           $existing_ids = array_column($products, 'id');
           if (in_array($csid, $existing_ids, true)) {
@@ -1555,14 +1559,26 @@ function universal_get_crosssells_ajax()
           if ($p) {
             // Sprawdź czy produkt ma warianty (variable product)
             $has_variants = $p->get_type() === 'variable' && !empty($p->get_children());
+            $gallery_image_ids = $p->get_gallery_image_ids();
+            $secondary_image = !empty($gallery_image_ids)
+              ? wp_get_attachment_image_url($gallery_image_ids[0], 'woocommerce_single')
+              : '';
+            $acf_name = function_exists('get_field') ? get_field('product_name', $p->get_id()) : '';
+            $acf_description = function_exists('get_field') ? get_field('product_description', $p->get_id()) : '';
 
             $products[] = array(
               'id' => $p->get_id(),
               'name' => $p->get_name(),
+              'acf_name' => is_string($acf_name) ? trim($acf_name) : '',
+              'acf_description' => is_string($acf_description) ? trim($acf_description) : '',
               'price_formatted' => wc_price($p->get_price()),
               'image' => wp_get_attachment_image_url($p->get_image_id(), 'woocommerce_single'),
+              'secondary_image' => $secondary_image,
               'permalink' => get_permalink($p->get_id()),
               'has_variants' => $has_variants,
+              'is_on_sale' => $p->is_on_sale(),
+              'rating_count' => (int) $p->get_rating_count(),
+              'average_rating' => (float) $p->get_average_rating(),
             );
           }
         }
@@ -1572,22 +1588,36 @@ function universal_get_crosssells_ajax()
 
   // Fallback: if no cross-sells, get recent products
   if (empty($products)) {
+    $exclude_ids = function_exists('jetlagz_get_all_gift_product_ids') ? jetlagz_get_all_gift_product_ids() : array();
     $recent = wc_get_products(array(
       'limit' => 4,
       'orderby' => 'date',
       'order' => 'DESC',
       'status' => 'publish',
+      'exclude' => $exclude_ids,
     ));
     foreach ($recent as $p) {
       $has_variants = $p->get_type() === 'variable' && !empty($p->get_children());
+      $gallery_image_ids = $p->get_gallery_image_ids();
+      $secondary_image = !empty($gallery_image_ids)
+        ? wp_get_attachment_image_url($gallery_image_ids[0], 'woocommerce_single')
+        : '';
+      $acf_name = function_exists('get_field') ? get_field('product_name', $p->get_id()) : '';
+      $acf_description = function_exists('get_field') ? get_field('product_description', $p->get_id()) : '';
 
       $products[] = array(
         'id' => $p->get_id(),
         'name' => $p->get_name(),
+        'acf_name' => is_string($acf_name) ? trim($acf_name) : '',
+        'acf_description' => is_string($acf_description) ? trim($acf_description) : '',
         'price_formatted' => wc_price($p->get_price()),
         'image' => wp_get_attachment_image_url($p->get_image_id(), 'woocommerce_single'),
+        'secondary_image' => $secondary_image,
         'permalink' => get_permalink($p->get_id()),
         'has_variants' => $has_variants,
+        'is_on_sale' => $p->is_on_sale(),
+        'rating_count' => (int) $p->get_rating_count(),
+        'average_rating' => (float) $p->get_average_rating(),
       );
     }
   }
@@ -1678,10 +1708,29 @@ function universal_refresh_checkout_table()
         $product = $cart_item['data'];
         $quantity = $cart_item['quantity'];
         $product_id = $cart_item['product_id'];
-        $product_name = $product->get_name();
+        $acf_product_name = '';
+        if (function_exists('get_field')) {
+          $acf_product_name = get_field('product_name', $product_id);
+
+          if ((!is_string($acf_product_name) || trim($acf_product_name) === '') && $product) {
+            $runtime_product_id = $product->get_id();
+            $acf_product_name = get_field('product_name', $runtime_product_id);
+          }
+
+          if ((!is_string($acf_product_name) || trim($acf_product_name) === '') && $product && method_exists($product, 'get_parent_id')) {
+            $parent_id = (int) $product->get_parent_id();
+            if ($parent_id > 0) {
+              $acf_product_name = get_field('product_name', $parent_id);
+            }
+          }
+        }
+        $product_name = is_string($acf_product_name) && trim($acf_product_name) !== ''
+          ? trim($acf_product_name)
+          : $product->get_name();
         $product_image = $product->get_image('thumbnail');
         $product_price = $product->get_price();
         $product_total = $product_price * $quantity;
+        $is_gift = !empty($cart_item['jetlagz_is_gift']);
         $price_formatted = wc_price($product_price);
         $total_formatted = wc_price($product_total);
       ?>
@@ -1694,6 +1743,7 @@ function universal_refresh_checkout_table()
             </div>
             <div class="checkout-item-details">
               <div class="checkout-item-name">
+                <?php if ($is_gift) : ?><span class="gift-badge">🎁 PREZENT</span> <?php endif; ?>
                 <?php echo esc_html($product_name); ?>
               </div>
               <div class="checkout-item-unit-price" data-unit-price="<?php echo esc_attr($product_price); ?>">
@@ -2127,6 +2177,34 @@ function toggle_wishlist_product_ajax()
 }
 add_action('wp_ajax_toggle_wishlist_product', 'toggle_wishlist_product_ajax');
 add_action('wp_ajax_nopriv_toggle_wishlist_product', 'toggle_wishlist_product_ajax');
+
+
+/**
+ * Nadpisanie głównego zdjęcia w CTX Feed Pro zdjęciem z pola ACF 'zjecie_do_reklam'
+ */
+add_filter('woo_feed_filter_product_image_link', 'custom_acf_image_for_meta_ads', 10, 2);
+
+function custom_acf_image_for_meta_ads($image_link, $product)
+{
+  // Sprawdzamy, czy produkt istnieje
+  if (! $product) {
+    return $image_link;
+  }
+
+  // Pobieramy ID produktu (obsługuje też warianty)
+  $product_id = $product->get_id();
+
+  // Pobieramy URL z Twojego pola ACF
+  $custom_image_url = get_field('zjecie_do_reklam', $product_id);
+
+  // Jeśli pole nie jest puste, zwracamy URL z ACF zamiast standardowego
+  if (! empty($custom_image_url)) {
+    return $custom_image_url;
+  }
+
+  // Jeśli pole ACF jest puste, wracamy do standardowego zdjęcia produktowego
+  return $image_link;
+}
 
 /**
  * Tłumaczenia dla YITH Wishlist

@@ -21,7 +21,7 @@ if (!$categories || is_wp_error($categories)) {
 }
 ?>
 
-<div class="product-categories-grid grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap lg:justify-center gap-0 sm:gap-2 mx-auto pb-6 md:pb-20 max-w-screen-2xl px-4">
+<div class="product-categories-grid grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-nowrap lg:justify-stretch gap-0 mx-auto max-w-screen-2xl px-4 w-full border-[1px]">
     <?php
     // Get current category if on category page
     $current_category_id = is_product_category() ? get_queried_object_id() : 0;
@@ -33,21 +33,12 @@ if (!$categories || is_wp_error($categories)) {
         $is_active = ($category->term_id === $current_category_id);
     ?>
 
-        <a href="<?php echo esc_url($category_link); ?>" class="py-4 border-b-[1px] sm:border-none sm:py-0 category-item group transition-all duration-300 flex justify-end flex-col <?php echo $is_active ? 'lg:w-[200px]' : 'lg:w-[160px]'; ?>">
-            <div class="flex justify-between items-center">
-                <?php if ($is_active): ?>
-                    <span class="category-indicator w-3 h-3 bg-black rounded-full mr-2"></span>
-                <?php endif; ?>
-                <h3 class="category-name text-base sm:text-xs sm:text-sm md:text-base font-light uppercase transition-all duration-300 <?php echo $is_active ? 'font-bold lg:text-lg' : ''; ?>">
+        <a href="<?php echo esc_url($category_link); ?>" class="py-2 sm:py-4 category-item group transition-all duration-300 <?php echo $is_active ? 'font-bold' : ''; ?>">
+            <div class="flex justify-center items-center md:py-4">
+                <h3 class="category-name text-xs md:text-base font-light uppercase transition-all duration-300 <?php echo $is_active ? 'font-bold lg:text-lg' : ''; ?>">
                     <?php echo esc_html($category->name); ?>
                 </h3>
                 <img src="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/chevron-right.svg" class="sm:hidden w-4 h-4">
-            </div>
-            <div class="hidden sm:block category-image-wrapper relative overflow-hidden mt-1 w-full <?php echo $is_active ? 'lg:h-full' : 'lg:h-48'; ?>">
-                <img
-                    src="<?php echo esc_url($image_url); ?>"
-                    alt="<?php echo esc_attr($category->name); ?>"
-                    class="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105">
             </div>
         </a>
     <?php endforeach; ?>

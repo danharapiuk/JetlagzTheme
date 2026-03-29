@@ -1443,7 +1443,6 @@ input[type='submit']:hover {
 .free-shipping-progress,
 .free-shipping-achieved {
 	color: black;
-	padding: 1.5rem;
 	border-radius: var(--border-radius);
 }
 
@@ -2663,7 +2662,6 @@ input[type='submit']:hover {
 	color: #333 !important;
 	border: none !important;
 	display: inline !important;
-	flex: 0 !important;
 	margin: 0 !important;
 }
 

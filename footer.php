@@ -44,12 +44,13 @@
 
             </div>
             <div class="w-full md:w-1/3 flex justify-end gap-2 hidden">
-                <!-- <a href="/">
+                <a href="https://www.instagram.com/myalmostdream" target="_blank" rel="noopener">
                     <img src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets/images/instagram.svg'); ?>" alt="Instagram Logo" class="w-[24px] h-[24px]">
                 </a>
-                <a href="/">
+                ?
+                <a href="https://www.facebook.com/myalmostdream" target="_blank" rel="noopener">
                     <img src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets/images/facebook.svg'); ?>" alt="Facebook Logo" class="w-[24px] h-[24px]">
-                </a> -->
+                </a>
             </div>
 
         </div>
@@ -64,7 +65,7 @@
         <?php jetlagz_inject_template_part('payment-icons'); ?>
 
         <div class="flex sm:flex justify-center">
-            <div class="wrapper !p-0 text-[10px] py-4 text-black md:text-white opacity-20">
+            <div class="wrapper !p-0 text-[10px] py-4 text-black opacity-20">
                 <?php do_action('storefront_after_footer'); ?>
                 © <?php echo date('Y'); ?> ALMOST DREAM
                 <!-- Scroll to Top Button -->

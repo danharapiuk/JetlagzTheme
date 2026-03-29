@@ -57,23 +57,8 @@ if (!empty($gallery_image_ids)) {
                 $average_rating = $product->get_average_rating();
                 if ($rating_count > 0) :
                     $rating_display = ($average_rating == 5) ? '5/5' : number_format($average_rating, 1, '.', '') . '/5';
+                endif;
                 ?>
-                    <div class="stars">
-                        <span class="rating-number"><?php echo $rating_display; ?></span>
-                        <span class="rating-count">(<?php echo $rating_count; ?>)</span>
-                        <span class="rating-stars">
-                            <?php
-                            for ($i = 1; $i <= 5; $i++) {
-                                if ($i <= round($average_rating)) {
-                                    echo '<span class="star filled">★</span>';
-                                } else {
-                                    echo '<span class="star empty">★</span>';
-                                }
-                            }
-                            ?>
-                        </span>
-                    </div>
-                <?php endif; ?>
             </div>
         </a>
         <?php
@@ -91,29 +76,53 @@ if (!empty($gallery_image_ids)) {
             </button>
         <?php } ?>
         <a href="<?php echo esc_url(get_permalink()); ?>" class="product-link product-info-link">
-            <div class="product-info-row">
-                <?php
-                // Check for ACF custom name/description
-                $acf_name = function_exists('get_field') ? get_field('product_name', $product_id) : '';
-                $acf_description = function_exists('get_field') ? get_field('product_description', $product_id) : '';
+            <?php
+            // Check for ACF custom name/description
+            $acf_name = function_exists('get_field') ? get_field('product_name', $product_id) : '';
+            $acf_description = function_exists('get_field') ? get_field('product_description', $product_id) : '';
 
-                if (!empty($acf_name)) :
-                ?>
-                    <div class="product-title-wrapper">
-                        <h3 class="slider-product-title" itemprop="name"><?php echo esc_html($acf_name); ?></h3>
-                        <?php if (!empty($acf_description)) : ?>
-                            <p class="slider-product-subtitle" itemprop="description"><?php echo esc_html($acf_description); ?></p>
-                        <?php endif; ?>
-                    </div>
-                <?php else : ?>
-                    <h3 class="product-title">
-                        <?php echo esc_html(get_the_title()); ?>
-                    </h3>
-                <?php endif; ?>
+            if (!empty($acf_name)) :
+            ?>
+                <div class="product-title-wrapper">
+                    <h3 class="slider-product-title" itemprop="name"><?php echo esc_html($acf_name); ?></h3>
+                    <?php if (!empty($acf_description)) : ?>
+                        <p class="slider-product-subtitle" itemprop="description"><?php echo esc_html($acf_description); ?></p>
+                    <?php endif; ?>
+                </div>
+            <?php else : ?>
+                <h3 class="product-title">
+                    <?php echo esc_html(get_the_title()); ?>
+                </h3>
+            <?php endif; ?>
+
+            <?php if ($rating_count > 0) : ?>
+                <div class="stars">
+                    <span class="rating-stars">
+                        <?php
+                        for ($i = 1; $i <= 5; $i++) {
+                            if ($i <= round($average_rating)) {
+                                echo '<span class="star filled">★</span>';
+                            } else {
+                                echo '<span class="star empty">★</span>';
+                            }
+                        }
+                        ?>
+                    </span>
+                    <span class="rating-number"><?php echo $rating_display; ?></span>
+                    <span class="rating-count">(<?php echo $rating_count; ?>)</span>
+                </div>
+            <?php endif; ?>
+
+            <div class="product-info-row">
                 <div class="product-price">
                     <?php echo $product->get_price_html(); ?>
                 </div>
             </div>
+
+            <?php
+            // Wyświetl kolory produktu pod ceną
+            jetlagz_display_product_colors($product);
+            ?>
         </a>
     </div>
 </li>

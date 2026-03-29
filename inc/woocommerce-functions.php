@@ -10,6 +10,41 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * Test: prevent form re-submission after add to cart (PRG pattern)
+ * Converts POST add-to-cart flow into redirect to GET URL.
+ */
+function jetlagz_add_to_cart_post_redirect($redirect_url)
+{
+    // Keep default behavior for admin and AJAX requests.
+    if (is_admin() || wp_doing_ajax()) {
+        return $redirect_url;
+    }
+
+    $referer = wp_get_referer();
+
+    if (!empty($referer)) {
+        return remove_query_arg(array(
+            'add-to-cart',
+            'quantity',
+            'variation_id',
+            'product_id',
+        ), $referer);
+    }
+
+    // Fallback: stay on current URL instead of redirecting to cart/checkout.
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/';
+    $current_url = home_url($request_uri);
+
+    return remove_query_arg(array(
+        'add-to-cart',
+        'quantity',
+        'variation_id',
+        'product_id',
+    ), $current_url);
+}
+add_filter('woocommerce_add_to_cart_redirect', 'jetlagz_add_to_cart_post_redirect', 999);
+
+/**
  * Convert comma-separated GET parameters to arrays before WordPress processes them
  * This prevents the urlencode() error with array values
  */
@@ -29,22 +64,218 @@ function jetlagz_convert_filter_params()
 add_action('init', 'jetlagz_convert_filter_params', 1);
 
 /**
- * Remove .00 from prices (hide decimals when price is whole number)
+ * Force WooCommerce price format to: 209,00 PLN
+ * Applies globally (product lists, single product, sliders using wc_price/get_price_html).
  */
-function jetlagz_trim_zeros_from_price($price)
+function jetlagz_wc_force_pln_price_format($price_format, $currency_pos)
 {
-    // Remove .00 or ,00 from the end of price
-    $price = preg_replace('/[.,]00([^\d]|$)/', '$1', $price);
-    // Zamień przecinek na kropkę
-    $price = str_replace(',', '.', $price);
-    return $price;
+    return '%2$s %1$s';
 }
-add_filter('woocommerce_price_trim_zeros', '__return_true');
-add_filter('formatted_woocommerce_price', 'jetlagz_trim_zeros_from_price', 10, 1);
-add_filter('woocommerce_format_sale_price', 'jetlagz_trim_zeros_from_price', 10, 1);
+add_filter('woocommerce_price_format', 'jetlagz_wc_force_pln_price_format', 10, 2);
+
+function jetlagz_wc_force_pln_currency_symbol($currency_symbol, $currency)
+{
+    if ('PLN' === $currency) {
+        return 'PLN';
+    }
+
+    return $currency_symbol;
+}
+add_filter('woocommerce_currency_symbol', 'jetlagz_wc_force_pln_currency_symbol', 10, 2);
+
+function jetlagz_wc_force_price_decimals($decimals)
+{
+    return 2;
+}
+add_filter('wc_get_price_decimals', 'jetlagz_wc_force_price_decimals');
+
+function jetlagz_wc_force_decimal_separator($separator)
+{
+    return ',';
+}
+add_filter('wc_get_price_decimal_separator', 'jetlagz_wc_force_decimal_separator');
 
 /**
- * Trim product title in breadcrumbs to text before "-" or "–"
+ * Treat duplicate WooCommerce attribute term creation over REST as success.
+ *
+ * Some external integrations try to create an attribute term even when it
+ * already exists. WooCommerce returns a term_exists error in that case, which
+ * breaks the export. For product attribute term create requests we return the
+ * existing term payload instead of letting the request fail.
+ */
+function jetlagz_maybe_return_existing_attribute_term_for_rest_create($response, $handler, $request)
+{
+    if (!($request instanceof WP_REST_Request)) {
+        return $response;
+    }
+
+    if ('POST' !== $request->get_method()) {
+        return $response;
+    }
+
+    $route = $request->get_route();
+    if (!is_string($route) || !preg_match('#^/wc/v[1-3]/products/attributes/([0-9]+)/terms$#', $route, $matches)) {
+        return $response;
+    }
+
+    $attribute_id = isset($matches[1]) ? absint($matches[1]) : 0;
+    if (!$attribute_id || !function_exists('wc_attribute_taxonomy_name_by_id')) {
+        return $response;
+    }
+
+    $taxonomy = wc_attribute_taxonomy_name_by_id($attribute_id);
+    if (empty($taxonomy) || !taxonomy_exists($taxonomy)) {
+        return $response;
+    }
+
+    $requested_name = isset($request['name']) ? wc_clean(wp_unslash((string) $request['name'])) : '';
+    $requested_slug = isset($request['slug']) ? sanitize_title(wp_unslash((string) $request['slug'])) : '';
+
+    if ('' === $requested_name && '' === $requested_slug) {
+        return $response;
+    }
+
+    $existing_term = null;
+
+    if ('' !== $requested_slug) {
+        $existing_term = get_term_by('slug', $requested_slug, $taxonomy);
+    }
+
+    if ((!$existing_term || is_wp_error($existing_term)) && '' !== $requested_name) {
+        $existing_term = get_term_by('name', $requested_name, $taxonomy);
+    }
+
+    if ((!$existing_term || is_wp_error($existing_term)) && '' !== $requested_name) {
+        $term_exists = term_exists($requested_name, $taxonomy);
+
+        if (is_array($term_exists) && !empty($term_exists['term_id'])) {
+            $existing_term = get_term((int) $term_exists['term_id'], $taxonomy);
+        } elseif (is_int($term_exists) && $term_exists > 0) {
+            $existing_term = get_term($term_exists, $taxonomy);
+        }
+    }
+
+    if (!$existing_term || is_wp_error($existing_term) || empty($existing_term->term_id)) {
+        return $response;
+    }
+
+    if (!class_exists('WC_REST_Product_Attribute_Terms_Controller')) {
+        $fallback_response = rest_ensure_response(array(
+            'id' => (int) $existing_term->term_id,
+            'name' => $existing_term->name,
+            'slug' => $existing_term->slug,
+            'description' => $existing_term->description,
+            'menu_order' => 0,
+            'count' => (int) $existing_term->count,
+        ));
+        $fallback_response->set_status(201);
+        $fallback_response->header('Location', rest_url('/wc/v3/products/attributes/' . $attribute_id . '/terms/' . (int) $existing_term->term_id));
+
+        return $fallback_response;
+    }
+
+    $request->set_param('attribute_id', $attribute_id);
+    $request->set_param('context', 'edit');
+
+    $controller = new WC_REST_Product_Attribute_Terms_Controller();
+    $prepared_response = $controller->prepare_item_for_response($existing_term, $request);
+    $prepared_response = rest_ensure_response($prepared_response);
+    $prepared_response->set_status(201);
+    $prepared_response->header('Location', rest_url('/wc/v3/products/attributes/' . $attribute_id . '/terms/' . (int) $existing_term->term_id));
+
+    return $prepared_response;
+}
+add_filter('rest_request_before_callbacks', 'jetlagz_maybe_return_existing_attribute_term_for_rest_create', 10, 3);
+add_filter('rest_pre_dispatch', 'jetlagz_maybe_return_existing_attribute_term_for_rest_create', 10, 3);
+
+/**
+ * Normalize REST product taxonomy attribute options to existing term IDs.
+ *
+ * Base can send taxonomy attribute values as strings. WooCommerce then tries to
+ * create missing terms while saving the product. If the term already exists but
+ * is not matched cleanly, the save fails. Converting known values to term IDs
+ * prevents duplicate term creation attempts.
+ */
+function jetlagz_normalize_rest_product_attribute_terms($product, $request, $creating)
+{
+    if (!($product instanceof WC_Product) || !($request instanceof WP_REST_Request)) {
+        return $product;
+    }
+
+    if (!function_exists('wc_get_attribute_taxonomy_names')) {
+        return $product;
+    }
+
+    $attributes = $product->get_attributes();
+    if (empty($attributes) || !is_array($attributes)) {
+        return $product;
+    }
+
+    $updated_attributes = array();
+
+    foreach ($attributes as $attribute_key => $attribute_object) {
+        if (!($attribute_object instanceof WC_Product_Attribute) || !$attribute_object->is_taxonomy()) {
+            $updated_attributes[$attribute_key] = $attribute_object;
+            continue;
+        }
+
+        $taxonomy = $attribute_object->get_name();
+        if (empty($taxonomy) || !taxonomy_exists($taxonomy)) {
+            $updated_attributes[$attribute_key] = $attribute_object;
+            continue;
+        }
+
+        $resolved_options = array();
+
+        foreach ((array) $attribute_object->get_options() as $option) {
+            if (is_int($option) || ctype_digit((string) $option)) {
+                $resolved_options[] = (int) $option;
+                continue;
+            }
+
+            $option_name = wc_clean(wp_unslash((string) $option));
+            if ('' === $option_name) {
+                continue;
+            }
+
+            $existing_term = get_term_by('name', $option_name, $taxonomy);
+
+            if ((!$existing_term || is_wp_error($existing_term))) {
+                $existing_term = get_term_by('slug', sanitize_title($option_name), $taxonomy);
+            }
+
+            if ((!$existing_term || is_wp_error($existing_term)) && function_exists('get_terms')) {
+                $matching_terms = get_terms(array(
+                    'taxonomy' => $taxonomy,
+                    'hide_empty' => false,
+                    'name' => $option_name,
+                    'number' => 1,
+                ));
+
+                if (!is_wp_error($matching_terms) && !empty($matching_terms) && isset($matching_terms[0])) {
+                    $existing_term = $matching_terms[0];
+                }
+            }
+
+            if ($existing_term && !is_wp_error($existing_term) && !empty($existing_term->term_id)) {
+                $resolved_options[] = (int) $existing_term->term_id;
+            } else {
+                $resolved_options[] = $option_name;
+            }
+        }
+
+        $attribute_object->set_options($resolved_options);
+        $updated_attributes[$attribute_key] = $attribute_object;
+    }
+
+    $product->set_attributes($updated_attributes);
+
+    return $product;
+}
+add_filter('woocommerce_rest_pre_insert_product_object', 'jetlagz_normalize_rest_product_attribute_terms', 10, 3);
+
+/**
+ * Use ACF product_name in breadcrumbs (if set), then trim title by separators.
  */
 function jetlagz_trim_breadcrumb_title($crumbs, $breadcrumb)
 {
@@ -53,6 +284,25 @@ function jetlagz_trim_breadcrumb_title($crumbs, $breadcrumb)
         $last_key = count($crumbs) - 1;
         if (isset($crumbs[$last_key][0])) {
             $full_title = $crumbs[$last_key][0];
+
+            $product_id = get_queried_object_id();
+            $acf_product_name = '';
+
+            if ($product_id) {
+                if (function_exists('get_field')) {
+                    $acf_product_name = get_field('product_name', $product_id);
+                }
+
+                if (!is_string($acf_product_name) || trim($acf_product_name) === '') {
+                    $acf_product_name = get_post_meta($product_id, 'product_name', true);
+                }
+            }
+
+            if (is_string($acf_product_name) && trim($acf_product_name) !== '') {
+                $full_title = trim($acf_product_name);
+            }
+
+            $crumbs[$last_key][0] = $full_title;
 
             // Try different separators: em-dash (–), en-dash (—), hyphen (-)
             if (strpos($full_title, ' – ') !== false) {
@@ -127,10 +377,240 @@ remove_action('woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 30
 remove_action('woocommerce_before_shop_loop', 'woocommerce_result_count', 20);
 
 /**
+ * Normalize size labels so slugs like xs-s can be compared with labels like XS/S.
+ */
+function jetlagz_normalize_rozmiar_value($value)
+{
+    $value = wc_clean(wp_strip_all_tags((string) $value));
+    $value = strtoupper(trim($value));
+    $value = str_replace(array(' ', '-', '\\'), array('', '/', '/'), $value);
+
+    return $value;
+}
+
+/**
+ * Return sort rank for size labels used by pa_rozmiar.
+ */
+function jetlagz_get_rozmiar_sort_rank($value)
+{
+    static $size_order = array(
+        'XS'        => 0,
+        'XS/S'      => 0.5,
+        'S'         => 1,
+        'S/M'       => 1.5,
+        'M'         => 2,
+        'M/L'       => 2.5,
+        'L'         => 3,
+        'L/XL'      => 3.5,
+        'XL'        => 4,
+        'XL/XXL'    => 4.5,
+        'XXL'       => 5,
+        'XXL/XXXL'  => 5.5,
+        'XXXL'      => 6,
+        '4XL'       => 7,
+        '5XL'       => 8,
+        '6XL'       => 9,
+        '28'        => 100,
+        '30'        => 101,
+        '32'        => 102,
+        '32/34'     => 102.5,
+        '34'        => 103,
+        '34/36'     => 103.5,
+        '36'        => 104,
+        '36/38'     => 104.5,
+        '38'        => 105,
+        '38/40'     => 105.5,
+        '40'        => 106,
+        '40/42'     => 106.5,
+        '42'        => 107,
+        '42/44'     => 107.5,
+        '44'        => 108,
+        '44/46'     => 108.5,
+        '46'        => 109,
+        '46/48'     => 109.5,
+        '48'        => 110,
+        '48/50'     => 110.5,
+        '50'        => 111,
+        '50/52'     => 111.5,
+        '52'        => 112,
+        '52/54'     => 112.5,
+        '54'        => 113,
+        '54/56'     => 113.5,
+        '56'        => 114,
+        '56/58'     => 114.5,
+        '58'        => 115,
+        '58/60'     => 115.5,
+        '60'        => 116,
+    );
+
+    $normalized = jetlagz_normalize_rozmiar_value($value);
+
+    if (isset($size_order[$normalized])) {
+        return $size_order[$normalized];
+    }
+
+    if (is_numeric($normalized)) {
+        return 100 + (float) $normalized;
+    }
+
+    return 9999;
+}
+
+/**
+ * Sort dropdown options for the pa_rozmiar attribute before WooCommerce renders the select.
+ */
+function jetlagz_sort_dropdown_rozmiar_options($args)
+{
+    if (empty($args['attribute']) || !in_array($args['attribute'], array('pa_rozmiar', 'rozmiar'), true) || empty($args['options']) || !is_array($args['options'])) {
+        return $args;
+    }
+
+    $taxonomy = taxonomy_exists($args['attribute']) ? $args['attribute'] : '';
+
+    usort($args['options'], function ($option_a, $option_b) use ($taxonomy) {
+        $label_a = $option_a;
+        $label_b = $option_b;
+
+        if ($taxonomy) {
+            $term_a = get_term_by('slug', $option_a, $taxonomy);
+            $term_b = get_term_by('slug', $option_b, $taxonomy);
+
+            if ($term_a && !is_wp_error($term_a)) {
+                $label_a = $term_a->name;
+            }
+
+            if ($term_b && !is_wp_error($term_b)) {
+                $label_b = $term_b->name;
+            }
+        }
+
+        $rank_a = jetlagz_get_rozmiar_sort_rank($label_a);
+        $rank_b = jetlagz_get_rozmiar_sort_rank($label_b);
+
+        if ($rank_a === $rank_b) {
+            return strcmp(jetlagz_normalize_rozmiar_value($label_a), jetlagz_normalize_rozmiar_value($label_b));
+        }
+
+        return ($rank_a < $rank_b) ? -1 : 1;
+    });
+
+    return $args;
+}
+add_filter('woocommerce_dropdown_variation_attribute_options_args', 'jetlagz_sort_dropdown_rozmiar_options', 20);
+
+/**
  * Remove Add to Cart buttons from product loop (all products have variations)
  */
 remove_action('woocommerce_after_shop_loop_item', 'woocommerce_template_loop_add_to_cart', 10);
 remove_action('woocommerce_after_shop_loop', 'woocommerce_pagination', 10);
+
+/**
+ * Hide gift products (ID 15101) from all public displays
+ * This product should only be added programmatically to orders, not displayed or purchasable
+ */
+function jetlagz_hide_gift_products($query)
+{
+    // Don't filter admin queries
+    if (is_admin()) {
+        return;
+    }
+
+    // Hide from shop, category pages, search results, and front-end queries
+    if ($query->is_main_query() && (is_shop() || is_product_taxonomy() || is_search())) {
+        $query->set('post__not_in', array_merge(
+            (array) $query->get('post__not_in'),
+            array(15101) // Product ID to hide
+        ));
+    }
+}
+add_action('pre_get_posts', 'jetlagz_hide_gift_products', 1);
+
+/**
+ * Block direct access to gift product ID 15101
+ * Redirect to shop when trying to access single product page
+ */
+function jetlagz_block_gift_product_access()
+{
+    // Only run on frontend
+    if (is_admin()) {
+        return;
+    }
+
+    // Check if WooCommerce functions are available
+    if (!function_exists('is_product')) {
+        return;
+    }
+
+    // Check if this is a product page
+    if (!is_product()) {
+        return;
+    }
+
+    // Get the product ID from the query
+    $product_id = get_queried_object_id();
+
+    // Check if this is the gift product
+    if (intval($product_id) !== 15101) {
+        return;
+    }
+
+    // Get shop URL with fallback
+    $shop_url = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : home_url('/');
+
+    // Redirect with 301 status code
+    wp_redirect($shop_url, 301);
+    exit;
+}
+add_action('wp', 'jetlagz_block_gift_product_access', 5);
+
+/**
+ * Also hide gift product ID 15101 from WooCommerce shortcodes and queries
+ */
+function jetlagz_exclude_gift_product_from_queries($query_args)
+{
+    // Only apply to main frontend queries
+    if (is_admin()) {
+        return $query_args;
+    }
+
+    if (!isset($query_args['post__not_in'])) {
+        $query_args['post__not_in'] = array();
+    }
+
+    // Ensure it's an array
+    if (!is_array($query_args['post__not_in'])) {
+        $query_args['post__not_in'] = (array) $query_args['post__not_in'];
+    }
+
+    // Add gift product ID if not already there
+    if (!in_array(15101, $query_args['post__not_in'])) {
+        $query_args['post__not_in'][] = 15101;
+    }
+
+    return $query_args;
+}
+add_filter('woocommerce_shortcode_products_query_args', 'jetlagz_exclude_gift_product_from_queries', 10, 1);
+
+/**
+ * Hide gift product ID 15101 from REST API queries
+ */
+function jetlagz_exclude_gift_product_from_rest_api($args, $request)
+{
+    if (!isset($args['post__not_in'])) {
+        $args['post__not_in'] = array();
+    }
+
+    if (!is_array($args['post__not_in'])) {
+        $args['post__not_in'] = (array) $args['post__not_in'];
+    }
+
+    if (!in_array(15101, $args['post__not_in'])) {
+        $args['post__not_in'][] = 15101;
+    }
+
+    return $args;
+}
+add_filter('rest_product_query', 'jetlagz_exclude_gift_product_from_rest_api', 10, 2);
 
 /**
  * Advanced Product Filtering
@@ -266,6 +746,11 @@ function jetlagz_filter_products_by_size_stock($posts, $query)
             $filtered_posts = array();
 
             foreach ($posts as $post) {
+                // Skip gift product
+                if ($post->ID === 15101) {
+                    continue;
+                }
+
                 $product = wc_get_product($post->ID);
 
                 // Skip if not a variable product
@@ -349,7 +834,12 @@ function jetlagz_sort_products_by_size($posts, $query)
                 '46' => 24
             );
 
-            usort($posts, function ($a, $b) use ($size_order) {
+            // Filter out gift product and sort
+            $filtered_posts = array_filter($posts, function ($post) {
+                return $post->ID !== 15101;
+            });
+
+            usort($filtered_posts, function ($a, $b) use ($size_order) {
                 $product_a = wc_get_product($a->ID);
                 $product_b = wc_get_product($b->ID);
 
@@ -376,8 +866,10 @@ function jetlagz_sort_products_by_size($posts, $query)
 
             // Reverse if descending
             if ($_GET['orderby'] === 'size-desc') {
-                $posts = array_reverse($posts);
+                $filtered_posts = array_reverse($filtered_posts);
             }
+
+            return $filtered_posts;
         }
     }
 
@@ -389,6 +881,28 @@ add_filter('posts_results', 'jetlagz_sort_products_by_size', 10, 2);
  * Remove default rating from single product
  */
 remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_rating', 10);
+
+/**
+ * Filter related products query to exclude gift product ID 15101
+ */
+function jetlagz_filter_related_products($args)
+{
+    if (!isset($args['post__not_in'])) {
+        $args['post__not_in'] = array();
+    }
+
+    if (!is_array($args['post__not_in'])) {
+        $args['post__not_in'] = (array) $args['post__not_in'];
+    }
+
+    // Exclude gift product
+    if (!in_array(15101, $args['post__not_in'])) {
+        $args['post__not_in'][] = 15101;
+    }
+
+    return $args;
+}
+add_filter('woocommerce_related_products_args', 'jetlagz_filter_related_products', 10);
 
 /**
  * Remove default title and price to create custom wrapper
@@ -1256,7 +1770,7 @@ function jetlagz_display_product_banner()
     </div>
 <?php
 }
-add_action('woocommerce_after_add_to_cart_form', 'jetlagz_display_product_banner', 20.4);
+add_action('woocommerce_after_add_to_cart_form', 'jetlagz_display_product_banner', wp_is_mobile() ? 10 : 20.4);
 
 /**
  * Replace Additional Information tab with custom shipping content
@@ -2467,123 +2981,153 @@ function jetlagz_sticky_product_sidebar()
     }
 ?>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Only desktop (1024px+) - tablets use default layout
-            if (window.innerWidth < 1024) {
-                return;
+        (function() {
+            var resizeTimer = null;
+            var resizeObserver = null;
+
+            function isDesktopViewport() {
+                return window.innerWidth >= 1024;
             }
 
-            // Declare variables in outer scope for resize handler
-            var gallery = null;
-            var summary = null;
+            function ensureStickyWrapper(gallery, summary) {
+                if (!gallery || !summary) {
+                    return null;
+                }
 
-            // Use requestAnimationFrame to avoid blocking scroll
-            requestAnimationFrame(function() {
-                gallery = document.querySelector('.woocommerce-product-gallery');
-                summary = document.querySelector('.summary.entry-summary');
+                var existingWrapper = gallery.parentElement;
+
+                if (existingWrapper && existingWrapper.classList.contains('product-main-wrapper')) {
+                    return existingWrapper;
+                }
+
+                var container = gallery.parentElement;
+
+                if (!container || summary.parentElement !== container) {
+                    return null;
+                }
+
+                var wrapper = document.createElement('div');
+                wrapper.className = 'product-main-wrapper';
+
+                container.insertBefore(wrapper, gallery);
+                wrapper.appendChild(gallery);
+                wrapper.appendChild(summary);
+
+                return wrapper;
+            }
+
+            function normalizeAncestorOverflow(container) {
+                var parent = container;
+                var depth = 0;
+
+                while (parent && depth < 20) {
+                    var computedStyle = window.getComputedStyle(parent);
+
+                    if (computedStyle.overflow !== 'visible' || computedStyle.overflowY !== 'visible') {
+                        parent.style.overflow = 'visible';
+                        parent.style.overflowY = 'visible';
+                    }
+
+                    parent = parent.parentElement;
+                    depth++;
+                }
+            }
+
+            function updateStickySide(wrapper, gallery, summary) {
+                if (!wrapper || !gallery || !summary) {
+                    return;
+                }
+
+                wrapper.classList.remove('is-sticky-gallery', 'is-sticky-summary');
+
+                if (!isDesktopViewport()) {
+                    return;
+                }
+
+                var galleryHeight = gallery.offsetHeight;
+                var summaryHeight = summary.offsetHeight;
+
+                if (!galleryHeight || !summaryHeight) {
+                    return;
+                }
+
+                if (galleryHeight > summaryHeight) {
+                    wrapper.classList.add('is-sticky-summary');
+                } else if (summaryHeight > galleryHeight) {
+                    wrapper.classList.add('is-sticky-gallery');
+                }
+            }
+
+            function scheduleStickyUpdate(wrapper, gallery, summary) {
+                window.requestAnimationFrame(function() {
+                    updateStickySide(wrapper, gallery, summary);
+                });
+            }
+
+            function setupResizeObserver(wrapper, gallery, summary) {
+                if (!('ResizeObserver' in window)) {
+                    return;
+                }
+
+                if (resizeObserver) {
+                    resizeObserver.disconnect();
+                }
+
+                resizeObserver = new ResizeObserver(function() {
+                    scheduleStickyUpdate(wrapper, gallery, summary);
+                });
+
+                resizeObserver.observe(wrapper);
+                resizeObserver.observe(gallery);
+                resizeObserver.observe(summary);
+            }
+
+            function initStickyProductSidebar() {
+                var gallery = document.querySelector('.woocommerce-product-gallery');
+                var summary = document.querySelector('.summary.entry-summary');
 
                 if (!gallery || !summary) {
                     return;
                 }
 
-                // Create wrapper div for gallery + summary to enable flexbox
-                var container = gallery.parentElement;
-                var wrapper = document.createElement('div');
-                wrapper.className = 'product-main-wrapper';
-                wrapper.style.cssText = 'display:flex;align-items:flex-start;gap:2%;flex-wrap:nowrap;justify-content:space-between;';
+                var wrapper = ensureStickyWrapper(gallery, summary);
 
-                // Batch DOM operations
-                container.insertBefore(wrapper, gallery);
-                wrapper.appendChild(gallery);
-                wrapper.appendChild(summary);
+                if (!wrapper) {
+                    return;
+                }
 
-                // Batch style changes
-                gallery.style.cssText += 'width:46%;flex-shrink:0;';
-                summary.style.cssText += 'width:42%;flex-shrink:0;position:sticky;top:20px;align-self:flex-start;';
+                normalizeAncestorOverflow(wrapper);
+                setupResizeObserver(wrapper, gallery, summary);
+                scheduleStickyUpdate(wrapper, gallery, summary);
 
-                // Fix overflow on ALL ancestors including body - critical for sticky to work
-                requestAnimationFrame(function() {
-                    var parent = wrapper.parentElement;
-                    var depth = 0;
-
-                    // Fix overflow all the way up to body
-                    while (parent && depth < 20) {
-                        var currentOverflow = window.getComputedStyle(parent).overflow;
-                        var currentOverflowY = window.getComputedStyle(parent).overflowY;
-
-                        if (currentOverflow !== 'visible' || currentOverflowY !== 'visible') {
-                            parent.style.overflow = 'visible';
-                        }
-
-                        parent = parent.parentElement;
-                        depth++;
-                    }
+                window.addEventListener('load', function() {
+                    scheduleStickyUpdate(wrapper, gallery, summary);
+                }, {
+                    once: true
                 });
 
-                // After images load, verify sticky position
-                if (document.readyState === 'complete') {
-                    adjustSticky();
-                } else {
-                    window.addEventListener('load', adjustSticky);
-                }
-
-                function adjustSticky() {
-                    requestAnimationFrame(function() {
-                        var galleryHeight = gallery.offsetHeight;
-                        var summaryHeight = summary.offsetHeight;
-
-                        if (summaryHeight > galleryHeight) {
-                            summary.style.position = '';
-                            gallery.style.cssText += 'position:sticky;top:20px;align-self:flex-start;';
-                        }
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(function() {
+                        scheduleStickyUpdate(wrapper, gallery, summary);
                     });
                 }
-            });
 
-            // Recalculate on window resize
-            var resizeTimer;
-            window.addEventListener('resize', function() {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function() {
-                    if (!gallery || !summary) {
-                        return;
-                    }
+                window.addEventListener('resize', function() {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(function() {
+                        scheduleStickyUpdate(wrapper, gallery, summary);
+                    }, 150);
+                });
+            }
 
-                    if (window.innerWidth < 1024) {
-                        // Reset on mobile and tablet
-                        gallery.style.position = '';
-                        gallery.style.top = '';
-                        gallery.style.alignSelf = '';
-                        summary.style.position = '';
-                        summary.style.top = '';
-                        summary.style.alignSelf = '';
-                    } else {
-                        // Reapply on desktop only
-                        var galleryHeight = gallery.offsetHeight;
-                        var summaryHeight = summary.offsetHeight;
-
-                        // Reset both first
-                        gallery.style.position = '';
-                        gallery.style.top = '';
-                        gallery.style.alignSelf = '';
-                        summary.style.position = '';
-                        summary.style.top = '';
-                        summary.style.alignSelf = '';
-
-                        // Apply sticky to shorter
-                        if (galleryHeight > summaryHeight) {
-                            summary.style.position = 'sticky';
-                            summary.style.top = '20px';
-                            summary.style.alignSelf = 'flex-start';
-                        } else if (summaryHeight > galleryHeight) {
-                            gallery.style.position = 'sticky';
-                            gallery.style.top = '20px';
-                            gallery.style.alignSelf = 'flex-start';
-                        }
-                    }
-                }, 250);
-            });
-        });
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initStickyProductSidebar, {
+                    once: true
+                });
+            } else {
+                initStickyProductSidebar();
+            }
+        })();
     </script>
 <?php
 }
@@ -2600,6 +3144,132 @@ function jetlagz_variation_swatches_script()
 ?>
     <script>
         jQuery(document).ready(function($) {
+            function normalizeRozmiarValue(value) {
+                return String(value || '')
+                    .trim()
+                    .toUpperCase()
+                    .replace(/\s+/g, '')
+                    .replace(/-/g, '/');
+            }
+
+            function getRozmiarRank(value) {
+                var sizeOrder = {
+                    'XS': 0,
+                    'XS/S': 0.5,
+                    'S': 1,
+                    'S/M': 1.5,
+                    'M': 2,
+                    'M/L': 2.5,
+                    'L': 3,
+                    'L/XL': 3.5,
+                    'XL': 4,
+                    'XL/XXL': 4.5,
+                    'XXL': 5,
+                    'XXL/XXXL': 5.5,
+                    'XXXL': 6,
+                    '4XL': 7,
+                    '5XL': 8,
+                    '6XL': 9,
+                    '28': 100,
+                    '30': 101,
+                    '32': 102,
+                    '32/34': 102.5,
+                    '34': 103,
+                    '34/36': 103.5,
+                    '36': 104,
+                    '36/38': 104.5,
+                    '38': 105,
+                    '38/40': 105.5,
+                    '40': 106,
+                    '40/42': 106.5,
+                    '42': 107,
+                    '42/44': 107.5,
+                    '44': 108,
+                    '44/46': 108.5,
+                    '46': 109,
+                    '46/48': 109.5,
+                    '48': 110,
+                    '48/50': 110.5,
+                    '50': 111,
+                    '50/52': 111.5,
+                    '52': 112,
+                    '52/54': 112.5,
+                    '54': 113,
+                    '54/56': 113.5,
+                    '56': 114,
+                    '56/58': 114.5,
+                    '58': 115,
+                    '58/60': 115.5,
+                    '60': 116
+                };
+
+                var normalized = normalizeRozmiarValue(value);
+
+                if (Object.prototype.hasOwnProperty.call(sizeOrder, normalized)) {
+                    return sizeOrder[normalized];
+                }
+
+                if (!isNaN(normalized) && normalized !== '') {
+                    return 100 + parseFloat(normalized);
+                }
+
+                return 9999;
+            }
+
+            function sortRozmiarSelectOptions($select) {
+                var attrName = $select.attr('name') || '';
+
+                if (attrName !== 'attribute_pa_rozmiar' && attrName !== 'attribute_rozmiar') {
+                    return;
+                }
+
+                var $placeholder = $select.find('option[value=""]').first().clone();
+                var options = [];
+
+                $select.find('option').each(function() {
+                    var $option = $(this);
+                    var value = $option.val();
+
+                    if (!value) {
+                        return;
+                    }
+
+                    options.push({
+                        value: value,
+                        text: $option.text(),
+                        selected: $option.is(':selected'),
+                        disabled: $option.is(':disabled')
+                    });
+                });
+
+                options.sort(function(a, b) {
+                    var rankA = getRozmiarRank(a.text);
+                    var rankB = getRozmiarRank(b.text);
+
+                    if (rankA === rankB) {
+                        return normalizeRozmiarValue(a.text).localeCompare(normalizeRozmiarValue(b.text));
+                    }
+
+                    return rankA - rankB;
+                });
+
+                $select.empty();
+
+                if ($placeholder.length) {
+                    $select.append($placeholder);
+                }
+
+                options.forEach(function(option) {
+                    var $option = $('<option></option>')
+                        .val(option.value)
+                        .text(option.text)
+                        .prop('selected', option.selected)
+                        .prop('disabled', option.disabled);
+
+                    $select.append($option);
+                });
+            }
+
             // Reorder variation rows - size first, then color
             var $variationsTable = $('.variations_form .variations');
             var priorityOrder = ['pa_rozmiar', 'pa_size', 'pa_rozmiar', 'pa_kolor', 'pa_color'];
@@ -2642,6 +3312,8 @@ function jetlagz_variation_swatches_script()
                 var $select = $(this);
                 var $row = $select.closest('tr');
                 var attributeName = $select.attr('name');
+
+                sortRozmiarSelectOptions($select);
 
                 // Normalize attribute name (remove 'attribute_' prefix if exists)
                 var normalizedAttrName = attributeName.replace('attribute_', '');
@@ -2750,6 +3422,64 @@ function jetlagz_variation_swatches_script()
 <?php
 }
 add_action('wp_footer', 'jetlagz_variation_swatches_script');
+
+/**
+ * Auto-select single available attribute option on product page
+ */
+function jetlagz_auto_select_single_attribute()
+{
+    if (!is_product()) {
+        return;
+    }
+
+    global $product;
+
+    if (!$product || !$product->is_type('variable')) {
+        return;
+    }
+?>
+    <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            function autoSelectSingleOptions() {
+                $('.variations_form select[name^="attribute_"]').each(function() {
+                    var $select = $(this);
+
+                    // Skip if already selected
+                    if ($select.val() && $select.val() !== '') {
+                        return;
+                    }
+
+                    var $options = $select.find('option:not([value=""]):not(:disabled)');
+
+                    // If only one enabled option
+                    if ($options.length === 1) {
+                        var value = $options.first().val();
+                        $select.val(value).trigger('change');
+
+                        // Also trigger button selection if buttons exist
+                        var $button = $select.next('.variation-buttons').find('.variation-button[data-value="' + value + '"]');
+                        if ($button.length) {
+                            $button.addClass('selected');
+                        }
+                    }
+                });
+            }
+
+            // Try immediately
+            autoSelectSingleOptions();
+
+            // Try after a short delay (for slower loading)
+            setTimeout(autoSelectSingleOptions, 300);
+
+            // Try when variations are updated
+            $('.variations_form').on('woocommerce_update_variation_values', function() {
+                setTimeout(autoSelectSingleOptions, 100);
+            });
+        });
+    </script>
+<?php
+}
+add_action('wp_footer', 'jetlagz_auto_select_single_attribute');
 
 /**
  * Add color field to product attribute terms - EDIT form
@@ -2998,6 +3728,136 @@ function jetlagz_shipping_countdown_timer()
         });
     </script>
 <?php
+}
+
+/**
+ * Wyświetl kolory produktu jako kółka na karcie produktu
+ */
+function jetlagz_display_product_colors($product_obj = null)
+{
+    global $product;
+
+    if ($product_obj instanceof WC_Product) {
+        $current_product = $product_obj;
+    } else {
+        $current_product = $product;
+    }
+
+    if (!$current_product) {
+        return;
+    }
+
+    $product_id = $current_product->get_id();
+
+    // 1) Zbierz kolory z wariantów (najbardziej wiarygodne dla produktów variable).
+    $color_options = array();
+    if ($current_product->is_type('variable')) {
+        $variation_attributes = $current_product->get_variation_attributes();
+        if (!empty($variation_attributes['attribute_pa_kolor']) && is_array($variation_attributes['attribute_pa_kolor'])) {
+            foreach ($variation_attributes['attribute_pa_kolor'] as $color_slug) {
+                if (empty($color_slug)) {
+                    continue;
+                }
+
+                $term = get_term_by('slug', $color_slug, 'pa_kolor');
+                if ($term && !is_wp_error($term)) {
+                    $color_options[$term->slug] = array(
+                        'slug' => $term->slug,
+                        'name' => $term->name,
+                        'term_id' => $term->term_id,
+                    );
+                } else {
+                    $sanitized_slug = sanitize_title($color_slug);
+                    $color_options[$sanitized_slug] = array(
+                        'slug' => $sanitized_slug,
+                        'name' => ucfirst(str_replace('-', ' ', $sanitized_slug)),
+                        'term_id' => 0,
+                    );
+                }
+            }
+        }
+    }
+
+    // 2) Fallback do atrybutów produktu.
+    if (count($color_options) <= 1) {
+        $attributes = $current_product->get_attributes();
+        if (!empty($attributes) && isset($attributes['pa_kolor']) && is_object($attributes['pa_kolor']) && method_exists($attributes['pa_kolor'], 'get_options')) {
+            $attribute_options = $attributes['pa_kolor']->get_options();
+            if (is_array($attribute_options)) {
+                foreach ($attribute_options as $option) {
+                    $term = is_numeric($option)
+                        ? get_term((int) $option, 'pa_kolor')
+                        : get_term_by('slug', (string) $option, 'pa_kolor');
+
+                    if ($term && !is_wp_error($term)) {
+                        $color_options[$term->slug] = array(
+                            'slug' => $term->slug,
+                            'name' => $term->name,
+                            'term_id' => $term->term_id,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    // 3) Ostateczny fallback: termy przypisane do produktu.
+    if (count($color_options) <= 1) {
+        $color_terms = wp_get_post_terms($product_id, 'pa_kolor', array('fields' => 'all'));
+        if (!empty($color_terms) && !is_wp_error($color_terms)) {
+            foreach ($color_terms as $color_term) {
+                $color_options[$color_term->slug] = array(
+                    'slug' => $color_term->slug,
+                    'name' => $color_term->name,
+                    'term_id' => $color_term->term_id,
+                );
+            }
+        }
+    }
+
+    // Pokazuj sekcję tylko gdy produkt ma więcej niż 1 kolor.
+    if (count($color_options) <= 1) {
+        return;
+    }
+
+    $fallback_colors = array(
+        'white' => '#f8f8f8',
+        'bialy' => '#f8f8f8',
+        'czarny' => '#111111',
+        'black' => '#111111',
+        'red' => '#d60000',
+        'czerwony' => '#d60000',
+        'rozowy' => '#f472b6',
+        'pink' => '#f472b6',
+        'niebieski' => '#2563eb',
+        'blue' => '#2563eb',
+        'zielony' => '#16a34a',
+        'green' => '#16a34a',
+        'bezowy' => '#d6c2a5',
+        'bez' => '#d6c2a5',
+        'ecru' => '#e8dfcc',
+        'nude' => '#d8b49c',
+    );
+
+    echo '<div class="product-colors">';
+
+    foreach ($color_options as $color_option) {
+        $color_value = '';
+
+        if (!empty($color_option['term_id'])) {
+            $color_value = get_term_meta($color_option['term_id'], 'attribute_color', true);
+        }
+
+        if (empty($color_value)) {
+            $option_slug = isset($color_option['slug']) ? $color_option['slug'] : '';
+            $color_value = isset($fallback_colors[$option_slug]) ? $fallback_colors[$option_slug] : '#dddddd';
+        }
+
+        $color_name = isset($color_option['name']) ? $color_option['name'] : '';
+        echo '<span class="color-swatch" style="background-color: ' . esc_attr($color_value) . ';" title="' . esc_attr($color_name) . '"></span>';
+    }
+
+    echo '</div>';
 }
 add_action('woocommerce_after_add_to_cart_form', 'jetlagz_shipping_countdown_timer', 10);
 
@@ -3538,7 +4398,7 @@ function jetlagz_update_product_status_by_stock($product_id, $desired_status = '
         // Get preferred hidden status from settings
         $hidden_status = get_theme_option('woocommerce.out_of_stock_status', 'draft');
         $hidden_status = in_array($hidden_status, ['draft', 'private']) ? $hidden_status : 'draft';
-        
+
         // Automatic mode - set status based on stock availability
         if ($has_stock && in_array($current_status, ['draft', 'private'])) {
             // Product has stock and is currently hidden - make it public

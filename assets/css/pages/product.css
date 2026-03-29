@@ -19,6 +19,22 @@
 	overflow: visible;
 }
 
+.single-product #page,
+.single-product .site,
+.single-product .site-content,
+.single-product #primary,
+.single-product .content-area,
+.single-product .site-main {
+	overflow: visible !important;
+	overflow-x: visible !important;
+	overflow-y: visible !important;
+}
+
+.single-product .recently-viewed-section {
+	max-width: 100%;
+	overflow-x: hidden;
+}
+
 .single-product .col-full {
 	padding: 0 !important;
 }
@@ -1335,6 +1351,32 @@ button.single_add_to_cart_button::after {
 
 /* Desktop only (1024px+) - custom grid layout */
 @media (min-width: 1024px) {
+	.product-main-wrapper {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 2%;
+		width: 100%;
+		margin-bottom: 3rem;
+	}
+
+	.product-main-wrapper > .woocommerce-product-gallery {
+		width: 46%;
+		flex-shrink: 0;
+	}
+
+	.product-main-wrapper > .summary.entry-summary {
+		width: 42%;
+		flex-shrink: 0;
+	}
+
+	.product-main-wrapper.is-sticky-summary > .summary.entry-summary,
+	.product-main-wrapper.is-sticky-gallery > .woocommerce-product-gallery {
+		position: sticky;
+		top: 20px;
+		align-self: flex-start;
+	}
+
 	.single-product div.product .woocommerce-product-gallery {
 		width: 46%;
 	}
@@ -1347,6 +1389,23 @@ button.single_add_to_cart_button::after {
 	button.universal-one-click-btn {
 		width: auto !important;
 	} */
+}
+
+@media (max-width: 1023px) {
+	.product-main-wrapper {
+		display: block !important;
+	}
+
+	.product-main-wrapper > .woocommerce-product-gallery,
+	.product-main-wrapper > .summary.entry-summary {
+		width: 100% !important;
+	}
+
+	.product-main-wrapper.is-sticky-summary > .summary.entry-summary,
+	.product-main-wrapper.is-sticky-gallery > .woocommerce-product-gallery {
+		position: static;
+		top: auto;
+	}
 }
 
 /* Mobile - no custom modifications, use default WooCommerce gallery */

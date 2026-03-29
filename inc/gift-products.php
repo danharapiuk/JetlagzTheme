@@ -315,6 +315,145 @@ function jetlagz_get_all_gift_product_ids()
 }
 
 /**
+ * Check if product ID is configured as gift source product.
+ */
+function jetlagz_is_gift_source_product($product_id)
+{
+    $product_id = intval($product_id);
+    if ($product_id <= 0) {
+        return false;
+    }
+
+    return in_array($product_id, jetlagz_get_all_gift_product_ids(), true);
+}
+
+/**
+ * Block direct access to single pages of gift source products.
+ */
+function jetlagz_block_gift_product_page_access()
+{
+    if (is_admin() || wp_doing_ajax() || !is_product()) {
+        return;
+    }
+
+    global $post;
+    if (!$post) {
+        return;
+    }
+
+    $product_id = intval($post->ID);
+    if (!jetlagz_is_gift_source_product($product_id)) {
+        return;
+    }
+
+    wc_add_notice(__('Ten produkt jest dodawany automatycznie jako prezent i nie jest dostępny do samodzielnego zakupu.', 'universal-theme'), 'notice');
+    wp_safe_redirect(wc_get_cart_url());
+    exit;
+}
+add_action('template_redirect', 'jetlagz_block_gift_product_page_access', 1);
+
+/**
+ * Prevent manual add-to-cart for gift source products.
+ */
+function jetlagz_block_manual_gift_add_to_cart($passed, $product_id, $quantity, $variation_id = 0, $variations = [], $cart_item_data = [])
+{
+    // Allow internal auto-add from gift engine.
+    if (!empty($cart_item_data['jetlagz_is_gift'])) {
+        return $passed;
+    }
+
+    $check_id = intval($variation_id ?: $product_id);
+    $check_product = wc_get_product($check_id);
+    if ($check_product && $check_product->is_type('variation')) {
+        $parent_id = intval($check_product->get_parent_id());
+        if ($parent_id > 0) {
+            $check_id = $parent_id;
+        }
+    }
+
+    if (jetlagz_is_gift_source_product($check_id)) {
+        wc_add_notice(__('Tego produktu nie można dodać ręcznie do koszyka. Jest dodawany automatycznie jako prezent.', 'universal-theme'), 'error');
+        return false;
+    }
+
+    return $passed;
+}
+add_filter('woocommerce_add_to_cart_validation', 'jetlagz_block_manual_gift_add_to_cart', 10, 6);
+
+/**
+ * Hide gift products from related products
+ */
+function jetlagz_exclude_gifts_from_related($related_posts, $product_id, $args)
+{
+    $gift_ids = jetlagz_get_all_gift_product_ids();
+    if (empty($gift_ids)) {
+        return $related_posts;
+    }
+
+    return array_diff($related_posts, $gift_ids);
+}
+add_filter('woocommerce_related_products', 'jetlagz_exclude_gifts_from_related', 10, 3);
+
+/**
+ * Hide gift products from upsells
+ */
+function jetlagz_exclude_gifts_from_upsells($upsells, $product_id)
+{
+    $gift_ids = jetlagz_get_all_gift_product_ids();
+    if (empty($gift_ids)) {
+        return $upsells;
+    }
+
+    return array_diff($upsells, $gift_ids);
+}
+add_filter('woocommerce_product_get_upsell_ids', 'jetlagz_exclude_gifts_from_upsells', 10, 2);
+add_filter('woocommerce_product_variation_get_upsell_ids', 'jetlagz_exclude_gifts_from_upsells', 10, 2);
+
+/**
+ * Hide gift products from cross-sells
+ */
+function jetlagz_exclude_gifts_from_crosssells($crosssells, $product_id)
+{
+    $gift_ids = jetlagz_get_all_gift_product_ids();
+    if (empty($gift_ids)) {
+        return $crosssells;
+    }
+
+    return array_diff($crosssells, $gift_ids);
+}
+add_filter('woocommerce_product_get_cross_sell_ids', 'jetlagz_exclude_gifts_from_crosssells', 10, 2);
+add_filter('woocommerce_product_variation_get_cross_sell_ids', 'jetlagz_exclude_gifts_from_crosssells', 10, 2);
+
+/**
+ * Hide gift products from archive/shop/search pages
+ */
+function jetlagz_exclude_gifts_from_queries($q)
+{
+    // Only run on product archives, shop, search - not admin
+    if (is_admin() || !$q->is_main_query()) {
+        return;
+    }
+
+    // Only for product queries
+    if (!is_post_type_archive('product') && !is_search() && !is_tax(get_object_taxonomies('product'))) {
+        return;
+    }
+
+    $gift_ids = jetlagz_get_all_gift_product_ids();
+    if (empty($gift_ids)) {
+        return;
+    }
+
+    $existing_not_in = $q->get('post__not_in');
+    if (empty($existing_not_in)) {
+        $existing_not_in = [];
+    }
+
+    $q->set('post__not_in', array_merge($existing_not_in, $gift_ids));
+}
+add_action('pre_get_posts', 'jetlagz_exclude_gifts_from_queries', 20);
+
+/**
  * Calculate cart total EXCLUDING gift products
  */
 function jetlagz_get_cart_total_without_gifts()
@@ -345,7 +484,7 @@ function jetlagz_track_gift_removal($cart_item_key, $cart)
     $cart_item = $cart->get_cart_item($cart_item_key);
     if (!empty($cart_item['jetlagz_is_gift']) && WC()->session) {
         $dismissed = WC()->session->get('jetlagz_dismissed_gifts', []);
-        $product_id = intval($cart_item['product_id']);
+        $product_id = intval($cart_item['jetlagz_gift_source_product_id'] ?? $cart_item['product_id']);
         if (!in_array($product_id, $dismissed)) {
             $dismissed[] = $product_id;
         }
@@ -353,6 +492,85 @@ function jetlagz_track_gift_removal($cart_item_key, $cart)
     }
 }
 add_action('woocommerce_remove_cart_item', 'jetlagz_track_gift_removal', 10, 2);
+
+/**
+ * Resolve add_to_cart params for gift product.
+ * Supports simple and variable products (default variation preferred).
+ */
+function jetlagz_resolve_gift_add_to_cart_params($product)
+{
+    if (!$product || !($product instanceof WC_Product)) {
+        return false;
+    }
+
+    // Simple (or already concrete) product.
+    if (!$product->is_type('variable')) {
+        if (!$product->is_purchasable() || !$product->is_in_stock()) {
+            return false;
+        }
+
+        return [
+            'product_id'   => (int) $product->get_id(),
+            'variation_id' => 0,
+            'variation'    => [],
+            'name'         => $product->get_name(),
+        ];
+    }
+
+    // Variable product: try default attributes first.
+    $default_attributes = array_filter((array) $product->get_default_attributes(), function ($value) {
+        return $value !== '';
+    });
+
+    if (!empty($default_attributes)) {
+        $variation_id = (int) WC_Data_Store::load('product')->find_matching_product_variation($product, $default_attributes);
+
+        if ($variation_id > 0) {
+            $variation_product = wc_get_product($variation_id);
+            if ($variation_product && $variation_product->is_purchasable() && $variation_product->is_in_stock()) {
+                $variation_attributes = [];
+                foreach ((array) $variation_product->get_attributes() as $attr_name => $attr_value) {
+                    if ($attr_value === '') {
+                        continue;
+                    }
+                    $variation_attributes['attribute_' . $attr_name] = $attr_value;
+                }
+
+                return [
+                    'product_id'   => (int) $product->get_id(),
+                    'variation_id' => $variation_id,
+                    'variation'    => $variation_attributes,
+                    'name'         => $variation_product->get_name(),
+                ];
+            }
+        }
+    }
+
+    // Fallback: pick first in-stock purchasable variation.
+    foreach ($product->get_children() as $variation_id) {
+        $variation_product = wc_get_product($variation_id);
+        if (!$variation_product || !$variation_product->is_purchasable() || !$variation_product->is_in_stock()) {
+            continue;
+        }
+
+        $variation_attributes = [];
+        foreach ((array) $variation_product->get_attributes() as $attr_name => $attr_value) {
+            if ($attr_value === '') {
+                continue;
+            }
+            $variation_attributes['attribute_' . $attr_name] = $attr_value;
+        }
+
+        return [
+            'product_id'   => (int) $product->get_id(),
+            'variation_id' => (int) $variation_id,
+            'variation'    => $variation_attributes,
+            'name'         => $variation_product->get_name(),
+        ];
+    }
+
+    return false;
+}
 
 /**
  * When cart contents change (add product), reset dismissed gifts
@@ -394,7 +612,7 @@ function jetlagz_manage_gift_products()
 
     $cart_total = jetlagz_get_cart_total_without_gifts();
     $applicable_rules = jetlagz_get_applicable_gift_rules($cart_total);
-    $applicable_product_ids = array_column($applicable_rules, 'product_id');
+    $applicable_product_ids = array_map('intval', array_column($applicable_rules, 'product_id'));
     $all_gift_product_ids = jetlagz_get_all_gift_product_ids();
 
     // Track which gifts were added this round (for notification)
@@ -407,9 +625,9 @@ function jetlagz_manage_gift_products()
             continue;
         }
 
-        $product_id = $cart_item['product_id'];
+        $product_id = intval($cart_item['jetlagz_gift_source_product_id'] ?? $cart_item['product_id']);
 
-        if (!in_array($product_id, $applicable_product_ids)) {
+        if (!in_array($product_id, $applicable_product_ids, true)) {
             WC()->cart->remove_cart_item($cart_key);
             $gifts_removed[] = $product_id;
 
@@ -427,20 +645,28 @@ function jetlagz_manage_gift_products()
         $product_id = intval($rule['product_id']);
 
         // Skip if customer manually dismissed this gift
-        if (in_array($product_id, $dismissed_gifts)) {
+        if (in_array($product_id, $dismissed_gifts, true)) {
             continue;
         }
 
         $product = wc_get_product($product_id);
 
-        if (!$product || !$product->is_in_stock()) {
+        if (!$product) {
+            continue;
+        }
+
+        $add_params = jetlagz_resolve_gift_add_to_cart_params($product);
+        if (!$add_params) {
             continue;
         }
 
         // Check if this gift is already in cart
         $already_in_cart = false;
         foreach (WC()->cart->get_cart() as $cart_item) {
-            if ($cart_item['product_id'] == $product_id && !empty($cart_item['jetlagz_is_gift'])) {
+            if (
+                !empty($cart_item['jetlagz_is_gift'])
+                && intval($cart_item['jetlagz_gift_source_product_id'] ?? $cart_item['product_id']) === $product_id
+            ) {
                 $already_in_cart = true;
                 break;
             }
@@ -448,22 +674,34 @@ function jetlagz_manage_gift_products()
 
         if (!$already_in_cart) {
             $cart_item_data = [
-                'jetlagz_is_gift'   => true,
-                'jetlagz_gift_rule' => $rule,
+                'jetlagz_is_gift'               => true,
+                'jetlagz_gift_rule'             => $rule,
+                'jetlagz_gift_source_product_id' => $product_id,
             ];
 
-            WC()->cart->add_to_cart($product_id, 1, 0, [], $cart_item_data);
+            $added_key = WC()->cart->add_to_cart(
+                $add_params['product_id'],
+                1,
+                $add_params['variation_id'],
+                $add_params['variation'],
+                $cart_item_data
+            );
+
+            if (!$added_key) {
+                continue;
+            }
+
             $gifts_added[] = [
                 'product_id'   => $product_id,
-                'product_name' => $product->get_name(),
+                'product_name' => $add_params['name'],
                 'price'        => $rule['price'],
                 'message'      => $rule['message'] ?? '',
             ];
-            
+
             // Also mark this gift as "just added" for page reload detection
             $just_added = WC()->session->get('jetlagz_gifts_just_added', []);
             $just_added[$product_id] = [
-                'product_name' => $product->get_name(),
+                'product_name' => $add_params['name'],
                 'message'      => $rule['message'] ?? '',
             ];
             WC()->session->set('jetlagz_gifts_just_added', $just_added);
@@ -651,7 +889,7 @@ function jetlagz_gift_notification_frontend()
             }
             WC()->session->set('jetlagz_gifts_just_added', null);
         }
-        
+
         // Then check regular notifications (AJAX scenario)
         $pending = WC()->session->get('jetlagz_gift_notifications');
         if (!empty($pending)) {
@@ -819,7 +1057,7 @@ function jetlagz_gift_notification_frontend()
         }
 
         .gift-badge {
-            display: inline-block;
+            display: block;
             background: linear-gradient(135deg, #c9a96e, #b8944f);
             color: #fff;
             font-size: 10px;
@@ -830,6 +1068,8 @@ function jetlagz_gift_notification_frontend()
             text-transform: uppercase;
             letter-spacing: 0.5px;
             vertical-align: middle;
+            width: fit-content;
+            margin-bottom: 2px;
         }
 
         .gift-quantity {

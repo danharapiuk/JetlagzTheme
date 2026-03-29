@@ -88,55 +88,171 @@ add_action('woocommerce_single_product_summary', 'jetlagz_display_old_product_na
 */
 
 /**
- * Generate product slug from ACF product_name field
- * Updates slug when product_name is filled and different from current slug
+ * Sync product slug from ACF field "product_name" when field is not empty.
  */
-function jetlagz_generate_slug_from_product_name($post_id)
+function jetlagz_generate_slug_from_product_name($post_id, $post = null, $update = null)
 {
-    // Only for products
-    if (get_post_type($post_id) !== 'product') {
+    $post_id = absint($post_id);
+
+    if (!$post_id || get_post_type($post_id) !== 'product') {
         return;
     }
 
-    // Prevent infinite loop
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
         return;
     }
 
-    // Check user permissions
-    if (!current_user_can('edit_post', $post_id)) {
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
         return;
     }
 
-    // Get ACF product_name
-    $product_name = get_field('product_name', $post_id);
+    $product_name = '';
 
-    if (empty($product_name)) {
+    if (function_exists('get_field')) {
+        $product_name = get_field('product_name', $post_id);
+    }
+
+    if (!is_string($product_name) || trim($product_name) === '') {
+        $product_name = get_post_meta($post_id, 'product_name', true);
+    }
+
+    if (!is_string($product_name) || trim($product_name) === '') {
         return;
     }
 
-    // Get current slug
-    $current_slug = get_post_field('post_name', $post_id);
+    $new_slug = sanitize_title(trim($product_name));
 
-    // Generate new slug from product_name
-    $new_slug = sanitize_title($product_name);
-
-    // Only update if different (avoid infinite loops)
-    if ($new_slug !== $current_slug) {
-        // Make slug unique
-        $new_slug = wp_unique_post_slug($new_slug, $post_id, get_post_status($post_id), 'product', 0);
-
-        // Remove hook temporarily to avoid infinite loop
-        remove_action('acf/save_post', 'jetlagz_generate_slug_from_product_name', 20);
-
-        // Update the post slug
-        wp_update_post(array(
-            'ID' => $post_id,
-            'post_name' => $new_slug
-        ));
-
-        // Re-add the hook
-        add_action('acf/save_post', 'jetlagz_generate_slug_from_product_name', 20);
+    if ($new_slug === '') {
+        return;
     }
+
+    $current_slug = (string) get_post_field('post_name', $post_id);
+
+    if ($new_slug === $current_slug) {
+        return;
+    }
+
+    $new_slug = wp_unique_post_slug($new_slug, $post_id, get_post_status($post_id), 'product', 0);
+
+    // Prevent recursion for both hooks that can trigger wp_update_post.
+    remove_action('acf/save_post', 'jetlagz_generate_slug_from_product_name', 20);
+    remove_action('save_post_product', 'jetlagz_generate_slug_from_product_name', 20);
+
+    wp_update_post(array(
+        'ID' => $post_id,
+        'post_name' => $new_slug,
+    ));
+
+    add_action('acf/save_post', 'jetlagz_generate_slug_from_product_name', 20);
+    add_action('save_post_product', 'jetlagz_generate_slug_from_product_name', 20, 3);
 }
 add_action('acf/save_post', 'jetlagz_generate_slug_from_product_name', 20);
+add_action('save_post_product', 'jetlagz_generate_slug_from_product_name', 20, 3);
+
+/**
+ * Zwraca URL obrazka z pola ACF "flat" dla produktu lub wariantu.
+ * Dla kompatybilności wstecznej czyta też starsze pole "fotka".
+ */
+function jetlagz_get_flat_image_url($post_id)
+{
+    $post_id = absint($post_id);
+
+    if (!$post_id) {
+        return '';
+    }
+
+    $sources = array($post_id);
+
+    if (get_post_type($post_id) === 'product_variation') {
+        $parent_id = wp_get_post_parent_id($post_id);
+        if ($parent_id) {
+            $sources[] = $parent_id;
+        }
+    }
+
+    foreach ($sources as $source_id) {
+        $raw = get_post_meta($source_id, 'flat', true);
+
+        // Backward compatibility for existing products using old key.
+        if (!is_numeric($raw) && (!is_string($raw) || trim($raw) === '')) {
+            $raw = get_post_meta($source_id, 'fotka', true);
+        }
+
+        if (is_numeric($raw) && (int) $raw > 0) {
+            $url = wp_get_attachment_url((int) $raw);
+            if ($url) {
+                return esc_url_raw($url);
+            }
+        }
+
+        if (is_string($raw) && trim($raw) !== '') {
+            return esc_url_raw(trim($raw));
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Przy zapisie produktu lub wariantu zapisuje URL z pola "flat" do meta klucza
+ * "_flat_url" – bezpośrednio w bazie danych, bez żadnych ACF-owych filtrów.
+ * CTX Feed może ten klucz odczytać jako zwykłe Custom Field.
+ */
+function jetlagz_sync_flat_url_on_save($post_id)
+{
+    $post_id = absint($post_id);
+    if (!$post_id) {
+        return;
+    }
+
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+        return;
+    }
+
+    $post_type = get_post_type($post_id);
+
+    if (!in_array($post_type, array('product', 'product_variation'), true)) {
+        return;
+    }
+
+    // Pobierz URL dla tego produktu/wariantu (warianty szukają też u rodzica)
+    $url = jetlagz_get_flat_image_url($post_id);
+
+    if ($url !== '') {
+        update_post_meta($post_id, '_flat_url', $url);
+        // Keep legacy key for existing feed configurations.
+        update_post_meta($post_id, '_fotka_url', $url);
+    } else {
+        delete_post_meta($post_id, '_flat_url');
+        delete_post_meta($post_id, '_fotka_url');
+    }
+
+    // Jeśli to produkt nadrzędny – zsynchronizuj też wszystkie warianty
+    if ($post_type === 'product') {
+        $variation_ids = get_posts(array(
+            'post_type'   => 'product_variation',
+            'post_parent' => $post_id,
+            'fields'      => 'ids',
+            'numberposts' => -1,
+            'post_status' => 'any',
+        ));
+
+        foreach ((array) $variation_ids as $var_id) {
+            $var_url = jetlagz_get_flat_image_url((int) $var_id);
+            if ($var_url !== '') {
+                update_post_meta($var_id, '_flat_url', $var_url);
+                update_post_meta($var_id, '_fotka_url', $var_url);
+            } else {
+                delete_post_meta($var_id, '_flat_url');
+                delete_post_meta($var_id, '_fotka_url');
+            }
+        }
+    }
+}
+add_action('acf/save_post', 'jetlagz_sync_flat_url_on_save', 30);
+add_action('save_post_product', 'jetlagz_sync_flat_url_on_save', 30);
+add_action('save_post_product_variation', 'jetlagz_sync_flat_url_on_save', 30);

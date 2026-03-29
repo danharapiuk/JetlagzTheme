@@ -17,6 +17,7 @@
             this.lazyLoading();
             this.productGallery();
             this.cartUpdates();
+            this.contactLinksCopy();
             this.stockAvailabilityDropdown();
         },
 
@@ -189,6 +190,77 @@
             });
         },
 
+        // Kopiowanie/mailto/tel dla bloków kontaktowych (działa globalnie)
+        contactLinksCopy: function() {
+            function isNumeric(str) {
+                return /\d/.test(str);
+            }
+
+            function showTooltip(el) {
+                var tooltip = document.createElement('div');
+                tooltip.textContent = 'Skopiowano';
+                tooltip.style.position = 'absolute';
+                tooltip.style.background = 'black';
+                tooltip.style.color = 'white';
+                tooltip.style.padding = '4px 8px';
+                tooltip.style.fontSize = '12px';
+                tooltip.style.borderRadius = '4px';
+                tooltip.style.whiteSpace = 'nowrap';
+                tooltip.style.zIndex = 1000;
+
+                document.body.appendChild(tooltip);
+                var rect = el.getBoundingClientRect();
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 4 + window.scrollY) + 'px';
+                tooltip.style.left = (rect.left + (rect.width - tooltip.offsetWidth) / 2 + window.scrollX) + 'px';
+
+                setTimeout(function() {
+                    tooltip.remove();
+                }, 1500);
+            }
+
+            $(document).on('click', '.contact-link', function() {
+                var el = this;
+                var value = String($(el).data('value') || '').trim();
+
+                if (!value) {
+                    return;
+                }
+
+                var isEmail = value.indexOf('@') !== -1;
+                var isPhone = isNumeric(value);
+                var mobile = window.matchMedia('(max-width: 767px)').matches;
+
+                if (mobile && isEmail) {
+                    window.location.href = 'mailto:' + value;
+                    return;
+                }
+
+                if (mobile && isPhone) {
+                    window.location.href = 'tel:' + value.replace(/[^0-9+]/g, '');
+                    return;
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(value).then(function() {
+                        showTooltip(el);
+                    });
+                    return;
+                }
+
+                var temp = document.createElement('textarea');
+                temp.value = value;
+                document.body.appendChild(temp);
+                temp.select();
+                try {
+                    document.execCommand('copy');
+                    showTooltip(el);
+                } catch (e) {
+                    // no-op
+                }
+                document.body.removeChild(temp);
+            });
+        },
+
         // Powiadomienia
         showNotification: function(message, type = 'info') {
             const notification = $(`
@@ -341,9 +413,30 @@
             $(document).on('wpcf7submit wpcf7mailsent wpcf7mailfailed', '.wpcf7-form', function(event) {
                 console.log('CF7 Event:', event.type, event);
             });
+
+            const STOCK_ALERT_FORM_ID = '3ef1ab3';
+
+            function isStockAlertForm($form) {
+                const hiddenFormId = String($form.find('input[name="_wpcf7"]').val() || '').trim();
+                const $wrapper = $form.closest('.wpcf7');
+                const wrapperDataId = String($wrapper.attr('data-id') || '').trim();
+                const wrapperId = String($wrapper.attr('id') || '').trim();
+
+                return (
+                    hiddenFormId === STOCK_ALERT_FORM_ID ||
+                    wrapperDataId === STOCK_ALERT_FORM_ID ||
+                    wrapperId.indexOf(STOCK_ALERT_FORM_ID) !== -1
+                );
+            }
             
             // Obsługa sukcesu Contact Form 7 - próbuj różne eventy
             $(document).on('wpcf7mailsent wpcf7submit', '.wpcf7-form', function(event) {
+                const $form = $(this);
+
+                if (!isStockAlertForm($form)) {
+                    return;
+                }
+
                 console.log('CF7 Success event triggered:', event.type);
                 
                 // Sprawdź czy formularz został pomyślnie wysłany
@@ -366,7 +459,7 @@
                 event.preventDefault();
                 
                 // Pokaż komunikat sukcesu
-                $(this).parent().html(`
+                $form.parent().html(`
                     <div style="text-align: center; color: #28a745; padding: 30px;">
                         <div style="font-size: 48px; margin-bottom: 15px;">✓</div>
                         <h4 style="margin: 0 0 10px 0; color: #28a745; font-size: 18px;">Mail został wysłany!</h4>
@@ -392,6 +485,12 @@
             setInterval(function() {
                 $('.wpcf7-mail-sent-ok:visible').each(function() {
                     const $message = $(this);
+                    const $form = $message.closest('.wpcf7').find('.wpcf7-form').first();
+
+                    if (!$form.length || !isStockAlertForm($form)) {
+                        return;
+                    }
+
                     const $dropdown = $message.closest('.stock-availability-dropdown');
                     const $trigger = $('.stock-availability-trigger.active');
                     
@@ -529,7 +628,7 @@
                         if (node.nodeType === 1) {
                             var tagName = node.tagName ? node.tagName.toLowerCase() : '';
                             var className = node.className && typeof node.className === 'string' ? node.className : '';
-                            var id = node.id || '';
+                            var id = typeof node.id === 'string' ? node.id : '';
                             
                             if (tagName.includes('inpost') || className.includes('inpost') || className.includes('izi') || id.includes('inpost')) {
                                 console.log('[InPost DEBUG] Element ADDED:', tagName, className, id);
@@ -549,7 +648,7 @@
                         if (node.nodeType === 1) {
                             var tagName = node.tagName ? node.tagName.toLowerCase() : '';
                             var className = node.className && typeof node.className === 'string' ? node.className : '';
-                            var id = node.id || '';
+                            var id = typeof node.id === 'string' ? node.id : '';
                             
                             if (tagName.includes('inpost') || className.includes('inpost') || className.includes('izi') || id.includes('inpost')) {
                                 console.log('[InPost DEBUG] Element REMOVED:', tagName, className, id);

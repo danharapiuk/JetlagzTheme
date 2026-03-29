@@ -61,23 +61,8 @@ if (!$products_query || !$products_query->have_posts()) {
                                 $average_rating = $product->get_average_rating();
                                 if ($rating_count > 0) :
                                     $rating_display = ($average_rating == 5) ? '5/5' : number_format($average_rating, 1, '.', '') . '/5';
+                                endif;
                                 ?>
-                                    <div class="stars">
-                                        <span class="rating-number"><?php echo $rating_display; ?></span>
-                                        <span class="rating-count">(<?php echo $rating_count; ?>)</span>
-                                        <span class="rating-stars">
-                                            <?php
-                                            for ($i = 1; $i <= 5; $i++) {
-                                                if ($i <= round($average_rating)) {
-                                                    echo '<span class="star filled">★</span>';
-                                                } else {
-                                                    echo '<span class="star empty">★</span>';
-                                                }
-                                            }
-                                            ?>
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
                             </div>
                         </a>
                         <?php
@@ -132,11 +117,34 @@ if (!$products_query || !$products_query->have_posts()) {
                                     </h3>
                                 <?php endif; ?>
 
+                                <?php if ($rating_count > 0) : ?>
+                                    <div class="stars">
+                                        <span class="rating-stars">
+                                            <?php
+                                            for ($i = 1; $i <= 5; $i++) {
+                                                if ($i <= round($average_rating)) {
+                                                    echo '<span class="star filled">★</span>';
+                                                } else {
+                                                    echo '<span class="star empty">★</span>';
+                                                }
+                                            }
+                                            ?>
+                                        </span>
+                                        <span class="rating-number"><?php echo $rating_display; ?></span>
+                                        <span class="rating-count">(<?php echo $rating_count; ?>)</span>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="product-info-row">
                                     <div class="product-price">
                                         <?php echo $product->get_price_html(); ?>
                                     </div>
                                 </div>
+
+                                <?php
+                                // Wyświetl kolory produktu pod ceną
+                                jetlagz_display_product_colors($product);
+                                ?>
                             </div>
                         </a>
                     </div>
@@ -165,8 +173,9 @@ if (!$products_query || !$products_query->have_posts()) {
 
         if (swiperElement && !swiperElement.swiper) {
             const swiperConfig = {
-                slidesPerView: 2.15,
-                spaceBetween: 6,
+                // Mobile: show 1 full card + about 3/4 of the next one
+                slidesPerView: 1.75,
+                spaceBetween: 10,
                 freeMode: {
                     enabled: true,
                     sticky: false,
@@ -175,9 +184,9 @@ if (!$products_query || !$products_query->have_posts()) {
                 },
                 breakpoints: {
                     640: {
-                        slidesPerView: 2,
-                        slidesPerGroup: 2,
-                        spaceBetween: 20,
+                        slidesPerView: 1.75,
+                        slidesPerGroup: 1,
+                        spaceBetween: 12,
                         freeMode: {
                             enabled: false,
                         },
@@ -193,7 +202,7 @@ if (!$products_query || !$products_query->have_posts()) {
                     1024: {
                         slidesPerView: 4,
                         slidesPerGroup: 4,
-                        spaceBetween: 40,
+                        spaceBetween: 2,
                         freeMode: {
                             enabled: false,
                         },

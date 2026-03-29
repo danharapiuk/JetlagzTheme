@@ -6,15 +6,35 @@
  * Content is pulled from Options Page
  */
 
-$faq_items = safe_get_field('faq', 'option');
+$faq_items = null;
+$faq_title = 'FAQ';
+$faq_instance = 'faq-' . wp_generate_password(6, false, false);
+
+if (isset($args) && is_array($args)) {
+    if (isset($args['faq_items'])) {
+        $faq_items = $args['faq_items'];
+    }
+
+    if (!empty($args['faq_title']) && is_string($args['faq_title'])) {
+        $faq_title = $args['faq_title'];
+    }
+
+    if (!empty($args['faq_instance']) && is_string($args['faq_instance'])) {
+        $faq_instance = sanitize_html_class($args['faq_instance']);
+    }
+}
+
+if (!is_array($faq_items) || empty($faq_items)) {
+    $faq_items = safe_get_field('faq', 'option');
+}
 
 if (!$faq_items || !is_array($faq_items) || empty($faq_items)) {
     return;
 }
 ?>
 
-<div class="product-faq-section mt-12 md:mt-20 text-black">
-    <h2 class="text-2xl font-semibold mb-6 text-center">FAQ</h2>
+<div class="product-faq-section mt-12 md:mt-20 text-black" data-faq-instance="<?php echo esc_attr($faq_instance); ?>">
+    <h2 class="text-2xl font-semibold mb-6 text-center"><?php echo esc_html($faq_title); ?></h2>
 
     <div class="faq-accordion max-w-4xl mx-auto">
         <?php foreach ($faq_items as $index => $item): ?>
@@ -22,9 +42,9 @@ if (!$faq_items || !is_array($faq_items) || empty($faq_items)) {
                 <div class="faq-item border-b border-gray-200 overflow-hidden">
                     <button
                         class="faq-question text-sm sm:text-base w-full text-left py-4 flex justify-between items-center hover:bg-transparent"
-                        data-faq-index="<?php echo $index; ?>"
+                        data-faq-index="<?php echo esc_attr($faq_instance . '-' . $index); ?>"
                         aria-expanded="false"
-                        aria-controls="faq-answer-<?php echo $index; ?>">
+                        aria-controls="faq-answer-<?php echo esc_attr($faq_instance . '-' . $index); ?>">
                         <span class="font-medium text-sm sm:text-base pr-4"><?php echo esc_html($item['title']); ?></span>
                         <svg class="faq-icon w-5 h-5 flex-shrink-0 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -32,7 +52,7 @@ if (!$faq_items || !is_array($faq_items) || empty($faq_items)) {
                     </button>
 
                     <div
-                        id="faq-answer-<?php echo $index; ?>"
+                        id="faq-answer-<?php echo esc_attr($faq_instance . '-' . $index); ?>"
                         class="faq-answer overflow-hidden transition-all duration-300 max-h-0"
                         aria-hidden="true">
                         <div class="pb-4 text-xs sm:text-sm font-light">
@@ -51,7 +71,12 @@ if (!$faq_items || !is_array($faq_items) || empty($faq_items)) {
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const faqButtons = document.querySelectorAll('.faq-question');
+        const faqSection = document.querySelector('[data-faq-instance="<?php echo esc_js($faq_instance); ?>"]');
+        if (!faqSection) {
+            return;
+        }
+
+        const faqButtons = faqSection.querySelectorAll('.faq-question');
 
         faqButtons.forEach(button => {
             button.addEventListener('click', function() {

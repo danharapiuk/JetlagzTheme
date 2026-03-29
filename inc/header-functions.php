@@ -28,9 +28,6 @@ function universal_theme_customize_header()
     remove_action('storefront_header', 'storefront_search', 40);
     remove_action('storefront_header', 'storefront_site_search', 40);
 
-    // Dodaj topbar przed headerem
-    add_action('storefront_before_header', 'universal_theme_topbar', 5);
-
     // Dodaj custom header layout
     add_action('storefront_header', 'universal_theme_custom_header_content', 10);
 }
@@ -44,12 +41,10 @@ function universal_theme_topbar()
 ?>
     <!-- Top Bar - tylko desktop -->
     <div class="universal-topbar">
-        <div class="wrapper !py-0">
-            <div class="topbar-content">
-                <span class="topbar-item">Darmowa dostawa od 299 zł</span>
-                <span class="topbar-item">Wysyłka w 24h!</span>
-                <span class="topbar-item">Darmowy zwrot do 30 dni</span>
-            </div>
+        <div class="topbar-content">
+            <span class="topbar-item">Darmowa dostawa od 299 zł</span>
+            <span class="topbar-item">Wysyłka w 24h!</span>
+            <span class="topbar-item">Darmowy zwrot do 30 dni</span>
         </div>
     </div>
 <?php
@@ -60,8 +55,10 @@ function universal_theme_topbar()
  */
 function universal_theme_custom_header_content()
 {
-?>
-    <div id="site-header" class="wrapper !py-0">
+?><div class="masta-head">
+        <?php universal_theme_topbar(); ?>
+    </div>
+    <div id="site-header" class="wrapper !py-4">
         <div class="universal-header-row">
 
             <!-- Logo/Branding -->
@@ -123,90 +120,6 @@ function universal_theme_custom_header_content()
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </a>
-                <?php endif; ?>
-            </div>
-
-            <!-- Cart -->
-            <div class="universal-header-cart">
-                <?php if (class_exists('WooCommerce')) : ?>
-                    <div class="universal-cart-dropdown">
-                        <a href="<?php echo esc_url(wc_get_cart_url()); ?>" class="universal-cart-link">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V17C17 18.1 16.1 19 15 19H9C7.9 19 7 18.1 7 17V13M17 13H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <span class="cart-count"><?php echo WC()->cart->get_cart_contents_count(); ?></span>
-                            <span class="cart-total"><?php echo WC()->cart->get_cart_subtotal(); ?></span>
-                        </a>
-
-                        <!-- Cart Dropdown Content -->
-                        <div class="universal-cart-dropdown-content">
-                            <?php if (!WC()->cart->is_empty()) : ?>
-                                <div class="cart-items">
-                                    <?php foreach (WC()->cart->get_cart() as $cart_item_key => $cart_item) :
-                                        $_product = apply_filters('woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key);
-                                        $product_id = apply_filters('woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key);
-
-                                        if ($_product && $_product->exists() && $cart_item['quantity'] > 0) :
-                                            $product_name = apply_filters('woocommerce_cart_item_name', $_product->get_name(), $cart_item, $cart_item_key);
-                                            $product_permalink = apply_filters('woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink($cart_item) : '', $cart_item, $cart_item_key);
-                                    ?>
-                                            <div class="cart-item">
-                                                <div class="cart-item-image">
-                                                    <?php echo $_product->get_image('woocommerce_gallery_thumbnail'); ?>
-                                                </div>
-                                                <div class="cart-item-details">
-                                                    <h4 class="cart-item-title">
-                                                        <?php if ($product_permalink) : ?>
-                                                            <a href="<?php echo esc_url($product_permalink); ?>"><?php echo wp_kses_post($product_name); ?></a>
-                                                        <?php else : ?>
-                                                            <?php echo wp_kses_post($product_name); ?>
-                                                        <?php endif; ?>
-                                                    </h4>
-                                                    <div class="cart-item-quantity">
-                                                        <?php if (!empty($cart_item['jetlagz_is_gift'])) :
-                                                            $orig_product = wc_get_product($product_id);
-                                                            $regular_price = $orig_product ? $orig_product->get_regular_price() : 0;
-                                                            if (empty($regular_price) && $orig_product) {
-                                                                $regular_price = $orig_product->get_price();
-                                                            }
-                                                            $gift_price = floatval($cart_item['jetlagz_gift_rule']['price'] ?? 0.10);
-                                                            if ($regular_price && floatval($regular_price) > $gift_price) : ?>
-                                                                1 × <del class="gift-original-price"><?php echo wc_price($regular_price); ?></del> <ins class="gift-price"><?php echo wc_price($gift_price); ?></ins>
-                                                            <?php else : ?>
-                                                                1 × <?php echo wc_price($gift_price); ?>
-                                                            <?php endif; ?>
-                                                        <?php else : ?>
-                                                            <?php echo sprintf('%s × %s', $cart_item['quantity'], WC()->cart->get_product_price($_product)); ?>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                </div>
-                                                <div class="cart-item-remove">
-                                                    <a href="#" class="remove-item" data-cart_item_key="<?php echo esc_attr($cart_item_key); ?>" title="<?php esc_attr_e('Remove this item', 'woocommerce'); ?>">&times;</a>
-                                                </div>
-                                            </div>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                </div>
-
-                                <div class="cart-dropdown-footer">
-                                    <div class="cart-total-amount">
-                                        <strong><?php esc_html_e('Suma: ', 'universal-theme');
-                                                echo WC()->cart->get_cart_subtotal(); ?></strong>
-                                    </div>
-                                    <div class="cart-actions">
-                                        <a href="<?php echo esc_url(wc_get_checkout_url()); ?>" class="btn-checkout-single"><?php esc_html_e('Do kasy', 'universal-theme'); ?></a>
-                                    </div>
-                                </div>
-                            <?php else : ?>
-                                <div class="cart-empty">
-                                    <p><?php esc_html_e('Twój koszyk jest pusty.', 'universal-theme'); ?></p>
-                                    <a href="<?php echo esc_url(wc_get_page_permalink('shop')); ?>" class="btn-continue-shopping">
-                                        <?php esc_html_e('Kontynuuj zakupy', 'universal-theme'); ?>
-                                    </a>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
                 <?php endif; ?>
             </div>
 
@@ -498,6 +411,12 @@ function header_cart_dropdown_fragments($fragments)
                     if ($_product && $_product->exists() && $cart_item['quantity'] > 0) :
                         $product_name = apply_filters('woocommerce_cart_item_name', $_product->get_name(), $cart_item, $cart_item_key);
                         $product_permalink = apply_filters('woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink($cart_item) : '', $cart_item, $cart_item_key);
+                        $is_gift = !empty($cart_item['jetlagz_is_gift']);
+
+                        // Blokuj link dla prezentów
+                        if ($is_gift) {
+                            $product_permalink = '';
+                        }
                 ?>
                         <div class="cart-item">
                             <div class="cart-item-image">

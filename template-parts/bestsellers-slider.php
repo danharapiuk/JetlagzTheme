@@ -13,6 +13,7 @@ $args = array(
     'orderby'        => 'meta_value_num',
     'order'          => 'DESC',
     'post_status'    => 'publish',
+    'post__not_in'   => function_exists('jetlagz_get_all_gift_product_ids') ? jetlagz_get_all_gift_product_ids() : array(),
 );
 
 $products_query = new WP_Query($args);

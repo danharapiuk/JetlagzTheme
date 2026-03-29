@@ -14,6 +14,7 @@
 	text-decoration: none;
 	color: inherit;
 	display: block;
+	padding: 0 2px;
 }
 
 /* Product Image */
@@ -103,54 +104,48 @@
 	font-weight: 500;
 }
 
-/* Stars on product image (bottom-right corner) */
-.product-image-wrapper .stars {
-	position: absolute;
-	bottom: 0;
-	/* right: 0; */
-	left: 0;
+/* Stars between subtitle and product info row */
+.product-card .stars {
+	position: static;
 	display: flex;
 	align-items: center;
 	gap: 0.25rem;
-	font-size: 14px;
+	font-size: 10px;
 	flex-wrap: nowrap;
-	background-color: rgba(255, 255, 255, 0.95);
-	padding: 0.25rem 1rem;
-	z-index: 10;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-	border: 1px solid rgba(0, 0, 0, 0.1);
+	margin-top: 0.4rem;
+	margin-bottom: 0.35rem;
 }
 
-.product-image-wrapper .stars .rating-number {
+.product-card .stars .rating-number {
 	font-weight: 600;
 	color: #333;
 }
 
-.product-image-wrapper .stars .rating-count {
+.product-card .stars .rating-count {
 	color: #666;
 }
 
-.product-image-wrapper .stars .rating-stars {
+.product-card .stars .rating-stars {
 	display: inline-flex;
 	gap: 1px;
 }
 
-.product-image-wrapper .stars .rating-stars .star {
+.product-card .stars .rating-stars .star {
 	font-size: 10px;
 	line-height: 1;
 }
 
 @media (min-width: 640px) {
-	.product-image-wrapper .stars .rating-stars .star {
+	.product-card .stars .rating-stars .star {
 		font-size: 12px;
 	}
 }
 
-.product-image-wrapper .stars .rating-stars .star.filled {
+.product-card .stars .rating-stars .star.filled {
 	color: #d5a676;
 }
 
-.product-image-wrapper .stars .rating-stars .star.empty {
+.product-card .stars .rating-stars .star.empty {
 	color: #d1d5db;
 }
 
@@ -196,8 +191,38 @@
 	}
 
 	.slider-product-subtitle {
-		font-size: 12px;
+		font-size: 10px;
+		font-family: 'Inter', sans-serif;
+		letter-spacing: -0.02em;
+		font-weight: 400;
 	}
+
+	.product-banner-image {
+		display: none;
+	}
+}
+
+.product-banner-payment-wrapper img.feature-image {
+	outline: 2px solid white;
+	outline-offset: -1px;
+}
+/* Product Colors */
+.product-colors {
+	margin: 8px 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.color-swatch {
+	width: 25px !important;
+	height: 25px !important;
+	border-radius: 50% !important;
+	display: inline-block !important;
+	margin-right: 4px !important;
+	cursor: pointer;
+	transition: transform 0.2s ease;
+	border: 1px solid #333333 !important;
 }
 
 .product-title-wrapper {

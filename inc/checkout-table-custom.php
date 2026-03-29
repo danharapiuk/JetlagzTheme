@@ -41,11 +41,31 @@ add_action('woocommerce_review_order_before_payment', function () {
 
                 // Pobierz dane
                 $product_id = $cart_item['product_id'];
-                $product_name = $product->get_name();
+                $acf_product_name = '';
+                if (function_exists('get_field')) {
+                    $acf_product_name = get_field('product_name', $product_id);
+
+                    if ((!is_string($acf_product_name) || trim($acf_product_name) === '') && $product) {
+                        $runtime_product_id = $product->get_id();
+                        $acf_product_name = get_field('product_name', $runtime_product_id);
+                    }
+
+                    if ((!is_string($acf_product_name) || trim($acf_product_name) === '') && $product && method_exists($product, 'get_parent_id')) {
+                        $parent_id = (int) $product->get_parent_id();
+                        if ($parent_id > 0) {
+                            $acf_product_name = get_field('product_name', $parent_id);
+                        }
+                    }
+                }
+
+                $product_name = is_string($acf_product_name) && trim($acf_product_name) !== ''
+                    ? trim($acf_product_name)
+                    : $product->get_name();
                 $product_image = $product->get_image('thumbnail');
                 $product_price = $product->get_price();
                 $product_total = $product_price * $quantity;
                 $product_url = get_permalink($product_id);
+                $is_gift = !empty($cart_item['jetlagz_is_gift']);
 
                 // Formatuj ceny
                 $price_formatted = wc_price($product_price);
@@ -55,14 +75,22 @@ add_action('woocommerce_review_order_before_payment', function () {
                     <!-- Lewa część: Miniaturka + Nazwa + Cena jednostkowa -->
                     <div class="checkout-item-left">
                         <div class="checkout-item-thumbnail">
-                            <a href="<?php echo esc_url($product_url); ?>">
+                            <?php if ($is_gift) : ?>
                                 <?php echo $product_image; ?>
-                            </a>
+                            <?php else : ?>
+                                <a href="<?php echo esc_url($product_url); ?>">
+                                    <?php echo $product_image; ?>
+                                </a>
+                            <?php endif; ?>
                             <button type="button" class="checkout-item-remove-btn" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="<?php echo __('Usuń z koszyka', 'universal-theme'); ?>">×</button>
                         </div>
                         <div class="checkout-item-details">
                             <div class="checkout-item-name">
-                                <a href="<?php echo esc_url($product_url); ?>"><?php echo esc_html($product_name); ?></a>
+                                <?php if ($is_gift) : ?>
+                                    <span class="gift-badge">🎁 PREZENT</span> <?php echo esc_html($product_name); ?>
+                                <?php else : ?>
+                                    <a href="<?php echo esc_url($product_url); ?>"><?php echo esc_html($product_name); ?></a>
+                                <?php endif; ?>
                             </div>
                             <div class="checkout-item-unit-price" data-unit-price="<?php echo esc_attr($product_price); ?>">
                                 <?php echo wp_kses_post($price_formatted); ?>

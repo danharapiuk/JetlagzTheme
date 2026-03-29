@@ -28,12 +28,23 @@ if (function_exists('wc_get_product') && isset($_COOKIE['woocommerce_recently_vi
     $recently_viewed_ids = array_slice($recently_viewed_ids, 0, 8);
 } else {
     // Fallback: Show some recent products if no cookie is set (for testing)
+    $exclude_ids = function_exists('jetlagz_get_all_gift_product_ids') ? jetlagz_get_all_gift_product_ids() : array();
+
+    if (is_product()) {
+        global $product;
+        $current_product_id = $product ? $product->get_id() : 0;
+        if ($current_product_id > 0) {
+            $exclude_ids[] = $current_product_id;
+        }
+    }
+
     $recent_products_args = array(
         'post_type'      => 'product',
         'posts_per_page' => 8,
         'orderby'        => 'date',
         'order'          => 'DESC',
         'post_status'    => 'publish',
+        'post__not_in'   => $exclude_ids,
         'meta_query'     => array(
             array(
                 'key'     => '_stock_status',
@@ -42,12 +53,6 @@ if (function_exists('wc_get_product') && isset($_COOKIE['woocommerce_recently_vi
             )
         )
     );
-
-    if (is_product()) {
-        global $product;
-        $current_product_id = $product ? $product->get_id() : 0;
-        $recent_products_args['post__not_in'] = array($current_product_id);
-    }
 
     $recent_query = new WP_Query($recent_products_args);
     $recently_viewed_ids = array();
@@ -68,6 +73,7 @@ if (!empty($recently_viewed_ids)) {
         'post__in'       => $recently_viewed_ids,
         'orderby'        => isset($_COOKIE['woocommerce_recently_viewed']) ? 'post__in' : 'date',
         'post_status'    => 'publish',
+        'post__not_in'   => function_exists('jetlagz_get_all_gift_product_ids') ? jetlagz_get_all_gift_product_ids() : array(),
         'meta_query'     => array(
             array(
                 'key'     => '_stock_status',

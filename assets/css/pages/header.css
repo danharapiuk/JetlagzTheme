@@ -6,6 +6,9 @@
 	background: #010b13;
 	color: white;
 	padding: 8px 0;
+	width: 100vw;
+	margin-left: calc(50% - 50vw);
+	margin-right: calc(50% - 50vw);
 }
 
 @media (min-width: 1024px) {
@@ -21,6 +24,7 @@
 	gap: 8rem;
 	font-size: 14px;
 	font-weight: 300;
+	padding-inline: clamp(16px, 3vw, 40px);
 }
 
 .topbar-item {
@@ -71,7 +75,7 @@ header {
 
 .universal-header-row {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: space-between;
 	gap: 0;
 	flex-wrap: wrap;
@@ -347,8 +351,9 @@ button.universal-mobile-menu-toggle:hover {
 }
 
 .universal-header-navigation.active {
-	border: 1px solid black;
 	padding: 10px;
+	background-color: #efeded;
+	border: 1px solid #777777;
 }
 
 .universal-header-account {
@@ -587,7 +592,7 @@ input.search-field {
 
 /* Gift product styling in cart dropdown */
 .universal-cart-dropdown-content .gift-badge {
-	display: inline-block;
+	display: block;
 	background: linear-gradient(135deg, #c9a96e, #b8944f);
 	color: #fff;
 	font-size: 8px;
@@ -963,8 +968,8 @@ a[href*='cart']:not(.btn-checkout):not(.universal-cart-link) {
 	color: black !important;
 	box-shadow: none !important;
 	border-bottom-color: transparent !important;
-	max-width: 1380px !important;
-	margin: 0 auto !important;
+	max-width: none !important;
+	margin: 0 !important;
 	width: 100% !important;
 }
 
@@ -994,6 +999,33 @@ header .col-full .coll-full {
 }
 
 /* Ukryj submenu na desktopie i pokaż przy hover */
+@media (min-width: 768px) and (max-width: 1023px) {
+	.universal-primary-menu li {
+		position: relative;
+	}
+
+	.universal-primary-menu li > .sub-menu {
+		display: none !important;
+		visibility: hidden;
+		opacity: 0;
+	}
+
+	/* Force close sticky states added by touch/menu scripts on tablets */
+	.universal-primary-menu li.focus > .sub-menu,
+	.universal-primary-menu li.sfHover > .sub-menu,
+	.universal-primary-menu li:focus-within > .sub-menu {
+		display: none !important;
+		visibility: hidden;
+		opacity: 0;
+	}
+
+	.universal-primary-menu li:hover > .sub-menu {
+		display: block !important;
+		visibility: visible;
+		opacity: 1;
+	}
+}
+
 @media (min-width: 1024px) {
 	.universal-primary-menu li {
 		position: relative;
@@ -1046,5 +1078,21 @@ header .col-full .coll-full {
 
 	.universal-primary-menu .sub-menu a:hover {
 		background: rgba(0, 0, 0, 0.03);
+	}
+}
+
+li.menu-item,
+li.menu-item a {
+	padding-left: 0;
+}
+
+ul.sub-menu > li.menu-item {
+	padding-left: 10px !important;
+	padding-right: 0 !important;
+}
+
+@media (min-width: 768px) {
+	.site-header {
+		padding-top: 0 !important;
 	}
 }
