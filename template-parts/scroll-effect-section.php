@@ -15,15 +15,17 @@
  * @param array  $args['images'] Array of image URLs (strings) or ACF image arrays with 'url'/'alt' keys.
  */
 
-$section_title  = $args['title']  ?? '';
-$section_images = $args['images'] ?? [];
+global $scroll_effect_data;
+$section_title  = $scroll_effect_data['title']  ?? '';
+$section_images = $scroll_effect_data['images'] ?? [];
+$scroll_effect_data = null;
 
 // Unique ID per instance so multiple components on one page don't conflict.
 $instance_id = 'scroll-effect-' . uniqid();
 ?>
 
 <section class="hidden lg:flex h-screen overflow-x-hidden relative items-center justify-center font-inter" id="<?php echo esc_attr($instance_id); ?>">
-    <div class="effect-title-wrapper absolute z-0 left-0 flex transition-opacity duration-700 ease-in-out">
+    <div class="effect-title-wrapper absolute z-0 left-0 flex transition-opacity duration-700 ease-in-out" style="top: 50%; transform: translateY(-50%);">
         <h2 class="effect-title-text uppercase font-black text-[400px] text-[#6A263A] whitespace-nowrap">
             <?php echo esc_html($section_title); ?>
         </h2>
@@ -41,12 +43,15 @@ $instance_id = 'scroll-effect-' . uniqid();
                 <?php
                 $img_counter = 0;
                 foreach ($section_images as $image) :
-                    if (is_string($image)) {
+                    if (is_string($image) && $image) {
                         $img_url = $image;
                         $img_alt = '';
                     } elseif (is_array($image) && !empty($image['url'])) {
                         $img_url = $image['url'];
                         $img_alt = $image['alt'] ?? '';
+                    } elseif (is_numeric($image)) {
+                        $img_url = wp_get_attachment_image_url((int) $image, 'full');
+                        $img_alt = get_post_meta((int) $image, '_wp_attachment_image_alt', true);
                     } else {
                         continue;
                     }
@@ -104,7 +109,7 @@ $instance_id = 'scroll-effect-' . uniqid();
                     titleOffset = titleOffset % singleTextWidth;
                 }
 
-                titleWrapper.style.transform = 'translateX(' + titleOffset + 'px)';
+                titleWrapper.style.transform = 'translateY(-50%) translateX(' + titleOffset + 'px)';
 
                 if (newIndex !== currentIndex) {
                     images[currentIndex].classList.remove('opacity-100');

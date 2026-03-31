@@ -15,17 +15,45 @@ $hero = safe_get_field('hero');
 if (!$hero) {
     $hero = array('title' => '', 'images' => array());
 }
+
+$shop_url = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : home_url('/sklep/');
+$sale_link = add_query_arg('on_sale', '1', $shop_url);
 ?>
-<section class="mobile-hero lg:flex">
-    <div>
+<section class="wrapper">
+    <div class="mobile-hero mb-3 md:mb-0 relative md:border-black md:border-[1px]">
         <?php if (!empty($hero['video'])) :
             $video_url = is_array($hero['video']) ? $hero['video']['url'] : $hero['video'];
         ?>
-            <video autoplay muted loop playsinline>
+            <video autoplay muted loop playsinline webkit-playsinline x5-playsinline>
                 <source src="<?php echo esc_url($video_url); ?>" type="video/mp4">
             </video>
+            <script>
+                (function() {
+                    var videos = document.querySelectorAll('.mobile-hero video');
+                    videos.forEach(function(v) {
+                        v.muted = true;
+                        var p = v.play();
+                        if (p !== undefined) {
+                            p.catch(function() {
+                                v.muted = true;
+                                v.play();
+                            });
+                        }
+                    });
+                })();
+            </script>
         <?php endif; ?>
+        <div class="absolute bottom-12 sm:bottom-[250px] left-1/2 transform -translate-x-1/2 w-full px-4 sm:px-0 font-inter">
+            <h1 class="text-left sm:text-center font-thin text-white text-2xl sm:text-5xl leading-[1.1]">Zmysłowość zaczyna się od detali.</h1>
+            <p class="text-left sm:text-center text-white pt-2 font-thin">Od subtelnej koronki po odważne fasony — wybierz styl, który mówi więcej niż słowa.</p>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center mt-12">
+                <a href="#bestsellers"><button class="bg-white w-full sm:w-fit text-black uppercase px-4 py-2">Bestsellery</button></a>
+                <a href="<?php echo esc_url($sale_link); ?>"><button class="bg-[#51172F] w-full sm:w-fit text-white uppercase px-4 py-2">Promo do -60%</button></a>
+            </div>
+        </div>
     </div>
+    <?php get_template_part('template-parts/product-categories'); ?>
 </section>
 
 
@@ -34,7 +62,7 @@ if (!$hero) {
     // Zmiana tytułu strony gdy użytkownik przełączy kartę
     document.addEventListener('DOMContentLoaded', function() {
         const originalTitle = document.title;
-        const newTitle = "Wróć do nas! 👋"; // Dostosuj tekst według potrzeb
+        const newTitle = " Wróć do nas! 👋"; // Dostosuj tekst według potrzeb
 
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
@@ -46,9 +74,9 @@ if (!$hero) {
     });
 </script>
 
-<?php get_template_part('template-parts/product-categories'); ?>
 
-<section class="bestsellers py-16 md:py-20 overflow-hidden">
+
+<section id="bestsellers" class="bestsellers py-16 md:py-20 overflow-hidden">
     <div class="wrapper mx-auto">
         <h2 class="title">Bestsellery</h2>
     </div>
@@ -65,11 +93,6 @@ if (!$hero) {
         <?php get_template_part('template-parts/new-products-slider'); ?>
     </div>
 </section>
-
-<?php get_template_part('template-parts/scroll-effect-section', null, [
-    'title'  => $hero['title']  ?? '',
-    'images' => $hero['images'] ?? [],
-]); ?>
 
 <section class="">
     <?php jetlagz_inject_template_part('features'); ?>

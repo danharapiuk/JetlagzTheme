@@ -11,14 +11,14 @@
 /* Note: Slider styles moved to assets/css/sliders.css for reusability */
 
 .mobile-hero {
-	height: 85svh;
-	max-height: 85vh;
+	height: 77svh;
+	max-height: 77vh;
 	width: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding-inline: clamp(12px, 4vw, 48px);
 	overflow: hidden;
+	border-bottom: none;
 }
 
 .mobile-hero video {
@@ -26,7 +26,7 @@
 	height: 100%;
 	max-width: 100%;
 	max-height: 100%;
-	object-fit: contain;
+	object-fit: cover;
 	object-position: center;
 	display: block;
 }

@@ -50,18 +50,185 @@ add_filter('woocommerce_add_to_cart_redirect', 'jetlagz_add_to_cart_post_redirec
  */
 function jetlagz_convert_filter_params()
 {
-    // Convert comma-separated strings to arrays for filter parameters
-    $filter_params = array('product_cat', 'pa_rozmiar', 'pa_kolor');
+    // Avoid native WP/Woo taxonomy parsing for attribute filters.
+    // We handle these in jetlagz_filter_products_query to support alias grouping.
+    $param_map = array(
+        'pa_kolor' => 'filter_kolor',
+        'pa_rozmiar' => 'filter_rozmiar',
+    );
 
-    foreach ($filter_params as $param) {
-        if (isset($_GET[$param]) && is_string($_GET[$param]) && !empty($_GET[$param])) {
-            // Keep as string - we'll handle it in our filter function
-            // This prevents WordPress from trying to parse it as a taxonomy term
-            continue;
+    foreach ($param_map as $native_param => $custom_param) {
+        if (isset($_GET[$native_param]) && !isset($_GET[$custom_param])) {
+            $_GET[$custom_param] = $_GET[$native_param];
+            $_REQUEST[$custom_param] = $_GET[$native_param];
+        }
+
+        if (isset($_GET[$native_param])) {
+            unset($_GET[$native_param]);
+        }
+
+        if (isset($_REQUEST[$native_param])) {
+            unset($_REQUEST[$native_param]);
         }
     }
 }
 add_action('init', 'jetlagz_convert_filter_params', 1);
+
+/**
+ * Color aliases map used only for storefront filtering.
+ * Does not modify source product data from external integrations.
+ */
+if (!function_exists('jetlagz_get_color_alias_map')) {
+    function jetlagz_get_color_alias_map()
+    {
+        return array(
+            'czarny' => array('czarny', 'czarna', 'czarne', 'black', 'negro', 'nero', 'czarny-1', 'czarny-2', 'czarnula'),
+            'bialy' => array('bialy', 'biel', 'biala', 'biale', 'white', 'blanc', 'biay', 'bia-y', 'pearl', 'perla', 'perlowy', 'off-white', 'offwhite', 'ivory', 'kremowy', 'mleczny'),
+            'czerwony' => array('czerwony', 'red', 'rouge', 'czerwie', 'czerwien', 'czerwoniutki'),
+            'bordo' => array('bordo', 'bordeaux', 'burgund', 'burgundy', 'wine', 'red-velvet', 'velvet-red', 'plum', 'malina', 'malinka', 'malinowy', 'raspberry'),
+            'bez' => array('bez', 'bezowy', 'be-z', 'beige', 'nude', 'cappuccino', 'piasek', 'piaskowy', 'sand', 'mocca', 'jasna-mocca', 'pudrowa-mocca', 'brzoskwiniowy'),
+            'ecri' => array('ecri', 'ecru', 'ecrui', 'ecro'),
+            'niebieski' => array('niebieski', 'blue', 'navy-blue', 'granat', 'granatowy', 'navy', 'blekit', 'chaber', 'chabrowy', 'jeans', 'jagoda', 'jagodowy'),
+            'zielony' => array('zielony', 'green', 'khaki', 'oliwka', 'olive'),
+            'rozowy' => array('rozowy', 'roz', 'rose', 'pink', 'fuksja', 'fuchsia', 'brudny-roz'),
+            'szary' => array('szary', 'grey', 'gray', 'grafit', 'antracyt'),
+            'brazowy' => array('brazowy', 'brown', 'br-zowy', 'czekoladowy', 'czekolada', 'camel', 'karmel', 'gold', 'zloty'),
+            'fioletowy' => array('fioletowy', 'violet', 'purple'),
+            'wielobarwny' => array('wielobarwny', 'mix', 'multicolor', 'multi', 'kolorowy', 'melanz', 'c-melanz', 'j-melanz', 'jasny-melange', 'czerwony-czarny', 'groszek')
+        );
+    }
+}
+
+if (!function_exists('jetlagz_get_canonical_color_swatch_map')) {
+    function jetlagz_get_canonical_color_swatch_map()
+    {
+        return array(
+            'bez' => '#d6c2a5',
+            'bialy' => '#f8f8f8',
+            'bordo' => '#7a1f2b',
+            'brazowy' => '#6f4e37',
+            'czarny' => '#111111',
+            'czerwony' => '#d60000',
+            'ecri' => '#ece3cf',
+            'fioletowy' => '#6b46c1',
+            'niebieski' => '#2563eb',
+            'rozowy' => '#f472b6',
+            'szary' => '#6b7280',
+            'wielobarwny' => '#9ca3af',
+            'zielony' => '#16a34a'
+        );
+    }
+}
+
+if (!function_exists('jetlagz_normalize_color_token')) {
+    function jetlagz_normalize_color_token($value)
+    {
+        $token = sanitize_title((string) $value);
+        // Remove one or more trailing numeric suffixes used by WP for duplicate slugs.
+        while (preg_match('/-\d+$/', $token)) {
+            $token = (string) preg_replace('/-\d+$/', '', $token);
+        }
+        return is_string($token) ? $token : '';
+    }
+}
+
+if (!function_exists('jetlagz_get_canonical_color_key')) {
+    function jetlagz_get_canonical_color_key($value)
+    {
+        $token = jetlagz_normalize_color_token($value);
+        if ($token === '') {
+            return '';
+        }
+
+        $alias_map = jetlagz_get_color_alias_map();
+        foreach ($alias_map as $canonical => $aliases) {
+            $normalized_aliases = array_map('jetlagz_normalize_color_token', (array) $aliases);
+            if ($token === jetlagz_normalize_color_token($canonical) || in_array($token, $normalized_aliases, true)) {
+                return $canonical;
+            }
+        }
+
+        return $token;
+    }
+}
+
+if (!function_exists('jetlagz_get_selected_color_filters')) {
+    function jetlagz_get_selected_color_filters()
+    {
+        $raw_values = array();
+
+        foreach (array('filter_kolor', 'pa_kolor') as $param) {
+            if (!isset($_GET[$param])) {
+                continue;
+            }
+
+            $value = $_GET[$param];
+            $parts = is_string($value) ? explode(',', $value) : (array) $value;
+            foreach ($parts as $part) {
+                $part = sanitize_text_field((string) $part);
+                if ($part !== '') {
+                    $raw_values[] = $part;
+                }
+            }
+        }
+
+        if (empty($raw_values)) {
+            return array();
+        }
+
+        $canonical = array_map('jetlagz_get_canonical_color_key', $raw_values);
+        $canonical = array_filter($canonical, static function ($value) {
+            return $value !== '';
+        });
+
+        return array_values(array_unique($canonical));
+    }
+}
+
+if (!function_exists('jetlagz_get_color_filter_groups')) {
+    function jetlagz_get_color_filter_groups($hide_empty = true)
+    {
+        $terms = get_terms(array(
+            'taxonomy' => 'pa_kolor',
+            'hide_empty' => (bool) $hide_empty,
+        ));
+
+        if (empty($terms) || is_wp_error($terms)) {
+            return array();
+        }
+
+        $groups = array();
+        $default_swatches = jetlagz_get_canonical_color_swatch_map();
+
+        foreach ($terms as $term) {
+            $canonical = jetlagz_get_canonical_color_key($term->slug ?: $term->name);
+            if ($canonical === '') {
+                continue;
+            }
+
+            if (!isset($groups[$canonical])) {
+                $default_swatch = isset($default_swatches[$canonical]) ? $default_swatches[$canonical] : '#ddd';
+                $groups[$canonical] = array(
+                    'key' => $canonical,
+                    'label' => ucfirst(str_replace('-', ' ', $canonical)),
+                    'swatch' => $default_swatch,
+                    'slugs' => array(),
+                );
+            }
+
+            $groups[$canonical]['slugs'][] = $term->slug;
+
+            $term_swatch = get_term_meta($term->term_id, 'attribute_color', true);
+            if (!empty($term_swatch)) {
+                $groups[$canonical]['swatch'] = $term_swatch;
+            }
+        }
+
+        ksort($groups, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $groups;
+    }
+}
 
 /**
  * Force WooCommerce price format to: 209,00 PLN
@@ -505,8 +672,18 @@ remove_action('woocommerce_after_shop_loop_item', 'woocommerce_template_loop_add
 remove_action('woocommerce_after_shop_loop', 'woocommerce_pagination', 10);
 
 /**
- * Hide gift products (ID 15101) from all public displays
- * This product should only be added programmatically to orders, not displayed or purchasable
+ * Product IDs that must be hidden from customer-facing product listings.
+ */
+if (!function_exists('jetlagz_get_hidden_shop_product_ids')) {
+    function jetlagz_get_hidden_shop_product_ids()
+    {
+        return array(15101, 17598);
+    }
+}
+
+/**
+ * Hide internal products from public displays
+ * These products should not be visible in shop/category/search results.
  */
 function jetlagz_hide_gift_products($query)
 {
@@ -517,9 +694,11 @@ function jetlagz_hide_gift_products($query)
 
     // Hide from shop, category pages, search results, and front-end queries
     if ($query->is_main_query() && (is_shop() || is_product_taxonomy() || is_search())) {
+        $hidden_product_ids = function_exists('jetlagz_get_hidden_shop_product_ids') ? jetlagz_get_hidden_shop_product_ids() : array(15101, 17598);
+
         $query->set('post__not_in', array_merge(
             (array) $query->get('post__not_in'),
-            array(15101) // Product ID to hide
+            $hidden_product_ids
         ));
     }
 }
@@ -582,9 +761,12 @@ function jetlagz_exclude_gift_product_from_queries($query_args)
         $query_args['post__not_in'] = (array) $query_args['post__not_in'];
     }
 
-    // Add gift product ID if not already there
-    if (!in_array(15101, $query_args['post__not_in'])) {
-        $query_args['post__not_in'][] = 15101;
+    $hidden_product_ids = function_exists('jetlagz_get_hidden_shop_product_ids') ? jetlagz_get_hidden_shop_product_ids() : array(15101, 17598);
+
+    foreach ($hidden_product_ids as $hidden_product_id) {
+        if (!in_array($hidden_product_id, $query_args['post__not_in'])) {
+            $query_args['post__not_in'][] = $hidden_product_id;
+        }
     }
 
     return $query_args;
@@ -604,8 +786,12 @@ function jetlagz_exclude_gift_product_from_rest_api($args, $request)
         $args['post__not_in'] = (array) $args['post__not_in'];
     }
 
-    if (!in_array(15101, $args['post__not_in'])) {
-        $args['post__not_in'][] = 15101;
+    $hidden_product_ids = function_exists('jetlagz_get_hidden_shop_product_ids') ? jetlagz_get_hidden_shop_product_ids() : array(15101, 17598);
+
+    foreach ($hidden_product_ids as $hidden_product_id) {
+        if (!in_array($hidden_product_id, $args['post__not_in'])) {
+            $args['post__not_in'][] = $hidden_product_id;
+        }
     }
 
     return $args;
@@ -653,13 +839,39 @@ function jetlagz_filter_products_query($query)
             );
         }
 
-        // On sale filter
+        // On sale filter (supports variable products and synced lookup table)
         if (isset($_GET['on_sale']) && $_GET['on_sale'] === '1') {
-            $meta_query[] = array(
-                'key' => '_sale_price',
-                'value' => '',
-                'compare' => '!='
-            );
+            $on_sale_ids = wc_get_product_ids_on_sale();
+            $hidden_product_ids = function_exists('jetlagz_get_hidden_shop_product_ids') ? jetlagz_get_hidden_shop_product_ids() : array(15101, 17598);
+
+            if (empty($on_sale_ids)) {
+                // Fallback for stale lookup/transients: match products with explicit sale meta.
+                $meta_query[] = array(
+                    'relation' => 'OR',
+                    array(
+                        'key' => '_sale_price',
+                        'value' => 0,
+                        'compare' => '>',
+                        'type' => 'NUMERIC'
+                    ),
+                    array(
+                        'key' => '_min_variation_sale_price',
+                        'value' => 0,
+                        'compare' => '>',
+                        'type' => 'NUMERIC'
+                    )
+                );
+            } else {
+                $on_sale_ids = array_map('absint', $on_sale_ids);
+                $on_sale_ids = array_values(array_diff($on_sale_ids, array_map('absint', $hidden_product_ids)));
+                $existing_post_in = $query->get('post__in');
+
+                if (!empty($existing_post_in) && is_array($existing_post_in)) {
+                    $query->set('post__in', array_values(array_intersect($existing_post_in, $on_sale_ids)));
+                } else {
+                    $query->set('post__in', $on_sale_ids);
+                }
+            }
         }
 
         // Category filter
@@ -690,18 +902,35 @@ function jetlagz_filter_products_query($query)
             }
         }
 
-        // Color filter
-        if (isset($_GET['filter_kolor']) && !empty($_GET['filter_kolor'])) {
-            $colors = is_string($_GET['filter_kolor']) ? explode(',', $_GET['filter_kolor']) : (array)$_GET['filter_kolor'];
-            $colors = array_filter(array_map('sanitize_text_field', $colors));
-            if (!empty($colors)) {
-                $tax_query[] = array(
-                    'taxonomy' => 'pa_kolor',
-                    'field' => 'slug',
-                    'terms' => $colors,
-                    'operator' => 'IN'
-                );
+        // Color filter (canonical groups mapped to all matching term slugs)
+        $selected_color_groups = jetlagz_get_selected_color_filters();
+        if (!empty($selected_color_groups)) {
+            $all_color_terms = get_terms(array(
+                'taxonomy' => 'pa_kolor',
+                'hide_empty' => false,
+                'fields' => 'all'
+            ));
+
+            $matched_slugs = array();
+            if (!empty($all_color_terms) && !is_wp_error($all_color_terms)) {
+                foreach ($all_color_terms as $term) {
+                    $canonical = jetlagz_get_canonical_color_key($term->slug ?: $term->name);
+                    if (in_array($canonical, $selected_color_groups, true)) {
+                        $matched_slugs[] = $term->slug;
+                    }
+                }
             }
+
+            if (empty($matched_slugs)) {
+                $matched_slugs = $selected_color_groups;
+            }
+
+            $tax_query[] = array(
+                'taxonomy' => 'pa_kolor',
+                'field' => 'slug',
+                'terms' => array_values(array_unique($matched_slugs)),
+                'operator' => 'IN'
+            );
         }
         if (!empty($meta_query)) {
             $meta_query['relation'] = 'AND';
@@ -1825,6 +2054,314 @@ function jetlagz_shipping_tab_content()
 remove_action('woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20);
 
 /**
+ * Collect candidate product IDs for automatic cross-sell suggestions.
+ */
+function jetlagz_get_auto_cross_sell_candidates($source_product_id, $exclude_ids, $limit, $taxonomy = '', $term_ids = array())
+{
+    $limit = max(1, (int) $limit);
+    $exclude_ids = array_values(array_unique(array_map('intval', (array) $exclude_ids)));
+
+    $args = array(
+        'post_type' => 'product',
+        'post_status' => 'publish',
+        'posts_per_page' => $limit * 3,
+        'fields' => 'ids',
+        'post__not_in' => $exclude_ids,
+        'meta_query' => array(
+            array(
+                'key' => '_stock_status',
+                'value' => 'instock',
+            ),
+        ),
+        'orderby' => array(
+            'menu_order' => 'ASC',
+            'date' => 'DESC',
+        ),
+    );
+
+    if (!empty($taxonomy) && !empty($term_ids)) {
+        $args['tax_query'] = array(
+            array(
+                'taxonomy' => $taxonomy,
+                'field' => 'term_id',
+                'terms' => array_values(array_unique(array_map('intval', (array) $term_ids))),
+                'operator' => 'IN',
+            ),
+        );
+    }
+
+    $ids = get_posts($args);
+    if (empty($ids)) {
+        return array();
+    }
+
+    $valid_ids = array();
+
+    foreach ($ids as $candidate_id) {
+        $candidate_id = (int) $candidate_id;
+
+        if ($candidate_id <= 0 || in_array($candidate_id, $exclude_ids, true) || $candidate_id === (int) $source_product_id) {
+            continue;
+        }
+
+        $candidate_product = wc_get_product($candidate_id);
+        if (!$candidate_product || !$candidate_product->is_visible() || !$candidate_product->is_purchasable() || !$candidate_product->is_in_stock()) {
+            continue;
+        }
+
+        $valid_ids[] = $candidate_id;
+
+        if (count($valid_ids) >= $limit) {
+            break;
+        }
+    }
+
+    return $valid_ids;
+}
+
+/**
+ * Extract candidate "series/collection" tokens from a product title.
+ */
+function jetlagz_get_cross_sell_series_tokens_from_title($title)
+{
+    $title = wp_strip_all_tags((string) $title);
+    if ($title === '') {
+        return array();
+    }
+
+    $stop_words = array(
+        'body',
+        'koszulka',
+        'koszula',
+        'komplet',
+        'halka',
+        'bluzka',
+        'bluza',
+        'spodnie',
+        'spodenki',
+        'sukienka',
+        'dres',
+        'spodnica',
+        'leggingi',
+        'figi',
+        'biustonosz',
+        'top',
+        'sweter',
+        'kurtka',
+        'plaszcz',
+        'czapka',
+        'szalik',
+        'skarpetki',
+        'rajstopy',
+        'pizama',
+        'szlafrok',
+        'ponczochy',
+        'stringi',
+        'bokserki',
+        'slipy',
+        'tshirt',
+        't-shirt',
+        'set',
+        'new',
+        'premium',
+    );
+
+    $normalized = remove_accents(mb_strtolower($title));
+    $parts = preg_split('/[^a-z0-9]+/', $normalized);
+    if (!is_array($parts) || empty($parts)) {
+        return array();
+    }
+
+    $tokens = array();
+
+    foreach ($parts as $part) {
+        $token = trim((string) $part);
+
+        if ($token === '' || strlen($token) < 3) {
+            continue;
+        }
+
+        if (is_numeric($token) || preg_match('/^\d+[a-z]*$/', $token)) {
+            continue;
+        }
+
+        if (in_array($token, $stop_words, true)) {
+            continue;
+        }
+
+        $tokens[] = $token;
+    }
+
+    return array_values(array_unique($tokens));
+}
+
+/**
+ * Find automatic cross-sell candidates by shared non-generic title tokens.
+ */
+function jetlagz_get_auto_cross_sell_candidates_by_series_word($source_product_id, $exclude_ids, $limit)
+{
+    $limit = max(1, (int) $limit);
+    $exclude_ids = array_values(array_unique(array_map('intval', (array) $exclude_ids)));
+
+    $source_title = get_the_title($source_product_id);
+    $series_tokens = jetlagz_get_cross_sell_series_tokens_from_title($source_title);
+
+    if (empty($series_tokens)) {
+        return array();
+    }
+
+    global $wpdb;
+
+    $like_clauses = array();
+    $prepare_values = array();
+
+    foreach ($series_tokens as $token) {
+        $like_clauses[] = 'p.post_title LIKE %s';
+        $prepare_values[] = '%' . $wpdb->esc_like($token) . '%';
+    }
+
+    if (empty($like_clauses)) {
+        return array();
+    }
+
+    $exclude_sql = '';
+    if (!empty($exclude_ids)) {
+        $exclude_sql = ' AND p.ID NOT IN (' . implode(',', array_map('intval', $exclude_ids)) . ')';
+    }
+
+    $candidate_limit = max(30, $limit * 12);
+
+    $sql = "
+        SELECT p.ID
+        FROM {$wpdb->posts} p
+        WHERE p.post_type = 'product'
+          AND p.post_status = 'publish'
+          {$exclude_sql}
+          AND (" . implode(' OR ', $like_clauses) . ")
+        ORDER BY p.post_modified DESC
+        LIMIT %d
+    ";
+
+    $prepare_values[] = $candidate_limit;
+    $candidate_ids = $wpdb->get_col($wpdb->prepare($sql, $prepare_values));
+
+    if (empty($candidate_ids)) {
+        return array();
+    }
+
+    $matched_ids = array();
+
+    foreach ($candidate_ids as $candidate_id) {
+        $candidate_id = (int) $candidate_id;
+
+        if ($candidate_id <= 0 || $candidate_id === (int) $source_product_id || in_array($candidate_id, $exclude_ids, true)) {
+            continue;
+        }
+
+        $candidate_product = wc_get_product($candidate_id);
+        if (!$candidate_product || !$candidate_product->is_visible() || !$candidate_product->is_purchasable() || !$candidate_product->is_in_stock()) {
+            continue;
+        }
+
+        $candidate_tokens = jetlagz_get_cross_sell_series_tokens_from_title(get_the_title($candidate_id));
+        if (empty(array_intersect($series_tokens, $candidate_tokens))) {
+            continue;
+        }
+
+        $matched_ids[] = $candidate_id;
+
+        if (count($matched_ids) >= $limit) {
+            break;
+        }
+    }
+
+    return $matched_ids;
+}
+
+/**
+ * Automatic cross-sell fallback.
+ * Uses manual cross-sells first; if empty, applies category/tag/recent rules.
+ */
+function jetlagz_auto_cross_sell_ids_fallback($cross_sell_ids, $product)
+{
+    if (!empty($cross_sell_ids) || !($product instanceof WC_Product)) {
+        return $cross_sell_ids;
+    }
+
+    if (is_admin() && !wp_doing_ajax()) {
+        return $cross_sell_ids;
+    }
+
+    $max_products = (int) get_theme_option('crosssell.max_products', 4);
+    $max_products = $max_products > 0 ? $max_products : 4;
+
+    $source_product_id = $product->is_type('variation') ? (int) $product->get_parent_id() : (int) $product->get_id();
+    if ($source_product_id <= 0) {
+        return $cross_sell_ids;
+    }
+
+    $cache_key = 'jetlagz_auto_cross_sell_' . $source_product_id . '_' . $max_products;
+    $cached = wp_cache_get($cache_key, 'jetlagz_crosssell');
+    if (is_array($cached)) {
+        return $cached;
+    }
+
+    $exclude_ids = array($source_product_id);
+
+    if (function_exists('jetlagz_get_all_gift_product_ids')) {
+        $exclude_ids = array_merge($exclude_ids, array_map('intval', (array) jetlagz_get_all_gift_product_ids()));
+    }
+
+    $result_ids = array();
+
+    // Rule 1: products sharing a non-generic series/collection word in title.
+    $result_ids = array_merge(
+        $result_ids,
+        jetlagz_get_auto_cross_sell_candidates_by_series_word($source_product_id, array_merge($exclude_ids, $result_ids), $max_products)
+    );
+
+    // Rule 2: products from the same categories.
+    $category_ids = wp_get_post_terms($source_product_id, 'product_cat', array('fields' => 'ids'));
+    if (count($result_ids) < $max_products && !is_wp_error($category_ids) && !empty($category_ids)) {
+        $remaining = $max_products - count($result_ids);
+        $result_ids = array_merge(
+            $result_ids,
+            jetlagz_get_auto_cross_sell_candidates($source_product_id, array_merge($exclude_ids, $result_ids), $remaining, 'product_cat', $category_ids)
+        );
+    }
+
+    // Rule 3: products sharing product tags.
+    if (count($result_ids) < $max_products) {
+        $tag_ids = wp_get_post_terms($source_product_id, 'product_tag', array('fields' => 'ids'));
+        if (!is_wp_error($tag_ids) && !empty($tag_ids)) {
+            $remaining = $max_products - count($result_ids);
+            $result_ids = array_merge(
+                $result_ids,
+                jetlagz_get_auto_cross_sell_candidates($source_product_id, array_merge($exclude_ids, $result_ids), $remaining, 'product_tag', $tag_ids)
+            );
+        }
+    }
+
+    // Rule 4: fallback to recent in-stock products.
+    if (count($result_ids) < $max_products) {
+        $remaining = $max_products - count($result_ids);
+        $result_ids = array_merge(
+            $result_ids,
+            jetlagz_get_auto_cross_sell_candidates($source_product_id, array_merge($exclude_ids, $result_ids), $remaining)
+        );
+    }
+
+    $result_ids = array_values(array_unique(array_map('intval', $result_ids)));
+    $result_ids = array_slice($result_ids, 0, $max_products);
+
+    wp_cache_set($cache_key, $result_ids, 'jetlagz_crosssell', HOUR_IN_SECONDS);
+
+    return $result_ids;
+}
+add_filter('woocommerce_product_get_cross_sell_ids', 'jetlagz_auto_cross_sell_ids_fallback', 9, 2);
+add_filter('woocommerce_product_variation_get_cross_sell_ids', 'jetlagz_auto_cross_sell_ids_fallback', 9, 2);
+
+/**
  * Add crosssell products after videos section (in summary)
  */
 function jetlagz_crosssell_in_summary()
@@ -1867,15 +2404,37 @@ function jetlagz_crosssell_in_summary()
                 }
 
                 $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'thumbnail') : wc_placeholder_img_src();
+                $crosssell_title = $crosssell_product->get_name();
+                $crosssell_average_rating = (float) $crosssell_product->get_average_rating();
+
+                if (function_exists('get_field')) {
+                    $acf_crosssell_title = get_field('product_name', $crosssell_id);
+                    if (is_string($acf_crosssell_title) && trim($acf_crosssell_title) !== '') {
+                        $crosssell_title = trim($acf_crosssell_title);
+                    }
+                }
             ?>
                 <div class="crosssell-product-item" data-product-id="<?php echo esc_attr($crosssell_id); ?>">
                     <a href="<?php echo esc_url(get_permalink($crosssell_id)); ?>" class="crosssell-product-image">
-                        <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($crosssell_product->get_name()); ?>">
+                        <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($crosssell_title); ?>">
                     </a>
                     <div class="crosssell-product-info">
                         <a href="<?php echo esc_url(get_permalink($crosssell_id)); ?>" class="crosssell-product-title">
-                            <?php echo esc_html($crosssell_product->get_name()); ?>
+                            <?php echo esc_html($crosssell_title); ?>
                         </a>
+                        <?php if ($crosssell_average_rating > 0): ?>
+                            <div class="crosssell-product-rating" aria-label="Ocena produktu: <?php echo esc_attr(number_format($crosssell_average_rating, 1)); ?> na 5">
+                                <span class="rating-stars" aria-hidden="true">
+                                    <?php for ($i = 1; $i <= 5; $i++): ?>
+                                        <?php if ($i <= floor($crosssell_average_rating) || ($i == ceil($crosssell_average_rating) && $crosssell_average_rating - floor($crosssell_average_rating) >= 0.5)): ?>
+                                            <span class="star filled">★</span>
+                                        <?php else: ?>
+                                            <span class="star empty">★</span>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+                                </span>
+                            </div>
+                        <?php endif; ?>
                         <div class="crosssell-product-price">
                             <?php echo $crosssell_product->get_price_html(); ?>
                         </div>
@@ -1883,7 +2442,7 @@ function jetlagz_crosssell_in_summary()
                     <button type="button"
                         class="crosssell-add-to-cart"
                         data-product-id="<?php echo esc_attr($crosssell_id); ?>"
-                        data-product-name="<?php echo esc_attr($crosssell_product->get_name()); ?>">
+                        data-product-name="<?php echo esc_attr($crosssell_title); ?>">
                         Wybierz
                     </button>
                 </div>

@@ -696,6 +696,10 @@ h2.title {
 	width: 100%;
 }
 
+.product-categories-grid > .category-item:hover .category-name {
+	color: #fff !important;
+}
+
 a:focus,
 button:focus,
 .button.alt:focus,
@@ -754,6 +758,53 @@ input[type='search']:focus {
 	}
 }
 
+/* === WYŁĄCZENIE HOVER EFFECTS NA URZĄDZENIACH DOTYKOWYCH === */
+@media (hover: none) {
+	button:hover,
+	input[type="button"]:hover,
+	input[type="submit"]:hover,
+	a button:hover {
+		background-color: inherit;
+		transform: none;
+		box-shadow: none;
+		opacity: inherit;
+	}
+
+	.universal-btn:hover {
+		transform: none;
+		box-shadow: none;
+	}
+
+	.woocommerce ul.products li.product:hover img {
+		transform: none;
+	}
+
+	.woocommerce ul.products li.product .button:hover {
+		background-color: var(--theme-accent);
+		transform: none;
+	}
+
+	.woocommerce ul.products li.product:hover .universal-quick-view {
+		opacity: 0;
+	}
+
+	.product-categories-grid > .category-item:hover .category-name {
+		color: inherit !important;
+	}
+
+	.update-quantity-btn:hover {
+		transform: none;
+	}
+
+	.remove-product:hover {
+		transform: none;
+	}
+
+	.yith-add-to-wishlist-button-block button:hover {
+		background-color: transparent !important;
+	}
+}
+
 .easypack-parcel-machine .easypack-parcel-machine-label {
 	display: none !important;
 }
@@ -798,8 +849,8 @@ input[type='text']:focus {
 	--tw-ring-color: white !important;
 }
 
-#menu-primary-menu li:first-of-type,
-#menu-primary-menu li a:first-of-type {
+#menu-primary-menu > li:first-of-type,
+#menu-primary-menu > li a:first-of-type {
 	padding-left: 0 !important;
 }
 
@@ -826,4 +877,8 @@ input[type='text']:focus {
 
 .L5Fo6c-PQbLGe {
 	width: auto !important;
+}
+
+.woocommerce-ordering {
+	margin-right: 0 !important;
 }

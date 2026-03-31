@@ -819,7 +819,8 @@
 
 .crosssell-product-title {
 	display: block;
-	font-size: 0.875rem;
+	font-family: 'Playfair Display', serif;
+	font-size: 1.2rem;
 	font-weight: 500;
 	color: #111;
 	text-decoration: none;
@@ -835,9 +836,33 @@
 	text-decoration: underline;
 }
 
+.crosssell-product-rating {
+	margin-bottom: 0.2rem;
+	line-height: 1;
+}
+
+.crosssell-product-rating .rating-stars {
+	display: flex;
+	gap: 2px;
+	line-height: 1;
+}
+
+.crosssell-product-rating .star {
+	font-size: 14px;
+	line-height: 1;
+}
+
+.crosssell-product-rating .star.filled {
+	color: #d5a676;
+}
+
+.crosssell-product-rating .star.empty {
+	color: #d1d5db;
+}
+
 .crosssell-product-price {
 	font-size: 0.875rem;
-	font-weight: 600;
+	font-weight: 300;
 	color: #111;
 }
 

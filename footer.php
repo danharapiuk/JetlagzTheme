@@ -60,7 +60,7 @@
     </div>
 </footer><!-- 
 <#colophon -->
-<div class="bottom-footer bg-white md:bg-[#DACFC6] w-full">
+<div class="bottom-footer bg-white md:bg-[#DACFC6] w-full pb-[40px] lg:pb-0">
     <div class="sm:flex w-full justify-between items-center max-w-[1380px] mx-auto px-4 xl:px-0">
         <?php jetlagz_inject_template_part('payment-icons'); ?>
 
@@ -73,7 +73,7 @@
         </div>
     </div>
 </div>
-<button id="scrollToTopBtn" aria-label="Wróć na górę" style="display:none;position:fixed;right:1rem;bottom:2.5rem;z-index:9999;background-color:#51172F;color:#fff;border:none;border-radius:50%;width:36px;height:36px;box-shadow:0 2px 8px rgba(0,0,0,0.15);cursor:pointer;transition:background 0.2s;">
+<button id="scrollToTopBtn" aria-label="Wróć na górę" style="display:none;position:fixed;right:1rem;bottom:2.8rem;z-index:9999;background-color:#51172F;color:#fff;border:none;border-radius:50%;width:36px;height:36px;box-shadow:0 2px 8px rgba(0,0,0,0.15);cursor:pointer;transition:background 0.2s;">
     <svg xmlns="https://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" style="display:block;margin:auto;">
         <path d="M12 19V5M12 5l-7 7M12 5l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
     </svg>

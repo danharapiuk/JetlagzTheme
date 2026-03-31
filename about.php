@@ -17,7 +17,7 @@ $about = is_array($about) ? $about : array();
     <div class="lg:min-h-screen lg:mt-[-120px] flex flex-col justify-between">
         <div></div>
         <h1 class="font-thin text-4xl text-center max-w-[800px] mx-auto py-20 lg:py-0"><?php echo esc_html(wp_strip_all_tags($about['hero'] ?? '')); ?></h1>
-        <p class="max-w-[760px] font-light pb-2 text-black"><?php echo esc_html($about['description'] ?? ''); ?></p>
+        <div class="max-w-[760px] font-light pb-2 text-black mx-auto text-center pb-[60px]"><?php echo esc_html($about['description'] ?? ''); ?></div>
     </div>
 
     <div class="">
@@ -48,6 +48,14 @@ $about = is_array($about) ? $about : array();
         </div>
     </div>
 </section>
+
+<?php if (!empty($about['gallery'])) : ?>
+    <?php
+    global $scroll_effect_data;
+    $scroll_effect_data = ['title' => 'ALMOSTDREAM', 'images' => $about['gallery']];
+    get_template_part('template-parts/scroll-effect-section');
+    ?>
+<?php endif; ?>
 
 <section class="wrapper py-20">
     <h2 class="text-2xl text-center mb-10 tracking-tight">Dlaczego my?</h2>
@@ -87,7 +95,7 @@ $about = is_array($about) ? $about : array();
     <?php get_template_part('template-parts/contact-elements'); ?>
 </section>
 
-<section class="">
+<section class="pb-12">
     <?php echo do_shortcode('[instagram-feed feed=1]'); ?>
 </section>
 
