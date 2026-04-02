@@ -47,11 +47,7 @@ if (!empty($gallery_image_ids)) {
                         alt="<?php echo esc_attr(get_the_title()); ?>"
                         loading="lazy">
                 <?php endif; ?>
-                <?php if ($product->is_on_sale()) : ?>
-                    <span class="sale-badge">
-                        Sale
-                    </span>
-                <?php endif; ?>
+                <?php jetlagz_render_product_card_badges($product); ?>
                 <?php
                 $rating_count = $product->get_rating_count();
                 $average_rating = $product->get_average_rating();

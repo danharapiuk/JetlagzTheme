@@ -120,6 +120,24 @@ function universal_critical_css()
             color: var(--color-primary);
         }
 
+        .checkout-price-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .checkout-price-original {
+            font-size: var(--font-size-small);
+            font-weight: 400;
+            color: var(--color-secondary);
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+
+        .checkout-price-discounted {
+            color: var(--color-primary);
+        }
+
         /* Ilość */
         .qty-label {
             font-family: var(--font-primary);

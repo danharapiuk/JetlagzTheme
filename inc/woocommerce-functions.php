@@ -509,6 +509,651 @@ function universal_theme_products_per_page($per_page)
 }
 add_filter('loop_shop_per_page', 'universal_theme_products_per_page', 20);
 
+function jetlagz_has_invalid_zero_sale_price($regular_price, $sale_price)
+{
+    if ($regular_price === '' || $sale_price === '' || $sale_price === null) {
+        return false;
+    }
+
+    return (float) $regular_price > 0 && (float) $sale_price <= 0;
+}
+
+function jetlagz_is_explicit_zero_price_value($value)
+{
+    if (!is_scalar($value)) {
+        return false;
+    }
+
+    return preg_match('/^[[:space:]]*0+(\.0+)?[[:space:]]*$/', (string) $value) === 1;
+}
+
+function jetlagz_normalize_request_list($value)
+{
+    if (is_string($value)) {
+        $value = explode(',', $value);
+    } elseif (!is_array($value)) {
+        $value = (array) $value;
+    }
+
+    return array_values(array_filter(array_map('sanitize_text_field', $value), static function ($item) {
+        return is_string($item) && $item !== '';
+    }));
+}
+
+function jetlagz_get_product_raw_price_meta($product, $key)
+{
+    if (!$product || !is_a($product, 'WC_Product')) {
+        return '';
+    }
+
+    return get_post_meta($product->get_id(), $key, true);
+}
+
+function jetlagz_filter_verified_on_sale_product_ids($product_ids)
+{
+    if (!is_array($product_ids) || empty($product_ids)) {
+        return array();
+    }
+
+    $verified_ids = array();
+
+    foreach (array_values(array_unique(array_map('absint', $product_ids))) as $product_id) {
+        if ($product_id <= 0) {
+            continue;
+        }
+
+        $product = wc_get_product($product_id);
+
+        if ($product && is_a($product, 'WC_Product') && $product->is_on_sale()) {
+            $verified_ids[] = $product_id;
+        }
+    }
+
+    return array_values($verified_ids);
+}
+
+function jetlagz_get_fallback_explicit_sale_product_ids()
+{
+    $sale_ids = get_posts(array(
+        'post_type' => 'product',
+        'post_status' => 'publish',
+        'fields' => 'ids',
+        'numberposts' => -1,
+        'meta_query' => array(
+            'relation' => 'OR',
+            array(
+                'key' => '_sale_price',
+                'value' => 0,
+                'compare' => '>',
+                'type' => 'NUMERIC',
+            ),
+            array(
+                'key' => '_min_variation_sale_price',
+                'value' => 0,
+                'compare' => '>',
+                'type' => 'NUMERIC',
+            ),
+        ),
+    ));
+
+    return is_array($sale_ids) ? array_values(array_map('absint', $sale_ids)) : array();
+}
+
+function jetlagz_coupon_applies_to_product($coupon, $product, $product_id = 0)
+{
+    if (!($coupon instanceof WC_Coupon) || !($product instanceof WC_Product)) {
+        return false;
+    }
+
+    $product_id = $product_id > 0 ? (int) $product_id : (int) $product->get_id();
+    $parent_product_id = method_exists($product, 'get_parent_id') ? (int) $product->get_parent_id() : 0;
+    $matched_product_ids = array_values(array_unique(array_filter(array($product_id, $parent_product_id, (int) $product->get_id()))));
+    $product_category_ids = wp_get_post_terms($parent_product_id > 0 ? $parent_product_id : $product_id, 'product_cat', array('fields' => 'ids'));
+
+    if (is_wp_error($product_category_ids)) {
+        $product_category_ids = array();
+    }
+
+    $product_category_ids = array_filter(array_map('absint', (array) $product_category_ids));
+    $restricted_category_ids = array_filter(array_map('absint', (array) $coupon->get_product_categories()));
+    $excluded_category_ids = array_filter(array_map('absint', (array) $coupon->get_excluded_product_categories()));
+    $included_product_ids = array_filter(array_map('absint', (array) $coupon->get_product_ids()));
+    $excluded_product_ids = array_filter(array_map('absint', (array) $coupon->get_excluded_product_ids()));
+
+    if (!empty($included_product_ids) && !array_intersect($matched_product_ids, $included_product_ids)) {
+        return false;
+    }
+
+    if (!empty($excluded_product_ids) && array_intersect($matched_product_ids, $excluded_product_ids)) {
+        return false;
+    }
+
+    if (!empty($restricted_category_ids) && !array_intersect($product_category_ids, $restricted_category_ids)) {
+        return false;
+    }
+
+    if (!empty($excluded_category_ids) && array_intersect($product_category_ids, $excluded_category_ids)) {
+        return false;
+    }
+
+    if ($coupon->get_exclude_sale_items() && $product->is_on_sale()) {
+        return false;
+    }
+
+    return true;
+}
+
+function jetlagz_get_active_coupon_promo_product_ids()
+{
+    static $cached_ids = null;
+
+    if ($cached_ids !== null) {
+        return $cached_ids;
+    }
+
+    $coupon_ids = get_posts(array(
+        'post_type' => 'shop_coupon',
+        'post_status' => 'publish',
+        'fields' => 'ids',
+        'numberposts' => -1,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    ));
+
+    if (empty($coupon_ids) || !is_array($coupon_ids)) {
+        $cached_ids = array();
+        return $cached_ids;
+    }
+
+    $promo_product_ids = array();
+
+    foreach ($coupon_ids as $coupon_id) {
+        $coupon = new WC_Coupon((int) $coupon_id);
+
+        if (!jetlagz_is_coupon_publicly_active($coupon)) {
+            continue;
+        }
+
+        $restricted_category_ids = array_filter(array_map('absint', (array) $coupon->get_product_categories()));
+        $excluded_category_ids = array_filter(array_map('absint', (array) $coupon->get_excluded_product_categories()));
+        $included_product_ids = array_filter(array_map('absint', (array) $coupon->get_product_ids()));
+
+        if (empty($restricted_category_ids) && empty($included_product_ids)) {
+            continue;
+        }
+
+        $query_args = array(
+            'post_type' => 'product',
+            'post_status' => 'publish',
+            'fields' => 'ids',
+            'numberposts' => -1,
+        );
+
+        if (!empty($included_product_ids)) {
+            $query_args['post__in'] = $included_product_ids;
+        }
+
+        $tax_query = array();
+
+        if (!empty($restricted_category_ids)) {
+            $tax_query[] = array(
+                'taxonomy' => 'product_cat',
+                'field' => 'term_id',
+                'terms' => $restricted_category_ids,
+                'operator' => 'IN',
+            );
+        }
+
+        if (!empty($excluded_category_ids)) {
+            $tax_query[] = array(
+                'taxonomy' => 'product_cat',
+                'field' => 'term_id',
+                'terms' => $excluded_category_ids,
+                'operator' => 'NOT IN',
+            );
+        }
+
+        if (!empty($tax_query)) {
+            if (count($tax_query) > 1) {
+                $tax_query['relation'] = 'AND';
+            }
+
+            $query_args['tax_query'] = $tax_query;
+        }
+
+        $candidate_ids = get_posts($query_args);
+
+        if (empty($candidate_ids) || !is_array($candidate_ids)) {
+            continue;
+        }
+
+        foreach ($candidate_ids as $candidate_id) {
+            $candidate_id = absint($candidate_id);
+
+            if ($candidate_id <= 0 || isset($promo_product_ids[$candidate_id])) {
+                continue;
+            }
+
+            $product = wc_get_product($candidate_id);
+
+            if (!$product || !is_a($product, 'WC_Product')) {
+                continue;
+            }
+
+            if (!jetlagz_coupon_applies_to_product($coupon, $product, $candidate_id)) {
+                continue;
+            }
+
+            if (function_exists('jetlagz_get_coupon_discount_amount_for_product')) {
+                $discount_amount = (float) jetlagz_get_coupon_discount_amount_for_product($coupon, $product, (float) $product->get_price());
+
+                if ($discount_amount <= 0) {
+                    continue;
+                }
+            }
+
+            $promo_product_ids[$candidate_id] = $candidate_id;
+        }
+    }
+
+    $cached_ids = array_values(array_map('absint', $promo_product_ids));
+
+    return $cached_ids;
+}
+
+function jetlagz_get_promotional_product_ids($hidden_product_ids = array())
+{
+    $sale_ids = wc_get_product_ids_on_sale();
+    $sale_ids = is_array($sale_ids) ? $sale_ids : array();
+
+    if (empty($sale_ids)) {
+        $sale_ids = jetlagz_get_fallback_explicit_sale_product_ids();
+    }
+
+    $sale_ids = jetlagz_filter_verified_on_sale_product_ids(array_map('absint', $sale_ids));
+    $coupon_promo_ids = jetlagz_get_active_coupon_promo_product_ids();
+    $promotional_ids = array_values(array_unique(array_merge($sale_ids, array_map('absint', $coupon_promo_ids))));
+
+    if (!empty($hidden_product_ids)) {
+        $promotional_ids = array_values(array_diff($promotional_ids, array_map('absint', (array) $hidden_product_ids)));
+    }
+
+    return $promotional_ids;
+}
+
+function jetlagz_is_tracked_price_meta_key($meta_key)
+{
+    return in_array($meta_key, array(
+        '_price',
+        '_regular_price',
+        '_sale_price',
+        '_sale_price_dates_from',
+        '_sale_price_dates_to',
+    ), true);
+}
+
+function jetlagz_sync_product_price_state($object_id)
+{
+    static $running = array();
+
+    $object_id = (int) $object_id;
+
+    if ($object_id <= 0 || isset($running[$object_id])) {
+        return false;
+    }
+
+    $post_type = get_post_type($object_id);
+
+    if (!in_array($post_type, array('product', 'product_variation'), true)) {
+        return false;
+    }
+
+    $product = wc_get_product($object_id);
+
+    if (!$product || !is_a($product, 'WC_Product')) {
+        return false;
+    }
+
+    $running[$object_id] = true;
+
+    $raw_regular_price = get_post_meta($object_id, '_regular_price', true);
+    $raw_sale_price = get_post_meta($object_id, '_sale_price', true);
+    $raw_active_price = get_post_meta($object_id, '_price', true);
+
+    $regular_price = $raw_regular_price === '' ? 0.0 : (float) $raw_regular_price;
+    $sale_price = $raw_sale_price === '' ? null : (float) $raw_sale_price;
+    $active_price = $raw_active_price === '' ? null : (float) $raw_active_price;
+
+    $should_have_sale_price = $sale_price !== null && $sale_price > 0 && $regular_price > 0 && $sale_price < $regular_price;
+    $updated = false;
+
+    if ($should_have_sale_price) {
+        if ($active_price === null || abs($active_price - $sale_price) > 0.0001) {
+            $product->set_price(wc_format_decimal($sale_price));
+            $updated = true;
+        }
+    } elseif ($raw_sale_price !== '') {
+        $product->set_sale_price('');
+        $product->set_date_on_sale_from(null);
+        $product->set_date_on_sale_to(null);
+
+        if ($regular_price > 0 && ($active_price === null || abs($active_price - $regular_price) > 0.0001)) {
+            $product->set_price(wc_format_decimal($regular_price));
+        }
+
+        $updated = true;
+    } elseif ($regular_price > 0 && ($active_price === null || abs($active_price - $regular_price) > 0.0001)) {
+        $product->set_price(wc_format_decimal($regular_price));
+        $updated = true;
+    }
+
+    if ($updated) {
+        $product->save();
+    }
+
+    wc_delete_product_transients($object_id);
+
+    if ($product->is_type('variation')) {
+        $parent_id = $product->get_parent_id();
+
+        if ($parent_id > 0 && class_exists('WC_Product_Variable')) {
+            WC_Product_Variable::sync($parent_id);
+            wc_delete_product_transients($parent_id);
+        }
+    } elseif ($product->is_type('variable') && class_exists('WC_Product_Variable')) {
+        WC_Product_Variable::sync($object_id);
+        wc_delete_product_transients($object_id);
+    }
+
+    unset($running[$object_id]);
+
+    return $updated;
+}
+
+function jetlagz_sync_product_price_meta_update($meta_id, $object_id, $meta_key, $meta_value)
+{
+    if (!jetlagz_is_tracked_price_meta_key($meta_key)) {
+        return;
+    }
+
+    jetlagz_sync_product_price_state($object_id);
+}
+add_action('added_post_meta', 'jetlagz_sync_product_price_meta_update', 15, 4);
+add_action('updated_post_meta', 'jetlagz_sync_product_price_meta_update', 15, 4);
+
+function jetlagz_sync_product_price_meta_delete($meta_ids, $object_id, $meta_key, $meta_value)
+{
+    if (!jetlagz_is_tracked_price_meta_key($meta_key)) {
+        return;
+    }
+
+    jetlagz_sync_product_price_state($object_id);
+}
+add_action('deleted_post_meta', 'jetlagz_sync_product_price_meta_delete', 15, 4);
+
+function jetlagz_filter_invalid_zero_sale_price($sale_price, $product)
+{
+    $regular_price = jetlagz_get_product_raw_price_meta($product, '_regular_price');
+
+    if (jetlagz_has_invalid_zero_sale_price($regular_price, $sale_price)) {
+        return '';
+    }
+
+    return $sale_price;
+}
+add_filter('woocommerce_product_get_sale_price', 'jetlagz_filter_invalid_zero_sale_price', 20, 2);
+add_filter('woocommerce_product_variation_get_sale_price', 'jetlagz_filter_invalid_zero_sale_price', 20, 2);
+
+function jetlagz_filter_invalid_zero_active_price($price, $product)
+{
+    $regular_price = jetlagz_get_product_raw_price_meta($product, '_regular_price');
+    $sale_price = jetlagz_get_product_raw_price_meta($product, '_sale_price');
+
+    if (jetlagz_has_invalid_zero_sale_price($regular_price, $sale_price)) {
+        return $regular_price;
+    }
+
+    return $price;
+}
+add_filter('woocommerce_product_get_price', 'jetlagz_filter_invalid_zero_active_price', 20, 2);
+add_filter('woocommerce_product_variation_get_price', 'jetlagz_filter_invalid_zero_active_price', 20, 2);
+
+function jetlagz_filter_invalid_zero_is_on_sale($is_on_sale, $product)
+{
+    $regular_price = jetlagz_get_product_raw_price_meta($product, '_regular_price');
+    $sale_price = jetlagz_get_product_raw_price_meta($product, '_sale_price');
+
+    if (jetlagz_has_invalid_zero_sale_price($regular_price, $sale_price)) {
+        return false;
+    }
+
+    return $is_on_sale;
+}
+add_filter('woocommerce_product_is_on_sale', 'jetlagz_filter_invalid_zero_is_on_sale', 20, 2);
+
+function jetlagz_cleanup_invalid_zero_sale_price($product)
+{
+    if (!$product || !is_a($product, 'WC_Product')) {
+        return;
+    }
+
+    $regular_price = $product->get_regular_price();
+    $sale_price = $product->get_sale_price();
+
+    if (!jetlagz_has_invalid_zero_sale_price($regular_price, $sale_price)) {
+        return;
+    }
+
+    $product->set_sale_price('');
+    $product->set_date_on_sale_from(null);
+    $product->set_date_on_sale_to(null);
+
+    if ((float) $product->get_price() <= 0) {
+        $product->set_price($regular_price);
+    }
+}
+add_action('woocommerce_before_product_object_save', 'jetlagz_cleanup_invalid_zero_sale_price', 20);
+add_action('woocommerce_before_product_variation_object_save', 'jetlagz_cleanup_invalid_zero_sale_price', 20);
+
+function jetlagz_cleanup_zero_sale_price_meta_update($meta_id, $object_id, $meta_key, $meta_value)
+{
+    static $running = false;
+
+    if ($running || '_sale_price' !== $meta_key || !jetlagz_is_explicit_zero_price_value($meta_value)) {
+        return;
+    }
+
+    $post_type = get_post_type($object_id);
+
+    if (!in_array($post_type, array('product', 'product_variation'), true)) {
+        return;
+    }
+
+    $regular_price = get_post_meta($object_id, '_regular_price', true);
+
+    if ((float) $regular_price <= 0) {
+        return;
+    }
+
+    $running = true;
+
+    delete_post_meta($object_id, '_sale_price');
+    delete_post_meta($object_id, '_sale_price_dates_from');
+    delete_post_meta($object_id, '_sale_price_dates_to');
+    update_post_meta($object_id, '_price', $regular_price);
+
+    $product = wc_get_product($object_id);
+    if ($product) {
+        wc_delete_product_transients($object_id);
+
+        if ($product->is_type('variation')) {
+            $parent_id = $product->get_parent_id();
+            if ($parent_id > 0 && class_exists('WC_Product_Variable')) {
+                WC_Product_Variable::sync($parent_id);
+                wc_delete_product_transients($parent_id);
+            }
+        }
+    }
+
+    $running = false;
+}
+add_action('added_post_meta', 'jetlagz_cleanup_zero_sale_price_meta_update', 20, 4);
+add_action('updated_post_meta', 'jetlagz_cleanup_zero_sale_price_meta_update', 20, 4);
+
+/**
+ * Return rounded discount percentage used on product card badges.
+ */
+function jetlagz_get_product_card_discount_percent($product)
+{
+    if (!($product instanceof WC_Product) || !$product->is_on_sale()) {
+        return 0;
+    }
+
+    $regular_price = $product->is_type('variable')
+        ? (float) $product->get_variation_regular_price('max')
+        : (float) $product->get_regular_price();
+    $sale_price = $product->is_type('variable')
+        ? (float) $product->get_variation_sale_price('min')
+        : (float) $product->get_sale_price();
+
+    if ($regular_price <= 0 || $sale_price <= 0 || $sale_price >= $regular_price) {
+        return 0;
+    }
+
+    return (int) round((1 - $sale_price / $regular_price) * 100 / 5) * 5;
+}
+
+function jetlagz_get_discount_percent_from_amounts($base_amount, $discounted_amount)
+{
+    $base_amount = (float) $base_amount;
+    $discounted_amount = (float) $discounted_amount;
+
+    if ($base_amount <= 0 || $discounted_amount >= $base_amount) {
+        return 0;
+    }
+
+    return (int) round((($base_amount - $discounted_amount) / $base_amount) * 100);
+}
+
+/**
+ * Build badge definitions for product cards.
+ * Extra banners can be injected via the jetlagz_product_card_badges filter.
+ */
+function jetlagz_get_product_card_badges($product)
+{
+    if (!($product instanceof WC_Product)) {
+        return array();
+    }
+
+    $badges = array();
+
+    if ($product->is_on_sale()) {
+        $badges[] = array(
+            'label' => 'Sale',
+            'class' => 'sale-badge',
+        );
+
+        $discount_percent = jetlagz_get_product_card_discount_percent($product);
+        if ($discount_percent > 0) {
+            $badges[] = array(
+                'label' => '-' . $discount_percent . '%',
+                'class' => 'sale-badge discount-pct-badge',
+            );
+        }
+    }
+
+    if (function_exists('jetlagz_get_best_category_coupon_notice_data_for_product')) {
+        $coupon_notice_data = jetlagz_get_best_category_coupon_notice_data_for_product($product);
+
+        if (!empty($coupon_notice_data['code'])) {
+            $badges[] = array(
+                'label' => wc_format_coupon_code((string) $coupon_notice_data['code']),
+                'class' => 'sale-badge sale-badge--coupon-code',
+            );
+
+            $coupon_discount_percent = isset($coupon_notice_data['discount_percent'])
+                ? (int) $coupon_notice_data['discount_percent']
+                : 0;
+
+            if ($coupon_discount_percent > 0) {
+                $badges[] = array(
+                    'label' => 'Kod na -' . $coupon_discount_percent . '%',
+                    'class' => 'sale-badge discount-pct-badge discount-pct-badge--coupon',
+                );
+            }
+        }
+    }
+
+    $extra_badges = apply_filters('jetlagz_product_card_badges', array(), $product, $badges);
+
+    if (!empty($extra_badges) && is_array($extra_badges)) {
+        foreach ($extra_badges as $badge) {
+            if (!is_array($badge)) {
+                continue;
+            }
+
+            $label = isset($badge['label']) ? trim((string) $badge['label']) : '';
+            if ($label === '') {
+                continue;
+            }
+
+            $class = isset($badge['class']) ? trim((string) $badge['class']) : 'sale-badge sale-badge--promo';
+            if (strpos($class, 'sale-badge') === false) {
+                $class = 'sale-badge ' . $class;
+            }
+
+            $badges[] = array(
+                'label' => $label,
+                'class' => $class,
+            );
+        }
+    }
+
+    return $badges;
+}
+
+/**
+ * Render stacked product card badges with shared width.
+ */
+function jetlagz_render_product_card_badges($product)
+{
+    $badges = jetlagz_get_product_card_badges($product);
+
+    if (empty($badges)) {
+        return;
+    }
+
+    echo '<div class="product-badge-stack">';
+
+    foreach ($badges as $badge) {
+        echo '<span class="' . esc_attr($badge['class']) . '">' . esc_html($badge['label']) . '</span>';
+    }
+
+    echo '</div>';
+}
+
+/**
+ * Dodaje badge z procentowym rabatem obok standardowego badge "Sale"
+ * Rabat zaokrąglany jest do pełnych 5%
+ */
+function jetlagz_sale_flash_with_discount($html, $post, $product)
+{
+    if (!$product->is_on_sale()) {
+        return $html;
+    }
+
+    $rounded_discount = jetlagz_get_product_card_discount_percent($product);
+
+    if ($rounded_discount <= 0) {
+        return $html;
+    }
+
+    $discount_badge = '<span class="onsale discount-badge">-' . $rounded_discount . '%</span>';
+
+    return $html . $discount_badge;
+}
+add_filter('woocommerce_sale_flash', 'jetlagz_sale_flash_with_discount', 10, 3);
+
 /**
  * Dostosowanie liczby produktów w rzędzie (z konfiguracji motywu)
  */
@@ -681,6 +1326,679 @@ if (!function_exists('jetlagz_get_hidden_shop_product_ids')) {
     }
 }
 
+if (!function_exists('jetlagz_get_hidden_product_category_slugs')) {
+    function jetlagz_get_hidden_product_category_slugs()
+    {
+        return array('rotate-a', 'rotate-b', 'rotate-c');
+    }
+}
+
+if (!function_exists('jetlagz_is_hidden_product_category_slug')) {
+    function jetlagz_is_hidden_product_category_slug($slug)
+    {
+        return in_array((string) $slug, jetlagz_get_hidden_product_category_slugs(), true);
+    }
+}
+
+if (!function_exists('jetlagz_should_hide_internal_product_categories_on_frontend')) {
+    function jetlagz_should_hide_internal_product_categories_on_frontend()
+    {
+        if (is_admin() || wp_doing_ajax()) {
+            return false;
+        }
+
+        if (function_exists('wp_is_serving_rest_request') && wp_is_serving_rest_request()) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
+function jetlagz_filter_hidden_product_categories_from_term_list($terms, $taxonomies, $args, $term_query)
+{
+    if (!jetlagz_should_hide_internal_product_categories_on_frontend() || empty($terms) || is_wp_error($terms)) {
+        return $terms;
+    }
+
+    if (!isset($terms[0]) || !($terms[0] instanceof WP_Term)) {
+        return $terms;
+    }
+
+    $taxonomies = is_array($taxonomies) ? $taxonomies : (array) $taxonomies;
+
+    if (!in_array('product_cat', $taxonomies, true)) {
+        return $terms;
+    }
+
+    $filtered_terms = array_values(array_filter($terms, static function ($term) {
+        return $term instanceof WP_Term && !jetlagz_is_hidden_product_category_slug($term->slug);
+    }));
+
+    return $filtered_terms;
+}
+add_filter('get_terms', 'jetlagz_filter_hidden_product_categories_from_term_list', 10, 4);
+
+function jetlagz_filter_hidden_product_categories_from_product_terms($terms, $post_id, $taxonomy)
+{
+    if ('product_cat' !== $taxonomy || !jetlagz_should_hide_internal_product_categories_on_frontend() || empty($terms) || is_wp_error($terms)) {
+        return $terms;
+    }
+
+    $filtered_terms = array_values(array_filter($terms, static function ($term) {
+        return $term instanceof WP_Term && !jetlagz_is_hidden_product_category_slug($term->slug);
+    }));
+
+    return !empty($filtered_terms) ? $filtered_terms : false;
+}
+add_filter('get_the_terms', 'jetlagz_filter_hidden_product_categories_from_product_terms', 10, 3);
+
+function jetlagz_block_hidden_product_category_access()
+{
+    if (is_admin() || !function_exists('is_product_category') || !is_product_category()) {
+        return;
+    }
+
+    $queried_object = get_queried_object();
+
+    if (!($queried_object instanceof WP_Term) || 'product_cat' !== $queried_object->taxonomy) {
+        return;
+    }
+
+    if (!jetlagz_is_hidden_product_category_slug($queried_object->slug)) {
+        return;
+    }
+
+    $shop_url = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : home_url('/');
+    wp_safe_redirect($shop_url, 301);
+    exit;
+}
+add_action('template_redirect', 'jetlagz_block_hidden_product_category_access', 1);
+
+function jetlagz_should_show_product_discount_notice()
+{
+    return true;
+}
+
+function jetlagz_get_selected_coupon_session_key()
+{
+    return 'jetlagz_selected_coupon_code';
+}
+
+function jetlagz_get_selected_coupon_cookie_name()
+{
+    return 'jetlagz_selected_coupon_code';
+}
+
+function jetlagz_clear_selected_coupon_code()
+{
+    if (function_exists('WC') && WC()->session) {
+        WC()->session->set(jetlagz_get_selected_coupon_session_key(), '');
+
+        if (method_exists(WC()->session, 'save_data')) {
+            WC()->session->save_data();
+        }
+    }
+
+    wc_setcookie(jetlagz_get_selected_coupon_cookie_name(), '', time() - HOUR_IN_SECONDS);
+
+    if (isset($_COOKIE[jetlagz_get_selected_coupon_cookie_name()])) {
+        unset($_COOKIE[jetlagz_get_selected_coupon_cookie_name()]);
+    }
+}
+
+function jetlagz_get_coupon_debug_payload($coupon_code = '')
+{
+    $coupon_code = wc_format_coupon_code((string) $coupon_code);
+    $session_coupon_code = '';
+    $cookie_coupon_code = isset($_COOKIE[jetlagz_get_selected_coupon_cookie_name()])
+        ? wc_format_coupon_code(wc_clean(wp_unslash($_COOKIE[jetlagz_get_selected_coupon_cookie_name()])))
+        : '';
+    $applied_coupons = array();
+    $cart_discount_total = 0.0;
+    $cart_total = '';
+    $cart_is_empty = true;
+    $has_session = false;
+
+    if (function_exists('WC') && WC()->session) {
+        $session_coupon_code = wc_format_coupon_code((string) WC()->session->get(jetlagz_get_selected_coupon_session_key(), ''));
+        $has_session = (bool) WC()->session->has_session();
+    }
+
+    if (function_exists('WC') && WC()->cart) {
+        $applied_coupons = array_values(array_map('wc_format_coupon_code', (array) WC()->cart->get_applied_coupons()));
+        $cart_discount_total = (float) WC()->cart->get_discount_total() + (float) WC()->cart->get_discount_tax();
+        $cart_total = wp_strip_all_tags((string) WC()->cart->get_total());
+        $cart_is_empty = (bool) WC()->cart->is_empty();
+    }
+
+    return array(
+        'requested_coupon_code' => $coupon_code,
+        'selected_coupon_code' => jetlagz_get_selected_coupon_code(),
+        'session_coupon_code' => $session_coupon_code,
+        'cookie_coupon_code' => $cookie_coupon_code,
+        'applied_coupons' => $applied_coupons,
+        'cart_discount_total' => $cart_discount_total,
+        'cart_total' => $cart_total,
+        'cart_is_empty' => $cart_is_empty,
+        'has_session' => $has_session,
+    );
+}
+
+function jetlagz_get_selected_coupon_code()
+{
+    $session_coupon_code = '';
+
+    if (function_exists('WC') && WC()->session) {
+        $session_coupon_code = wc_format_coupon_code((string) WC()->session->get(jetlagz_get_selected_coupon_session_key(), ''));
+
+        if ($session_coupon_code !== '') {
+            return $session_coupon_code;
+        }
+    }
+
+    $cookie_coupon_code = isset($_COOKIE[jetlagz_get_selected_coupon_cookie_name()])
+        ? wc_format_coupon_code(wc_clean(wp_unslash($_COOKIE[jetlagz_get_selected_coupon_cookie_name()])))
+        : '';
+
+    if ($cookie_coupon_code !== '' && function_exists('WC') && WC()->session) {
+        WC()->session->set(jetlagz_get_selected_coupon_session_key(), $cookie_coupon_code);
+    }
+
+    return $cookie_coupon_code;
+}
+
+function jetlagz_is_coupon_code_selected($coupon_code)
+{
+    $coupon_code = wc_format_coupon_code((string) $coupon_code);
+
+    if ($coupon_code === '') {
+        return false;
+    }
+
+    if (function_exists('WC') && WC()->cart) {
+        if (WC()->cart->is_empty()) {
+            return false;
+        }
+
+        $applied_coupons = array_map('wc_format_coupon_code', (array) WC()->cart->get_applied_coupons());
+
+        return in_array($coupon_code, $applied_coupons, true);
+    }
+
+    return false;
+}
+
+function jetlagz_clear_selected_coupon_when_cart_empty()
+{
+    if (is_admin() || !function_exists('WC') || !WC()->cart) {
+        return;
+    }
+
+    if (!WC()->cart->is_empty()) {
+        return;
+    }
+
+    if (jetlagz_get_selected_coupon_code() === '') {
+        return;
+    }
+
+    jetlagz_clear_selected_coupon_code();
+}
+add_action('template_redirect', 'jetlagz_clear_selected_coupon_when_cart_empty', 15);
+add_action('woocommerce_cart_emptied', 'jetlagz_clear_selected_coupon_code', 20);
+
+function jetlagz_is_coupon_publicly_active($coupon)
+{
+    if (!($coupon instanceof WC_Coupon)) {
+        return false;
+    }
+
+    $coupon_id = $coupon->get_id();
+
+    if ($coupon_id <= 0 || 'publish' !== get_post_status($coupon_id)) {
+        return false;
+    }
+
+    $date_expires = $coupon->get_date_expires();
+    if ($date_expires instanceof WC_DateTime && $date_expires->getTimestamp() < current_time('timestamp', true)) {
+        return false;
+    }
+
+    $usage_limit = (int) $coupon->get_usage_limit();
+    $usage_count = (int) $coupon->get_usage_count();
+
+    if ($usage_limit > 0 && $usage_count >= $usage_limit) {
+        return false;
+    }
+
+    return true;
+}
+
+function jetlagz_get_active_category_coupon_codes_for_product($product)
+{
+    if (!($product instanceof WC_Product)) {
+        return array();
+    }
+
+    $product_id = $product->get_parent_id() ? $product->get_parent_id() : $product->get_id();
+    $product_category_ids = wp_get_post_terms($product_id, 'product_cat', array('fields' => 'ids'));
+
+    if (empty($product_category_ids) || is_wp_error($product_category_ids)) {
+        return array();
+    }
+
+    $product_category_ids = array_filter(array_map('absint', (array) $product_category_ids));
+
+    $coupon_ids = get_posts(array(
+        'post_type' => 'shop_coupon',
+        'post_status' => 'publish',
+        'fields' => 'ids',
+        'numberposts' => -1,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    ));
+
+    if (empty($coupon_ids) || !is_array($coupon_ids)) {
+        return array();
+    }
+
+    $applicable_codes = array();
+
+    foreach ($coupon_ids as $coupon_id) {
+        $coupon = new WC_Coupon((int) $coupon_id);
+
+        if (!jetlagz_is_coupon_publicly_active($coupon)) {
+            continue;
+        }
+
+        $restricted_category_ids = array_filter(array_map('absint', (array) $coupon->get_product_categories()));
+        $excluded_category_ids = array_filter(array_map('absint', (array) $coupon->get_excluded_product_categories()));
+
+        if (empty($restricted_category_ids)) {
+            continue;
+        }
+
+        if (!array_intersect($product_category_ids, $restricted_category_ids)) {
+            continue;
+        }
+
+        if (!empty($excluded_category_ids) && array_intersect($product_category_ids, $excluded_category_ids)) {
+            continue;
+        }
+
+        $code = trim((string) $coupon->get_code());
+
+        if ($code !== '') {
+            $applicable_codes[] = $code;
+        }
+    }
+
+    return array_values(array_unique($applicable_codes));
+}
+
+function jetlagz_get_coupon_discount_amount_for_product($coupon, $product, $base_price = null)
+{
+    if (!($coupon instanceof WC_Coupon) || !($product instanceof WC_Product)) {
+        return 0.0;
+    }
+
+    $base_price = $base_price === null ? (float) $product->get_price() : (float) $base_price;
+
+    if ($base_price <= 0) {
+        return 0.0;
+    }
+
+    $discount_type = (string) $coupon->get_discount_type();
+    $coupon_amount = (float) $coupon->get_amount();
+
+    if ($coupon_amount <= 0) {
+        return 0.0;
+    }
+
+    if ('percent' === $discount_type) {
+        return min($base_price, round($base_price * ($coupon_amount / 100), wc_get_price_decimals()));
+    }
+
+    if ('fixed_product' === $discount_type || 'fixed_cart' === $discount_type) {
+        return min($base_price, $coupon_amount);
+    }
+
+    return 0.0;
+}
+
+function jetlagz_get_coupon_value_label_for_product($coupon, $product, $discount_amount)
+{
+    if (!($coupon instanceof WC_Coupon) || !($product instanceof WC_Product) || $discount_amount <= 0) {
+        return '';
+    }
+
+    $formatted_amount = number_format($discount_amount, 2, ',', '');
+    $formatted_amount = preg_replace('/,00$/', '', $formatted_amount);
+
+    return '-' . $formatted_amount . 'zł';
+}
+
+function jetlagz_get_best_category_coupon_notice_data_for_product($product)
+{
+    if (!($product instanceof WC_Product)) {
+        return null;
+    }
+
+    $product_id = $product->get_parent_id() ? $product->get_parent_id() : $product->get_id();
+    $product_category_ids = wp_get_post_terms($product_id, 'product_cat', array('fields' => 'ids'));
+
+    if (empty($product_category_ids) || is_wp_error($product_category_ids)) {
+        return null;
+    }
+
+    $product_category_ids = array_filter(array_map('absint', (array) $product_category_ids));
+    $base_price = (float) $product->get_price();
+
+    if ($base_price <= 0) {
+        return null;
+    }
+
+    $coupon_ids = get_posts(array(
+        'post_type' => 'shop_coupon',
+        'post_status' => 'publish',
+        'fields' => 'ids',
+        'numberposts' => -1,
+        'orderby' => 'date',
+        'order' => 'DESC',
+    ));
+
+    if (empty($coupon_ids) || !is_array($coupon_ids)) {
+        return null;
+    }
+
+    $best_notice = null;
+
+    foreach ($coupon_ids as $coupon_id) {
+        $coupon = new WC_Coupon((int) $coupon_id);
+
+        if (!jetlagz_is_coupon_publicly_active($coupon)) {
+            continue;
+        }
+
+        $restricted_category_ids = array_filter(array_map('absint', (array) $coupon->get_product_categories()));
+        $excluded_category_ids = array_filter(array_map('absint', (array) $coupon->get_excluded_product_categories()));
+        $included_product_ids = array_filter(array_map('absint', (array) $coupon->get_product_ids()));
+        $excluded_product_ids = array_filter(array_map('absint', (array) $coupon->get_excluded_product_ids()));
+
+        if (empty($restricted_category_ids)) {
+            continue;
+        }
+
+        if (!array_intersect($product_category_ids, $restricted_category_ids)) {
+            continue;
+        }
+
+        if (!empty($excluded_category_ids) && array_intersect($product_category_ids, $excluded_category_ids)) {
+            continue;
+        }
+
+        if (!empty($included_product_ids) && !in_array($product_id, $included_product_ids, true)) {
+            continue;
+        }
+
+        if (!empty($excluded_product_ids) && in_array($product_id, $excluded_product_ids, true)) {
+            continue;
+        }
+
+        if ($coupon->get_exclude_sale_items() && $product->is_on_sale()) {
+            continue;
+        }
+
+        $discount_amount = jetlagz_get_coupon_discount_amount_for_product($coupon, $product, $base_price);
+
+        if ($discount_amount <= 0) {
+            continue;
+        }
+
+        $discounted_price = max(0, $base_price - $discount_amount);
+        $coupon_code = trim((string) $coupon->get_code());
+
+        if ($coupon_code === '') {
+            continue;
+        }
+
+        $notice_data = array(
+            'code' => $coupon_code,
+            'discount_amount' => $discount_amount,
+            'discount_percent' => jetlagz_get_discount_percent_from_amounts($base_price, $discounted_price),
+            'discount_amount_html' => wp_strip_all_tags(wc_price($discount_amount)),
+            'discount_value_label' => jetlagz_get_coupon_value_label_for_product($coupon, $product, $discount_amount),
+            'discounted_price_html' => wp_strip_all_tags(wc_price($discounted_price)),
+        );
+
+        if ($best_notice === null || $notice_data['discount_amount'] > $best_notice['discount_amount']) {
+            $best_notice = $notice_data;
+        }
+    }
+
+    return $best_notice;
+}
+
+function jetlagz_render_available_coupon_notice($product)
+{
+    if (!jetlagz_should_show_product_discount_notice()) {
+        return;
+    }
+
+    if (!($product instanceof WC_Product)) {
+        return;
+    }
+
+    $notice_data = jetlagz_get_best_category_coupon_notice_data_for_product($product);
+
+    if (!empty($notice_data) && !empty($notice_data['code'])) {
+        $is_selected = jetlagz_is_coupon_code_selected($notice_data['code']);
+?>
+        <div class="jetlagz-available-coupon-notice">
+            <div class="jetlagz-available-coupon-row">
+                <span class="jetlagz-available-coupon-label"><?php echo esc_html('Dostępny kupon:'); ?></span>
+                <span class="jetlagz-available-coupon-codes"><?php echo esc_html($notice_data['code']); ?></span>
+            </div>
+            <span class="jetlagz-available-coupon-disclaimer"><?php echo esc_html('Wartość kuponu: ' . $notice_data['discount_value_label']); ?></span>
+            <span class="jetlagz-available-coupon-price"><?php echo esc_html('Cena z kuponem: ' . $notice_data['discounted_price_html']); ?></span>
+            <button
+                type="button"
+                class="jetlagz-apply-coupon-button<?php echo $is_selected ? ' is-applied' : ''; ?>"
+                data-coupon-code="<?php echo esc_attr($notice_data['code']); ?>"
+                aria-pressed="<?php echo $is_selected ? 'true' : 'false'; ?>">
+                <?php echo esc_html($is_selected ? 'Zastosowano kupon' : 'Zastosuj kupon'); ?>
+            </button>
+        </div>
+    <?php
+        return;
+    }
+}
+
+function jetlagz_store_selected_coupon_in_session()
+{
+    if (!wp_verify_nonce($_POST['nonce'] ?? '', 'universal_cart_nonce')) {
+        wp_send_json_error(array(
+            'message' => __('Unauthorized', 'jetlagz-theme'),
+        ), 403);
+    }
+
+    if (!function_exists('WC') || !WC()->session) {
+        wp_send_json_error(array(
+            'message' => __('Sesja WooCommerce nie jest dostępna.', 'jetlagz-theme'),
+        ), 500);
+    }
+
+    if (!WC()->session->has_session()) {
+        WC()->session->set_customer_session_cookie(true);
+    }
+
+    $coupon_code = isset($_POST['coupon_code']) ? wc_format_coupon_code(wc_clean(wp_unslash($_POST['coupon_code']))) : '';
+
+    if ($coupon_code === '') {
+        wp_send_json_error(array(
+            'message' => __('Brak kodu kuponu.', 'jetlagz-theme'),
+        ), 400);
+    }
+
+    $coupon = new WC_Coupon($coupon_code);
+
+    if (!$coupon || !$coupon->get_id() || !jetlagz_is_coupon_publicly_active($coupon)) {
+        wp_send_json_error(array(
+            'message' => __('Ten kupon nie jest już dostępny.', 'jetlagz-theme'),
+        ), 400);
+    }
+
+    WC()->session->set(jetlagz_get_selected_coupon_session_key(), $coupon_code);
+    wc_setcookie(jetlagz_get_selected_coupon_cookie_name(), $coupon_code, time() + (14 * DAY_IN_SECONDS));
+
+    $applied_to_cart = false;
+
+    if (WC()->cart && !WC()->cart->is_empty()) {
+        $applied_coupons = array_map('wc_format_coupon_code', (array) WC()->cart->get_applied_coupons());
+
+        if (!in_array($coupon_code, $applied_coupons, true)) {
+            wc_clear_notices();
+            $applied_to_cart = (bool) WC()->cart->apply_coupon($coupon_code);
+            WC()->cart->calculate_totals();
+            wc_clear_notices();
+        } else {
+            $applied_to_cart = true;
+        }
+    }
+
+    if (method_exists(WC()->session, 'save_data')) {
+        WC()->session->save_data();
+    }
+
+    wp_send_json_success(array(
+        'coupon_code' => $coupon_code,
+        'button_label' => __('Zastosowano kupon', 'jetlagz-theme'),
+        'applied_to_cart' => $applied_to_cart,
+        'debug' => jetlagz_get_coupon_debug_payload($coupon_code),
+    ));
+}
+add_action('wp_ajax_jetlagz_store_selected_coupon_in_session', 'jetlagz_store_selected_coupon_in_session');
+add_action('wp_ajax_nopriv_jetlagz_store_selected_coupon_in_session', 'jetlagz_store_selected_coupon_in_session');
+
+function jetlagz_try_apply_selected_coupon_to_cart($cart = null)
+{
+    static $running = false;
+
+    if ($running || is_admin() || !function_exists('WC') || !WC()->session || !WC()->cart) {
+        return;
+    }
+
+    $coupon_code = jetlagz_get_selected_coupon_code();
+
+    $cart = $cart instanceof WC_Cart ? $cart : WC()->cart;
+
+    if (!$cart || $coupon_code === '' || $cart->is_empty()) {
+        return;
+    }
+
+    $applied_coupons = array_map('wc_format_coupon_code', (array) $cart->get_applied_coupons());
+
+    if (in_array($coupon_code, $applied_coupons, true)) {
+        return;
+    }
+
+    $running = true;
+    wc_clear_notices();
+    $cart->apply_coupon($coupon_code);
+    $cart->calculate_totals();
+    wc_clear_notices();
+
+    if (method_exists(WC()->session, 'save_data')) {
+        WC()->session->save_data();
+    }
+
+    $running = false;
+}
+
+function jetlagz_maybe_apply_selected_coupon_from_session()
+{
+    jetlagz_try_apply_selected_coupon_to_cart(WC()->cart);
+}
+
+function jetlagz_apply_selected_coupon_after_add_to_cart($cart_item_key, $product_id, $quantity, $variation_id = 0, $variation = array(), $cart_item_data = array())
+{
+    jetlagz_try_apply_selected_coupon_to_cart(WC()->cart);
+}
+add_action('template_redirect', 'jetlagz_maybe_apply_selected_coupon_from_session', 20);
+add_action('woocommerce_add_to_cart', 'jetlagz_apply_selected_coupon_after_add_to_cart', 20, 6);
+add_action('woocommerce_before_cart', 'jetlagz_maybe_apply_selected_coupon_from_session', 1);
+add_action('woocommerce_before_checkout_form', 'jetlagz_maybe_apply_selected_coupon_from_session', 1);
+add_action('woocommerce_cart_loaded_from_session', 'jetlagz_try_apply_selected_coupon_to_cart', 20, 1);
+
+function jetlagz_product_coupon_notice_script()
+{
+    if (!is_product()) {
+        return;
+    }
+    ?>
+    <script>
+        jQuery(function($) {
+            function jetlagzCouponDebugLog(stage, payload) {
+                if (!window.console || !console.log) {
+                    return;
+                }
+
+                console.log('[Jetlagz coupon debug][product][' + stage + ']', payload);
+            }
+
+            $(document).on('click', '.jetlagz-apply-coupon-button', function() {
+                var $button = $(this);
+                var couponCode = (($button.data('coupon-code') || '') + '').trim();
+
+                if (!couponCode || $button.hasClass('is-loading') || $button.hasClass('is-applied')) {
+                    return;
+                }
+
+                jetlagzCouponDebugLog('click', {
+                    couponCode: couponCode,
+                    buttonText: $button.text().trim()
+                });
+
+                $button.addClass('is-loading');
+
+                $.ajax({
+                    url: '<?php echo esc_js(admin_url('admin-ajax.php')); ?>',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'jetlagz_store_selected_coupon_in_session',
+                        nonce: '<?php echo esc_js(wp_create_nonce('universal_cart_nonce')); ?>',
+                        coupon_code: couponCode
+                    }
+                }).done(function(response) {
+                    jetlagzCouponDebugLog('ajax-success', response);
+
+                    if (!response || !response.success) {
+                        return;
+                    }
+
+                    $button
+                        .removeClass('is-loading')
+                        .addClass('is-applied')
+                        .attr('aria-pressed', 'true')
+                        .text(response.data && response.data.button_label ? response.data.button_label : 'Zastosowano kupon');
+                }).fail(function(xhr, status, error) {
+                    jetlagzCouponDebugLog('ajax-fail', {
+                        xhr: xhr,
+                        status: status,
+                        error: error
+                    });
+
+                    $button.removeClass('is-loading');
+                });
+            });
+        });
+    </script>
+<?php
+}
+add_action('wp_footer', 'jetlagz_product_coupon_notice_script', 40);
+
 /**
  * Hide internal products from public displays
  * These products should not be visible in shop/category/search results.
@@ -803,157 +2121,149 @@ add_filter('rest_product_query', 'jetlagz_exclude_gift_product_from_rest_api', 1
  */
 function jetlagz_filter_products_query($query)
 {
-    if (!is_admin() && $query->is_main_query() && (is_shop() || is_product_taxonomy())) {
+    if (!($query instanceof WP_Query)) {
+        return;
+    }
 
-        $meta_query = $query->get('meta_query') ?: array();
-        $tax_query = $query->get('tax_query') ?: array();
+    try {
+        if (!is_admin() && $query->is_main_query() && (is_shop() || is_product_taxonomy())) {
 
-        // Price filter
-        if (isset($_GET['min_price']) || isset($_GET['max_price'])) {
-            $price_meta = array('key' => '_price', 'type' => 'NUMERIC');
+            $meta_query = $query->get('meta_query') ?: array();
+            $tax_query = $query->get('tax_query') ?: array();
 
-            if (isset($_GET['min_price']) && !empty($_GET['min_price'])) {
-                $price_meta['value'] = array(floatval($_GET['min_price']));
-                $price_meta['compare'] = '>=';
-            }
+            // Price filter
+            if (isset($_GET['min_price']) || isset($_GET['max_price'])) {
+                $price_meta = array('key' => '_price', 'type' => 'NUMERIC');
 
-            if (isset($_GET['max_price']) && !empty($_GET['max_price'])) {
-                if (isset($price_meta['value'])) {
-                    $price_meta['value'][] = floatval($_GET['max_price']);
-                    $price_meta['compare'] = 'BETWEEN';
-                } else {
-                    $price_meta['value'] = floatval($_GET['max_price']);
-                    $price_meta['compare'] = '<=';
+                if (isset($_GET['min_price']) && !empty($_GET['min_price'])) {
+                    $price_meta['value'] = array(floatval($_GET['min_price']));
+                    $price_meta['compare'] = '>=';
                 }
+
+                if (isset($_GET['max_price']) && !empty($_GET['max_price'])) {
+                    if (isset($price_meta['value'])) {
+                        $price_meta['value'][] = floatval($_GET['max_price']);
+                        $price_meta['compare'] = 'BETWEEN';
+                    } else {
+                        $price_meta['value'] = floatval($_GET['max_price']);
+                        $price_meta['compare'] = '<=';
+                    }
+                }
+
+                $meta_query[] = $price_meta;
             }
 
-            $meta_query[] = $price_meta;
-        }
-
-        // Stock status filter
-        if (isset($_GET['stock_status']) && $_GET['stock_status'] === 'instock') {
-            $meta_query[] = array(
-                'key' => '_stock_status',
-                'value' => 'instock',
-                'compare' => '='
-            );
-        }
-
-        // On sale filter (supports variable products and synced lookup table)
-        if (isset($_GET['on_sale']) && $_GET['on_sale'] === '1') {
-            $on_sale_ids = wc_get_product_ids_on_sale();
-            $hidden_product_ids = function_exists('jetlagz_get_hidden_shop_product_ids') ? jetlagz_get_hidden_shop_product_ids() : array(15101, 17598);
-
-            if (empty($on_sale_ids)) {
-                // Fallback for stale lookup/transients: match products with explicit sale meta.
+            // Stock status filter
+            if (isset($_GET['stock_status']) && $_GET['stock_status'] === 'instock') {
                 $meta_query[] = array(
-                    'relation' => 'OR',
-                    array(
-                        'key' => '_sale_price',
-                        'value' => 0,
-                        'compare' => '>',
-                        'type' => 'NUMERIC'
-                    ),
-                    array(
-                        'key' => '_min_variation_sale_price',
-                        'value' => 0,
-                        'compare' => '>',
-                        'type' => 'NUMERIC'
-                    )
+                    'key' => '_stock_status',
+                    'value' => 'instock',
+                    'compare' => '='
                 );
-            } else {
-                $on_sale_ids = array_map('absint', $on_sale_ids);
-                $on_sale_ids = array_values(array_diff($on_sale_ids, array_map('absint', $hidden_product_ids)));
+            }
+
+            // On sale filter (supports variable products and synced lookup table)
+            if (isset($_GET['on_sale']) && $_GET['on_sale'] === '1') {
+                $hidden_product_ids = function_exists('jetlagz_get_hidden_shop_product_ids') ? jetlagz_get_hidden_shop_product_ids() : array(15101, 17598);
+                $hidden_product_ids = is_array($hidden_product_ids) ? $hidden_product_ids : array();
+
+                $promotional_product_ids = jetlagz_get_promotional_product_ids($hidden_product_ids);
                 $existing_post_in = $query->get('post__in');
 
                 if (!empty($existing_post_in) && is_array($existing_post_in)) {
-                    $query->set('post__in', array_values(array_intersect($existing_post_in, $on_sale_ids)));
+                    $filtered_post_ids = array_values(array_intersect(array_map('absint', $existing_post_in), $promotional_product_ids));
+                    $query->set('post__in', !empty($filtered_post_ids) ? $filtered_post_ids : array(0));
                 } else {
-                    $query->set('post__in', $on_sale_ids);
+                    $query->set('post__in', !empty($promotional_product_ids) ? $promotional_product_ids : array(0));
                 }
             }
-        }
 
-        // Category filter
-        if (isset($_GET['product_cat']) && !empty($_GET['product_cat'])) {
-            $categories = is_string($_GET['product_cat']) ? explode(',', $_GET['product_cat']) : (array)$_GET['product_cat'];
-            $categories = array_filter(array_map('sanitize_text_field', $categories));
-            if (!empty($categories)) {
-                $tax_query[] = array(
-                    'taxonomy' => 'product_cat',
-                    'field' => 'slug',
-                    'terms' => $categories,
-                    'operator' => 'IN'
-                );
+            // Category filter
+            if (isset($_GET['product_cat']) && !empty($_GET['product_cat'])) {
+                $categories = jetlagz_normalize_request_list($_GET['product_cat']);
+                $categories = array_values(array_filter($categories, static function ($slug) {
+                    return !jetlagz_is_hidden_product_category_slug($slug);
+                }));
+
+                if (!empty($categories)) {
+                    $tax_query[] = array(
+                        'taxonomy' => 'product_cat',
+                        'field' => 'slug',
+                        'terms' => $categories,
+                        'operator' => 'IN'
+                    );
+                }
             }
-        }
 
-        // Size filter - only show products with selected size IN STOCK
-        if (isset($_GET['filter_rozmiar']) && !empty($_GET['filter_rozmiar'])) {
-            $sizes = is_string($_GET['filter_rozmiar']) ? explode(',', $_GET['filter_rozmiar']) : (array)$_GET['filter_rozmiar'];
-            $sizes = array_filter(array_map('sanitize_text_field', $sizes));
-            if (!empty($sizes)) {
-                $tax_query[] = array(
-                    'taxonomy' => 'pa_rozmiar',
-                    'field' => 'slug',
-                    'terms' => $sizes,
-                    'operator' => 'IN'
-                );
+            // Size filter - only show products with selected size IN STOCK
+            if (isset($_GET['filter_rozmiar']) && !empty($_GET['filter_rozmiar'])) {
+                $sizes = is_string($_GET['filter_rozmiar']) ? explode(',', $_GET['filter_rozmiar']) : (array)$_GET['filter_rozmiar'];
+                $sizes = array_filter(array_map('sanitize_text_field', $sizes));
+                if (!empty($sizes)) {
+                    $tax_query[] = array(
+                        'taxonomy' => 'pa_rozmiar',
+                        'field' => 'slug',
+                        'terms' => $sizes,
+                        'operator' => 'IN'
+                    );
+                }
             }
-        }
 
-        // Color filter (canonical groups mapped to all matching term slugs)
-        $selected_color_groups = jetlagz_get_selected_color_filters();
-        if (!empty($selected_color_groups)) {
-            $all_color_terms = get_terms(array(
-                'taxonomy' => 'pa_kolor',
-                'hide_empty' => false,
-                'fields' => 'all'
-            ));
+            // Color filter (canonical groups mapped to all matching term slugs)
+            $selected_color_groups = jetlagz_get_selected_color_filters();
+            if (!empty($selected_color_groups)) {
+                $all_color_terms = get_terms(array(
+                    'taxonomy' => 'pa_kolor',
+                    'hide_empty' => false,
+                    'fields' => 'all'
+                ));
 
-            $matched_slugs = array();
-            if (!empty($all_color_terms) && !is_wp_error($all_color_terms)) {
-                foreach ($all_color_terms as $term) {
-                    $canonical = jetlagz_get_canonical_color_key($term->slug ?: $term->name);
-                    if (in_array($canonical, $selected_color_groups, true)) {
-                        $matched_slugs[] = $term->slug;
+                $matched_slugs = array();
+                if (!empty($all_color_terms) && !is_wp_error($all_color_terms)) {
+                    foreach ($all_color_terms as $term) {
+                        $canonical = jetlagz_get_canonical_color_key($term->slug ?: $term->name);
+                        if (in_array($canonical, $selected_color_groups, true)) {
+                            $matched_slugs[] = $term->slug;
+                        }
                     }
                 }
+
+                if (empty($matched_slugs)) {
+                    $matched_slugs = $selected_color_groups;
+                }
+
+                $tax_query[] = array(
+                    'taxonomy' => 'pa_kolor',
+                    'field' => 'slug',
+                    'terms' => array_values(array_unique($matched_slugs)),
+                    'operator' => 'IN'
+                );
+            }
+            if (!empty($meta_query)) {
+                $meta_query['relation'] = 'AND';
+                $query->set('meta_query', $meta_query);
             }
 
-            if (empty($matched_slugs)) {
-                $matched_slugs = $selected_color_groups;
+            if (!empty($tax_query)) {
+                $tax_query['relation'] = 'AND';
+                $query->set('tax_query', $tax_query);
             }
 
-            $tax_query[] = array(
-                'taxonomy' => 'pa_kolor',
-                'field' => 'slug',
-                'terms' => array_values(array_unique($matched_slugs)),
-                'operator' => 'IN'
-            );
-        }
-        if (!empty($meta_query)) {
-            $meta_query['relation'] = 'AND';
-            $query->set('meta_query', $meta_query);
-        }
-
-        if (!empty($tax_query)) {
-            $tax_query['relation'] = 'AND';
-            $query->set('tax_query', $tax_query);
-        }
-
-        // Custom sorting by size attribute
-        if (isset($_GET['orderby'])) {
-            if ($_GET['orderby'] === 'size-asc') {
-                $query->set('orderby', 'meta_value');
-                $query->set('meta_key', 'attribute_pa_rozmiar');
-                $query->set('order', 'ASC');
-            } elseif ($_GET['orderby'] === 'size-desc') {
-                $query->set('orderby', 'meta_value');
-                $query->set('meta_key', 'attribute_pa_rozmiar');
-                $query->set('order', 'DESC');
+            // Custom sorting by size attribute
+            if (isset($_GET['orderby'])) {
+                if ($_GET['orderby'] === 'size-asc') {
+                    $query->set('orderby', 'meta_value');
+                    $query->set('meta_key', 'attribute_pa_rozmiar');
+                    $query->set('order', 'ASC');
+                } elseif ($_GET['orderby'] === 'size-desc') {
+                    $query->set('orderby', 'meta_value');
+                    $query->set('meta_key', 'attribute_pa_rozmiar');
+                    $query->set('order', 'DESC');
+                }
             }
         }
+    } catch (Throwable $exception) {
+        error_log('Jetlagz shop filter error: ' . $exception->getMessage());
     }
 }
 add_action('pre_get_posts', 'jetlagz_filter_products_query');
@@ -963,63 +2273,79 @@ add_action('pre_get_posts', 'jetlagz_filter_products_query');
  */
 function jetlagz_filter_products_by_size_stock($posts, $query)
 {
-    if (!is_admin() && $query->is_main_query() && (is_shop() || is_product_taxonomy())) {
-        if (isset($_GET['pa_rozmiar']) && !empty($_GET['pa_rozmiar'])) {
-            $selected_sizes = is_string($_GET['pa_rozmiar']) ? explode(',', $_GET['pa_rozmiar']) : (array)$_GET['pa_rozmiar'];
-            $selected_sizes = array_filter(array_map('sanitize_text_field', $selected_sizes));
+    if (!($query instanceof WP_Query)) {
+        return $posts;
+    }
 
-            if (empty($selected_sizes)) {
-                return $posts;
-            }
+    try {
+        if (!is_admin() && $query->is_main_query() && (is_shop() || is_product_taxonomy())) {
+            if (isset($_GET['pa_rozmiar']) && !empty($_GET['pa_rozmiar'])) {
+                $selected_sizes = is_string($_GET['pa_rozmiar']) ? explode(',', $_GET['pa_rozmiar']) : (array)$_GET['pa_rozmiar'];
+                $selected_sizes = array_filter(array_map('sanitize_text_field', $selected_sizes));
 
-            $filtered_posts = array();
-
-            foreach ($posts as $post) {
-                // Skip gift product
-                if ($post->ID === 15101) {
-                    continue;
+                if (empty($selected_sizes)) {
+                    return $posts;
                 }
 
-                $product = wc_get_product($post->ID);
+                $filtered_posts = array();
 
-                // Skip if not a variable product
-                if (!$product || !$product->is_type('variable')) {
-                    continue;
-                }
-
-                $variations = $product->get_available_variations();
-                $has_size_in_stock = false;
-
-                // Check if any variation with selected size is in stock
-                foreach ($variations as $variation) {
-                    $variation_obj = wc_get_product($variation['variation_id']);
-
-                    if (!$variation_obj || !$variation_obj->is_in_stock()) {
+                foreach ($posts as $post) {
+                    if (!is_object($post) || empty($post->ID)) {
                         continue;
                     }
 
-                    // Get size attribute from variation
-                    $variation_attributes = $variation_obj->get_attributes();
+                    // Skip gift product
+                    if ((int) $post->ID === 15101) {
+                        continue;
+                    }
 
-                    if (isset($variation_attributes['pa_rozmiar'])) {
-                        $variation_size = $variation_attributes['pa_rozmiar'];
+                    $product = wc_get_product($post->ID);
 
-                        // Check if this variation has one of the selected sizes
-                        if (in_array($variation_size, $selected_sizes)) {
-                            $has_size_in_stock = true;
-                            break;
+                    // Skip if not a variable product
+                    if (!$product || !$product->is_type('variable')) {
+                        continue;
+                    }
+
+                    $variations = $product->get_available_variations();
+                    $has_size_in_stock = false;
+
+                    // Check if any variation with selected size is in stock
+                    foreach ($variations as $variation) {
+                        if (empty($variation['variation_id'])) {
+                            continue;
                         }
+
+                        $variation_obj = wc_get_product($variation['variation_id']);
+
+                        if (!$variation_obj || !$variation_obj->is_in_stock()) {
+                            continue;
+                        }
+
+                        // Get size attribute from variation
+                        $variation_attributes = $variation_obj->get_attributes();
+
+                        if (isset($variation_attributes['pa_rozmiar'])) {
+                            $variation_size = $variation_attributes['pa_rozmiar'];
+
+                            // Check if this variation has one of the selected sizes
+                            if (in_array($variation_size, $selected_sizes, true)) {
+                                $has_size_in_stock = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Only include product if it has selected size in stock
+                    if ($has_size_in_stock) {
+                        $filtered_posts[] = $post;
                     }
                 }
 
-                // Only include product if it has selected size in stock
-                if ($has_size_in_stock) {
-                    $filtered_posts[] = $post;
-                }
+                return $filtered_posts;
             }
-
-            return $filtered_posts;
         }
+    } catch (Throwable $exception) {
+        error_log('Jetlagz size stock filter error: ' . $exception->getMessage());
     }
 
     return $posts;
@@ -1031,75 +2357,94 @@ add_filter('posts_results', 'jetlagz_filter_products_by_size_stock', 5, 2);
  */
 function jetlagz_sort_products_by_size($posts, $query)
 {
-    if (!is_admin() && $query->is_main_query() && (is_shop() || is_product_taxonomy())) {
-        if (isset($_GET['orderby']) && in_array($_GET['orderby'], ['size-asc', 'size-desc'])) {
+    if (!($query instanceof WP_Query)) {
+        return $posts;
+    }
 
-            // Define size order (smallest to largest)
-            $size_order = array(
-                'xxxs' => 1,
-                '2xs' => 2,
-                'xxs' => 3,
-                'xs' => 4,
-                's' => 5,
-                'm' => 6,
-                'l' => 7,
-                'xl' => 8,
-                'xxl' => 9,
-                '2xl' => 10,
-                'xxxl' => 11,
-                '3xl' => 12,
-                '4xl' => 13,
-                '5xl' => 14,
-                // Numeric sizes
-                '28' => 15,
-                '30' => 16,
-                '32' => 17,
-                '34' => 18,
-                '36' => 19,
-                '38' => 20,
-                '40' => 21,
-                '42' => 22,
-                '44' => 23,
-                '46' => 24
-            );
+    try {
+        if (!is_admin() && $query->is_main_query() && (is_shop() || is_product_taxonomy())) {
+            if (isset($_GET['orderby']) && in_array($_GET['orderby'], ['size-asc', 'size-desc'], true)) {
 
-            // Filter out gift product and sort
-            $filtered_posts = array_filter($posts, function ($post) {
-                return $post->ID !== 15101;
-            });
+                // Define size order (smallest to largest)
+                $size_order = array(
+                    'xxxs' => 1,
+                    '2xs' => 2,
+                    'xxs' => 3,
+                    'xs' => 4,
+                    's' => 5,
+                    'm' => 6,
+                    'l' => 7,
+                    'xl' => 8,
+                    'xxl' => 9,
+                    '2xl' => 10,
+                    'xxxl' => 11,
+                    '3xl' => 12,
+                    '4xl' => 13,
+                    '5xl' => 14,
+                    '28' => 15,
+                    '30' => 16,
+                    '32' => 17,
+                    '34' => 18,
+                    '36' => 19,
+                    '38' => 20,
+                    '40' => 21,
+                    '42' => 22,
+                    '44' => 23,
+                    '46' => 24
+                );
 
-            usort($filtered_posts, function ($a, $b) use ($size_order) {
-                $product_a = wc_get_product($a->ID);
-                $product_b = wc_get_product($b->ID);
+                // Filter out gift product and sort
+                $filtered_posts = array_filter($posts, function ($post) {
+                    return is_object($post) && !empty($post->ID) && (int) $post->ID !== 15101;
+                });
 
-                // Get size attributes
-                $size_a = $product_a->get_attribute('pa_rozmiar');
-                $size_b = $product_b->get_attribute('pa_rozmiar');
+                usort($filtered_posts, function ($a, $b) use ($size_order) {
+                    $product_a = wc_get_product($a->ID);
+                    $product_b = wc_get_product($b->ID);
 
-                // Handle multiple sizes (take first one)
-                if (strpos($size_a, ',') !== false) {
-                    $size_a = trim(explode(',', $size_a)[0]);
+                    if (!$product_a && !$product_b) {
+                        return 0;
+                    }
+
+                    if (!$product_a) {
+                        return 1;
+                    }
+
+                    if (!$product_b) {
+                        return -1;
+                    }
+
+                    // Get size attributes
+                    $size_a = $product_a->get_attribute('pa_rozmiar');
+                    $size_b = $product_b->get_attribute('pa_rozmiar');
+
+                    // Handle multiple sizes (take first one)
+                    if (is_string($size_a) && strpos($size_a, ',') !== false) {
+                        $size_a = trim(explode(',', $size_a)[0]);
+                    }
+                    if (is_string($size_b) && strpos($size_b, ',') !== false) {
+                        $size_b = trim(explode(',', $size_b)[0]);
+                    }
+
+                    $size_a = strtolower(trim((string) $size_a));
+                    $size_b = strtolower(trim((string) $size_b));
+
+                    $order_a = isset($size_order[$size_a]) ? $size_order[$size_a] : 999;
+                    $order_b = isset($size_order[$size_b]) ? $size_order[$size_b] : 999;
+
+                    return $order_a - $order_b;
+                });
+
+                // Reverse if descending
+                if ($_GET['orderby'] === 'size-desc') {
+                    $filtered_posts = array_reverse($filtered_posts);
                 }
-                if (strpos($size_b, ',') !== false) {
-                    $size_b = trim(explode(',', $size_b)[0]);
-                }
 
-                $size_a = strtolower(trim($size_a));
-                $size_b = strtolower(trim($size_b));
-
-                $order_a = isset($size_order[$size_a]) ? $size_order[$size_a] : 999;
-                $order_b = isset($size_order[$size_b]) ? $size_order[$size_b] : 999;
-
-                return $order_a - $order_b;
-            });
-
-            // Reverse if descending
-            if ($_GET['orderby'] === 'size-desc') {
-                $filtered_posts = array_reverse($filtered_posts);
+                return $filtered_posts;
             }
-
-            return $filtered_posts;
         }
+    } catch (Throwable $exception) {
+        error_log('Jetlagz size sort error: ' . $exception->getMessage());
     }
 
     return $posts;
@@ -1156,6 +2501,7 @@ function jetlagz_custom_title_price_wrapper()
         if (function_exists('storefront_wc_brands_single_product')) {
             storefront_wc_brands_single_product();
         }
+
         ?>
 
         <div class="single-product-info flex justify-between">
@@ -1193,6 +2539,8 @@ function jetlagz_custom_title_price_wrapper()
                 ?>
             </div>
         </div>
+
+        <?php jetlagz_render_available_coupon_notice($product); ?>
     </div>
 <?php
 }
@@ -1396,6 +2744,10 @@ add_action('woocommerce_after_add_to_cart_form', 'jetlagz_display_product_featur
  */
 function jetlagz_display_newsletter_discount()
 {
+    if (!jetlagz_should_show_product_discount_notice()) {
+        return;
+    }
+
     if (!is_product()) {
         return;
     }
@@ -1650,6 +3002,10 @@ function jetlagz_display_newsletter_discount()
 
         @media (max-width: 640px) {
 
+            .newsletter-discount-section {
+                display: none !important;
+            }
+
 
             .newsletter-button-container,
             .newsletter-savings-info {
@@ -1783,8 +3139,6 @@ function jetlagz_display_newsletter_discount()
     </script>
 <?php
 }
-add_action('woocommerce_after_add_to_cart_form', 'jetlagz_display_newsletter_discount', 16);
-
 /**
  * Display product videos slider
  */
@@ -2382,8 +3736,8 @@ function jetlagz_crosssell_in_summary()
     $crosssell_ids = array_slice($crosssell_ids, 0, 4);
 ?>
     <div class="crosssell-products-section">
-        <h3 class="crosssell-title !mb-0">Kup w zestawie</h3>
-        <p>Dobierz produkty do kompletu i oszczędzaj</p>
+        <h3 class="crosssell-title !mb-0">Pasujące rzeczy</h3>
+        <p>Stwórz zestaw</p>
         <div class="crosssell-products-list mt-3">
             <?php foreach ($crosssell_ids as $crosssell_id):
                 $crosssell_product = wc_get_product($crosssell_id);
@@ -2708,7 +4062,7 @@ function jetlagz_display_product_reviews()
                         <span class="score-number" aria-label="Average rating"><?php echo number_format($average_rating, 1); ?></span>
                         <span class="score-max">/ 5</span>
                     </div>
-                    <div class="rating-subtitle">
+                    <div class="rating-subtitle">-
                         <?php
                         // Poprawna odmiana słowa "opinia"
                         if ($total_reviews_with_ratings === 1) {
@@ -3190,6 +4544,31 @@ function jetlagz_product_gallery_grid_layout()
 ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            function isMobilePhotoSwipeDisabled() {
+                return window.matchMedia('(max-width: 640px)').matches;
+            }
+
+            function preventMobilePhotoSwipe(event) {
+                if (!isMobilePhotoSwipeDisabled()) {
+                    return;
+                }
+
+                var galleryTrigger = event.target.closest('.woocommerce-product-gallery__trigger, .woocommerce-product-gallery__image > a');
+
+                if (!galleryTrigger) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (typeof event.stopImmediatePropagation === 'function') {
+                    event.stopImmediatePropagation();
+                }
+            }
+
+            document.addEventListener('click', preventMobilePhotoSwipe, true);
+            document.addEventListener('touchstart', preventMobilePhotoSwipe, true);
 
             // Mobile: Let WooCommerce handle gallery normally
             if (window.innerWidth < 640) {}
@@ -3496,6 +4875,17 @@ function jetlagz_product_gallery_grid_layout()
             }
         });
     </script>
+    <style>
+        @media (max-width: 640px) {
+            .woocommerce-product-gallery__trigger {
+                display: none !important;
+            }
+
+            .woocommerce-product-gallery__image > a {
+                cursor: default !important;
+            }
+        }
+    </style>
 <?php
 }
 add_action('wp_head', 'jetlagz_product_gallery_grid_layout', 20);
@@ -3539,7 +4929,18 @@ function jetlagz_sticky_product_sidebar()
         return;
     }
 ?>
-    <script>
+    </script>
+    <style>
+        @media (max-width: 640px) {
+            .woocommerce-product-gallery__trigger {
+                display: none !important;
+            }
+
+            .woocommerce-product-gallery__image > a {
+                cursor: default !important;
+            }
+        }
+    </style>
         (function() {
             var resizeTimer = null;
             var resizeObserver = null;

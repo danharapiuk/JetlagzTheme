@@ -1,6 +1,6 @@
 /* Scroll to Top Button Styles */
 #scrollToTopBtn {
-	background: #90334E;
+	background: #90334e;
 	color: #fff;
 	border: none;
 	border-radius: 50%;
@@ -16,8 +16,15 @@
 	display: block !important; /* DEBUG: always show button */
 }
 #scrollToTopBtn:hover {
-	background: #A23756;
+	background: #a23756;
 }
+
+@media (max-width: 639px) {
+	#scrollToTopBtn {
+		bottom: 4rem; /* Move up to avoid mobile bottom bar */
+	}
+}
+
 /* Footer styles for Jetlagz-theme */
 
 .footer-element .title {

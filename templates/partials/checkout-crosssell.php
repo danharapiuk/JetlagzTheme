@@ -18,6 +18,7 @@ if (empty($products) || !is_array($products)) {
             $full_title = isset($p['name']) ? (string) $p['name'] : '';
             $product_title = isset($p['acf_name']) ? trim((string) $p['acf_name']) : '';
             $product_subtitle = isset($p['acf_description']) ? trim((string) $p['acf_description']) : '';
+            $card_product = !empty($p['id']) ? wc_get_product((int) $p['id']) : null;
 
             // Fallback: jeśli ACF jest puste, wyciągnij title/subtitle z nazwy produktu.
             if ($product_title === '') {
@@ -47,9 +48,7 @@ if (empty($products) || !is_array($products)) {
                                 src="<?php echo esc_url($p['secondary_image']); ?>"
                                 alt="<?php echo esc_attr($p['name']); ?>">
                         <?php endif; ?>
-                        <?php if (!empty($p['is_on_sale'])): ?>
-                            <span class="sale-badge">Sale</span>
-                        <?php endif; ?>
+                        <?php jetlagz_render_product_card_badges($card_product); ?>
                     </div>
                 </a>
 

@@ -37,7 +37,7 @@ if (!$categories || is_wp_error($categories)) {
 
         <a href="<?php echo esc_url($category_link); ?>" class="py-2 border-b-[1px] md:border-b-0 category-item group transition-all duration-300 md:hover:bg-[#9F7B8A] md:hover:text-white <?php echo $is_active ? 'font-bold bg-[#51172F] !text-white' : ''; ?>">
             <div class="flex justify-between md:justify-center items-center ">
-                <h3 class="category-name text-xs lg:text-base font-light uppercase transition-all duration-300 <?php echo $is_active ? 'font-medium lg:text-lg !text-white pl-2 md:pl-0' : ''; ?>">
+                <h3 class="category-name text-xs lg:text-sm font-light uppercase transition-all duration-300 <?php echo $is_active ? 'font-medium lg:text-lg !text-white pl-2 md:pl-0' : ''; ?>">
                     <?php echo esc_html($category->name); ?>
                 </h3>
                 <img src="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/chevron-right.svg" class="sm:hidden w-4 h-4">
@@ -45,10 +45,10 @@ if (!$categories || is_wp_error($categories)) {
         </a>
     <?php endforeach; ?>
 
-    <a href="<?php echo esc_url($sale_link); ?>" class="py-2 border-b-[1px] md:border-b-0 category-item group transition-all duration-300 md:hover:bg-[#9F7B8A] md:hover:text-white <?php echo $is_sale_filter_active ? 'font-bold bg-[#51172F] !text-white' : ''; ?>">
+    <a href="<?php echo esc_url($sale_link); ?>" class="py-2 border-b-[1px] md:border-b-0 category-item group transition-all duration-300 bg-[9F7B8A] md:hover:bg-[#9F7B8A] md:hover:text-white <?php echo $is_sale_filter_active ? 'font-bold bg-[#51172F] !text-white' : ''; ?>">
         <div class="flex justify-between md:justify-center items-center ">
-            <h3 class="category-name text-xs lg:text-base font-light uppercase transition-all duration-300 <?php echo $is_sale_filter_active ? 'font-medium lg:text-lg !text-white pl-2 md:pl-0' : ''; ?>">
-                Promo do -60%
+            <h3 class="category-name text-xs lg:text-sm font-medium text-[#51172F] uppercase transition-all duration-300 <?php echo $is_sale_filter_active ? 'font-semibold lg:text-lg !text-white pl-2 md:pl-0 no-wrap' : ''; ?>">
+                Oferty specjalne
             </h3>
             <img src="<?php echo get_stylesheet_directory_uri(); ?>/assets/images/chevron-right.svg" class="sm:hidden w-4 h-4">
         </div>

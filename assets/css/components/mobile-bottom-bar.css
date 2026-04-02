@@ -8,6 +8,12 @@
 	display: none;
 }
 
+.mobile-bar-search,
+.mobile-bar-menu,
+.mobile-bottom-nav-drawer {
+	display: none;
+}
+
 /* Show only on mobile (below 1024px) */
 @media (max-width: 1023px) {
 	.mobile-bottom-bar {
@@ -130,6 +136,209 @@
 	/* Ensure footer has enough margin */
 	footer#colophon {
 		margin-bottom: 0;
+	}
+}
+
+@media (max-width: 640px) {
+	.mobile-bottom-bar {
+		height: 58px;
+		padding-top: 0;
+	}
+
+	.mobile-bar-search,
+	.mobile-bar-menu {
+		display: flex;
+	}
+
+	.mobile-bar-item--button {
+		padding: 0;
+	}
+
+	.mobile-bottom-bar .universal-header-search,
+	.mobile-bottom-bar .universal-header-mobile-toggle {
+		align-items: center;
+		justify-content: center;
+		position: relative;
+	}
+
+	.mobile-bottom-bar .search-toggle,
+	.mobile-bottom-bar .universal-mobile-menu-toggle {
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		border-radius: 999px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		color: #111827;
+	}
+
+	.mobile-bottom-bar .universal-mobile-menu-toggle {
+		gap: 3px;
+	}
+
+	.mobile-bottom-bar .universal-mobile-menu-toggle span {
+		width: 20px;
+		height: 2px;
+	}
+
+	.mobile-bottom-bar .universal-search-form {
+		position: fixed;
+		left: 16px;
+		right: 16px;
+		bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+		top: auto;
+		transform: translateY(10px);
+		width: auto;
+		padding: 0.25rem;
+		background: #fff;
+		border: 1px solid #111827;
+		border-radius: 14px;
+		box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+		opacity: 0;
+		visibility: hidden;
+		transition:
+			opacity 0.2s ease,
+			visibility 0.2s ease,
+			transform 0.2s ease;
+		z-index: 10002;
+	}
+
+	.mobile-bottom-bar .universal-search-form.active {
+		opacity: 1;
+		visibility: visible;
+		width: auto;
+		transform: translateY(0);
+	}
+
+	.mobile-bottom-bar .universal-search-form .search-field {
+		padding: 0.7rem 0.9rem;
+		font-size: 14px;
+	}
+
+	.mobile-bottom-bar .universal-search-form .search-submit {
+		color: #111827;
+		padding: 0.5rem 0.75rem;
+	}
+
+	body.mobile-bottom-drawer-open {
+		overflow: hidden;
+	}
+
+	.mobile-bottom-nav-drawer {
+		display: block;
+		position: fixed;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		width: min(86vw, 360px);
+		padding: 0;
+		background: #fff;
+		border-right: 1px solid #e5e7eb;
+		z-index: 10001;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transform: translateX(-100%);
+		transition:
+			opacity 0.22s ease,
+			visibility 0.22s ease,
+			transform 0.28s ease;
+		box-shadow: 18px 0 36px rgba(0, 0, 0, 0.18);
+	}
+
+	.mobile-bottom-nav-drawer.active,
+	body.mobile-bottom-drawer-open .mobile-bottom-nav-drawer {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		transform: translateX(0);
+	}
+
+	.mobile-bottom-nav-drawer__panel {
+		width: 100%;
+		height: 100%;
+		background: #fff;
+		border-radius: 0;
+		border: none;
+		box-shadow: none;
+		padding: 24px 18px calc(88px + env(safe-area-inset-bottom, 0px));
+		max-height: none;
+		overflow: auto;
+		position: relative;
+	}
+
+	.mobile-bottom-nav-drawer__close {
+		position: absolute;
+		top: 14px;
+		right: 14px;
+		width: 38px;
+		height: 38px;
+		border: 1px solid #d1d5db;
+		border-radius: 999px;
+		background: #fff;
+		color: #111827;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 24px;
+		line-height: 1;
+		padding: 0;
+		cursor: pointer;
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+	}
+
+	.mobile-bottom-nav-drawer__close img {
+		display: block;
+		width: 16px;
+		height: 16px;
+	}
+
+	.mobile-bottom-nav-drawer__close:hover,
+	.mobile-bottom-nav-drawer__close:focus-visible {
+		background: #f9fafb;
+		border-color: #9ca3af;
+	}
+
+	.mobile-bottom-nav-menu {
+		padding-top: 36px;
+	}
+
+	.mobile-bottom-nav-menu,
+	.mobile-bottom-nav-menu ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.mobile-bottom-nav-menu {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.mobile-bottom-nav-menu > li > a,
+	.mobile-bottom-nav-menu .sub-menu a {
+		display: block;
+		padding: 0.7rem 0;
+		color: #111827;
+		text-decoration: none;
+		font-size: 15px;
+		border-bottom: 1px solid #f3f4f6;
+	}
+
+	.mobile-bottom-nav-menu > li:last-child > a {
+		border-bottom: none;
+	}
+
+	.mobile-bottom-nav-menu .sub-menu {
+		padding-left: 12px;
+	}
+
+	.mobile-bottom-nav-menu .sub-menu a {
+		font-size: 14px;
+		color: #4b5563;
 	}
 }
 

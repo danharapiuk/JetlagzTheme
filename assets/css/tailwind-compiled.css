@@ -1841,8 +1841,16 @@ select {
   left: 50%;
 }
 
+.right-1 {
+  right: 0.25rem;
+}
+
 .right-\[20px\] {
   right: 20px;
+}
+
+.top-1 {
+  top: 0.25rem;
 }
 
 .top-\[20px\] {
@@ -2454,6 +2462,15 @@ select {
   background-color: rgb(255 255 255 / var(--tw-bg-opacity));
 }
 
+.bg-\[9F7B8A\] {
+  background-color: 9F7B8A;
+}
+
+.bg-\[\#9F7B8A\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(159 123 138 / var(--tw-bg-opacity));
+}
+
 .bg-opacity-30 {
   --tw-bg-opacity: 0.3;
 }
@@ -2802,6 +2819,11 @@ select {
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
+}
+
+.text-\[\#51172F\] {
+  --tw-text-opacity: 1;
+  color: rgb(81 23 47 / var(--tw-text-opacity));
 }
 
 .underline {
@@ -3341,14 +3363,14 @@ select {
     padding-bottom: 0px;
   }
 
-  .lg\:text-base {
-    font-size: 1rem;
-    line-height: 1.5rem;
-  }
-
   .lg\:text-lg {
     font-size: 1.125rem;
     line-height: 1.75rem;
+  }
+
+  .lg\:text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 }
 

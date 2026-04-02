@@ -510,14 +510,12 @@ input.search-field {
 
 .cart-item-image {
 	width: 50px;
-	height: 50px;
 }
 
 .cart-item-image img {
 	width: 50px;
 	height: 50px;
 	object-fit: cover;
-	border-radius: 4px;
 }
 
 .cart-item-details {
@@ -835,7 +833,7 @@ form.universal-search-form.active {
 }
 
 @media (max-width: 480px) {
-	.universal-header-search {
+	#site-header .universal-header-search {
 		display: none;
 	}
 }
@@ -995,6 +993,18 @@ header .col-full .coll-full {
 	.universal-header-search {
 		justify-content: flex-end;
 		margin: 0;
+	}
+}
+
+@media (max-width: 640px) {
+	#site-header {
+		display: none !important;
+	}
+
+	.mobile-bottom-bar .universal-header-search,
+	.mobile-bottom-bar .universal-header-mobile-toggle {
+		display: flex !important;
+		margin: 0 !important;
 	}
 }
 

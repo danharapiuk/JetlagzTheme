@@ -522,7 +522,7 @@ function universal_theme_enqueue_assets()
       'universal-checkout-quantity-classic',
       get_stylesheet_directory_uri() . '/assets/js/checkout-quantity-classic.js',
       array('jquery', 'wc-checkout'),
-      $theme_version . '-qty-classic-v1', // Force cache refresh
+      $theme_version . '-qty-classic-v4', // Force cache refresh
       true
     );
 
@@ -1299,6 +1299,191 @@ function universal_get_checkout_totals()
   ));
 }
 
+function universal_collect_wc_notice_messages()
+{
+  $notices_html = wc_print_notices(true);
+
+  if (!is_string($notices_html) || trim($notices_html) === '') {
+    return array();
+  }
+
+  $message = trim(preg_replace('/\s+/', ' ', wp_strip_all_tags($notices_html)));
+
+  return $message !== '' ? array($message) : array();
+}
+
+function universal_get_wc_notice_text_from_html($notices_html)
+{
+  if (!is_string($notices_html) || trim($notices_html) === '') {
+    return '';
+  }
+
+  return trim(preg_replace('/\s+/', ' ', wp_strip_all_tags($notices_html)));
+}
+
+function universal_apply_checkout_coupon()
+{
+  if (!wp_verify_nonce($_POST['nonce'], 'universal_cart_nonce')) {
+    wp_send_json_error(array(
+      'message' => __('Unauthorized', 'jetlagz-theme'),
+    ), 403);
+  }
+
+  if (!function_exists('WC') || !WC()->cart) {
+    wp_send_json_error(array(
+      'message' => __('Koszyk nie jest dostępny.', 'jetlagz-theme'),
+    ), 500);
+  }
+
+  $coupon_code = isset($_POST['coupon_code']) ? wc_format_coupon_code(wc_clean(wp_unslash($_POST['coupon_code']))) : '';
+
+  if ($coupon_code === '') {
+    wp_send_json_error(array(
+      'message' => __('Wpisz kod kuponu', 'jetlagz-theme'),
+    ), 400);
+  }
+
+  $debug_payload = function_exists('jetlagz_get_coupon_debug_payload')
+    ? jetlagz_get_coupon_debug_payload($coupon_code)
+    : array(
+      'requested_coupon_code' => $coupon_code,
+      'applied_coupons' => array_values((array) WC()->cart->get_applied_coupons()),
+      'cart_discount_total' => (float) WC()->cart->get_discount_total() + (float) WC()->cart->get_discount_tax(),
+      'cart_total' => wp_strip_all_tags((string) WC()->cart->get_cart_total()),
+      'cart_is_empty' => (bool) WC()->cart->is_empty(),
+    );
+
+  $applied_coupons = array_map('wc_format_coupon_code', (array) WC()->cart->get_applied_coupons());
+
+  if (in_array($coupon_code, $applied_coupons, true)) {
+    WC()->cart->calculate_totals();
+
+    ob_start();
+    universal_render_checkout_totals();
+    $totals_html = ob_get_clean();
+
+    wc_clear_notices();
+
+    wp_send_json_success(array(
+      'message' => sprintf(__('Kupon "%s" został już zastosowany.', 'jetlagz-theme'), $coupon_code),
+      'coupon_code' => $coupon_code,
+      'totals_html' => $totals_html,
+      'cart_total' => WC()->cart->get_cart_total(),
+      'already_applied' => true,
+      'applied_coupons_html' => universal_get_checkout_applied_coupons_html(),
+      'debug' => function_exists('jetlagz_get_coupon_debug_payload') ? jetlagz_get_coupon_debug_payload($coupon_code) : $debug_payload,
+    ));
+  }
+
+  wc_clear_notices();
+
+  $applied = WC()->cart->apply_coupon($coupon_code);
+  WC()->cart->calculate_totals();
+
+  $notices_html = wc_print_notices(true);
+  $message = universal_get_wc_notice_text_from_html($notices_html);
+
+  if ($message === '' || $message === 'coupon_code') {
+    $messages = universal_collect_wc_notice_messages();
+    $message = !empty($messages) ? implode(' ', $messages) : '';
+  }
+
+  ob_start();
+  universal_render_checkout_totals();
+  $totals_html = ob_get_clean();
+
+  wc_clear_notices();
+
+  if (!$applied) {
+    wp_send_json_error(array(
+      'message' => $message !== '' ? $message : __('Kod kuponu jest nieprawidłowy.', 'jetlagz-theme'),
+      'notices_html' => $notices_html,
+      'totals_html' => $totals_html,
+      'applied_coupons_html' => universal_get_checkout_applied_coupons_html(),
+      'debug' => function_exists('jetlagz_get_coupon_debug_payload') ? jetlagz_get_coupon_debug_payload($coupon_code) : $debug_payload,
+    ), 400);
+  }
+
+  wp_send_json_success(array(
+    'message' => $message !== '' ? $message : sprintf(__('Kupon "%s" został zastosowany.', 'jetlagz-theme'), $coupon_code),
+    'coupon_code' => $coupon_code,
+    'notices_html' => $notices_html,
+    'totals_html' => $totals_html,
+    'cart_total' => WC()->cart->get_cart_total(),
+    'applied_coupons_html' => function_exists('universal_get_checkout_applied_coupons_html') ? universal_get_checkout_applied_coupons_html() : '',
+    'debug' => function_exists('jetlagz_get_coupon_debug_payload') ? jetlagz_get_coupon_debug_payload($coupon_code) : $debug_payload,
+  ));
+}
+
+function universal_get_checkout_applied_coupons_html()
+{
+  if (!function_exists('universal_render_checkout_applied_coupons')) {
+    return '';
+  }
+
+  ob_start();
+  universal_render_checkout_applied_coupons();
+
+  return ob_get_clean();
+}
+
+function universal_remove_checkout_coupon()
+{
+  if (!wp_verify_nonce($_POST['nonce'] ?? '', 'universal_cart_nonce')) {
+    wp_send_json_error(array(
+      'message' => __('Unauthorized', 'jetlagz-theme'),
+    ), 403);
+  }
+
+  if (!function_exists('WC') || !WC()->cart) {
+    wp_send_json_error(array(
+      'message' => __('Koszyk nie jest dostępny.', 'jetlagz-theme'),
+    ), 500);
+  }
+
+  $coupon_code = isset($_POST['coupon_code']) ? wc_format_coupon_code(wc_clean(wp_unslash($_POST['coupon_code']))) : '';
+
+  if ($coupon_code === '') {
+    wp_send_json_error(array(
+      'message' => __('Brak kodu kuponu do usunięcia.', 'jetlagz-theme'),
+    ), 400);
+  }
+
+  $applied_coupons = array_map('wc_format_coupon_code', (array) WC()->cart->get_applied_coupons());
+
+  if (!in_array($coupon_code, $applied_coupons, true)) {
+    wp_send_json_error(array(
+      'message' => __('Ten kupon nie jest aktualnie zastosowany.', 'jetlagz-theme'),
+      'applied_coupons_html' => universal_get_checkout_applied_coupons_html(),
+    ), 400);
+  }
+
+  WC()->cart->remove_coupon($coupon_code);
+  WC()->cart->calculate_totals();
+  wc_clear_notices();
+
+  if (function_exists('jetlagz_get_selected_coupon_code') && function_exists('jetlagz_clear_selected_coupon_code')) {
+    $selected_coupon_code = jetlagz_get_selected_coupon_code();
+
+    if ($selected_coupon_code !== '' && wc_format_coupon_code($selected_coupon_code) === $coupon_code) {
+      jetlagz_clear_selected_coupon_code();
+    }
+  }
+
+  ob_start();
+  universal_render_checkout_totals();
+  $totals_html = ob_get_clean();
+
+  wp_send_json_success(array(
+    'message' => sprintf(__('Kupon "%s" został usunięty.', 'jetlagz-theme'), $coupon_code),
+    'coupon_code' => $coupon_code,
+    'totals_html' => $totals_html,
+    'cart_total' => WC()->cart->get_cart_total(),
+    'applied_coupons_html' => universal_get_checkout_applied_coupons_html(),
+    'debug' => function_exists('jetlagz_get_coupon_debug_payload') ? jetlagz_get_coupon_debug_payload($coupon_code) : array(),
+  ));
+}
+
 /**
  * Render totals w naszym custom formacie
  * Format: Sub total: Kwota | Shipping: Kwota | Total: Kwota
@@ -1307,6 +1492,8 @@ function universal_render_checkout_totals()
 {
   $subtotal = WC()->cart->get_cart_subtotal();
   $total = WC()->cart->get_total();
+  $coupon_discount_total = (float) WC()->cart->get_discount_total() + (float) WC()->cart->get_discount_tax();
+  $coupon_discount_formatted = wc_price($coupon_discount_total);
 
   // Pobierz shipping
   $shipping_total = WC()->cart->get_shipping_total();
@@ -1342,6 +1529,13 @@ function universal_render_checkout_totals()
           <td><?php echo wp_kses_post($subtotal); ?></td>
         </tr>
 
+        <?php if ($coupon_discount_total > 0) : ?>
+          <tr class="cart-coupons-total">
+            <th><?php echo __('Wartość kuponów:', 'jetlagz-theme'); ?></th>
+            <td>-<?php echo wp_kses_post($coupon_discount_formatted); ?></td>
+          </tr>
+        <?php endif; ?>
+
         <!-- Gift Wrapping Fee (if exists) -->
         <?php if ($gift_wrapping_fee) : ?>
           <tr class="gift-wrapping-fee">
@@ -1375,8 +1569,112 @@ function universal_render_checkout_totals()
   <?php
 }
 
+function universal_get_checkout_cart_item_amount($cart_item, $amount_key, $tax_key)
+{
+  $amount = isset($cart_item[$amount_key]) ? (float) $cart_item[$amount_key] : 0.0;
+
+  if (WC()->cart && WC()->cart->display_prices_including_tax()) {
+    $amount += isset($cart_item[$tax_key]) ? (float) $cart_item[$tax_key] : 0.0;
+  }
+
+  return $amount;
+}
+
+function universal_get_gift_cart_item_price_data($cart_item)
+{
+  $quantity = max(1, (int) ($cart_item['quantity'] ?? 1));
+  $product_id = (int) ($cart_item['product_id'] ?? 0);
+  $variation_id = (int) ($cart_item['variation_id'] ?? 0);
+  $gift_rule = isset($cart_item['jetlagz_gift_rule']) && is_array($cart_item['jetlagz_gift_rule'])
+    ? $cart_item['jetlagz_gift_rule']
+    : array();
+  $source_product_id = $variation_id > 0 ? $variation_id : $product_id;
+  $original_product = $source_product_id > 0 ? wc_get_product($source_product_id) : null;
+  $regular_price = 0.0;
+
+  if ($source_product_id > 0) {
+    $raw_regular_price = get_post_meta($source_product_id, '_regular_price', true);
+    if ($raw_regular_price !== '') {
+      $regular_price = (float) $raw_regular_price;
+    }
+  }
+
+  if ($regular_price <= 0 && $original_product instanceof WC_Product) {
+    $regular_price = (float) $original_product->get_regular_price();
+  }
+
+  if ($regular_price <= 0 && $original_product instanceof WC_Product) {
+    $regular_price = (float) $original_product->get_price();
+  }
+
+  $gift_price = isset($gift_rule['price']) ? (float) $gift_rule['price'] : 0.10;
+  $base_unit_price = $regular_price > 0 ? $regular_price : $gift_price;
+  $has_discount = $base_unit_price > $gift_price;
+
+  return array(
+    'has_discount' => $has_discount,
+    'base_unit_price' => $base_unit_price,
+    'discounted_unit_price' => $gift_price,
+    'base_line_total' => $base_unit_price * $quantity,
+    'discounted_line_total' => $gift_price * $quantity,
+  );
+}
+
+function universal_get_checkout_cart_item_price_data($cart_item)
+{
+  if (!empty($cart_item['jetlagz_is_gift']) && !empty($cart_item['jetlagz_gift_rule'])) {
+    return universal_get_gift_cart_item_price_data($cart_item);
+  }
+
+  $quantity = max(1, (int) ($cart_item['quantity'] ?? 1));
+  $base_line_total = universal_get_checkout_cart_item_amount($cart_item, 'line_subtotal', 'line_subtotal_tax');
+  $discounted_line_total = universal_get_checkout_cart_item_amount($cart_item, 'line_total', 'line_tax');
+  $base_unit_price = $base_line_total / $quantity;
+  $discounted_unit_price = $discounted_line_total / $quantity;
+  $has_discount = $discounted_line_total + 0.0001 < $base_line_total;
+
+  return array(
+    'has_discount' => $has_discount,
+    'base_unit_price' => $base_unit_price,
+    'discounted_unit_price' => $has_discount ? $discounted_unit_price : $base_unit_price,
+    'base_line_total' => $base_line_total,
+    'discounted_line_total' => $has_discount ? $discounted_line_total : $base_line_total,
+  );
+}
+
+function universal_render_checkout_price_html($regular_amount, $discounted_amount, $has_discount, $wrapper_class)
+{
+  $wrapper_class = trim((string) $wrapper_class);
+  $wrapper_attr = $wrapper_class !== '' ? ' ' . $wrapper_class : '';
+
+  if (!$has_discount) {
+    return '<div class="' . esc_attr(trim('checkout-price-stack' . $wrapper_attr)) . '">' . wp_kses_post(wc_price($discounted_amount)) . '</div>';
+  }
+
+  return '<div class="' . esc_attr(trim('checkout-price-stack checkout-price-stack--discounted' . $wrapper_attr)) . '">'
+    . '<span class="checkout-price-original">' . wp_kses_post(wc_price($regular_amount)) . '</span>'
+    . '<span class="checkout-price-discounted">' . wp_kses_post(wc_price($discounted_amount)) . '</span>'
+    . '</div>';
+}
+
+function universal_get_discount_percentage($regular_amount, $discounted_amount)
+{
+  $regular_amount = (float) $regular_amount;
+  $discounted_amount = (float) $discounted_amount;
+
+  if ($regular_amount <= 0 || $discounted_amount >= $regular_amount) {
+    return 0;
+  }
+
+  return (int) round((($regular_amount - $discounted_amount) / $regular_amount) * 100);
+}
+
 add_action('wp_ajax_universal_get_checkout_totals', 'universal_get_checkout_totals');
 add_action('wp_ajax_nopriv_universal_get_checkout_totals', 'universal_get_checkout_totals'); // Zarejestruj AJAX handler - action musi być 'universal_update_cart_quantity'
+add_action('wp_ajax_universal_remove_checkout_coupon', 'universal_remove_checkout_coupon');
+add_action('wp_ajax_nopriv_universal_remove_checkout_coupon', 'universal_remove_checkout_coupon');
+add_action('wp_ajax_universal_apply_checkout_coupon', 'universal_apply_checkout_coupon');
+add_action('wp_ajax_nopriv_universal_apply_checkout_coupon', 'universal_apply_checkout_coupon');
 add_action('wp_ajax_universal_update_cart_quantity', 'universal_update_cart_quantity');
 add_action('wp_ajax_nopriv_universal_update_cart_quantity', 'universal_update_cart_quantity');
 
@@ -1516,7 +1814,7 @@ add_action('wp_loaded', 'universal_handle_cart_cleared');
 function universal_display_crosssell_placeholder()
 {
   if (is_checkout() && !is_wc_endpoint_url()) {
-    echo '<div class="checkout-crosssell-section"></div>';
+    echo '<div class="checkout-crosssell-section hidden"></div>';
   }
 }
 add_action('woocommerce_checkout_after_order_review', 'universal_display_crosssell_placeholder', 15);
@@ -1697,6 +1995,10 @@ add_action('wp_ajax_nopriv_universal_add_crosssell_product', 'universal_handle_a
  */
 function universal_refresh_checkout_table()
 {
+  if (function_exists('WC') && WC()->cart) {
+    WC()->cart->calculate_totals();
+  }
+
   ob_start();
 
   // Render checkout review table (TYLKO tabela z produktami)
@@ -1728,17 +2030,37 @@ function universal_refresh_checkout_table()
           ? trim($acf_product_name)
           : $product->get_name();
         $product_image = $product->get_image('thumbnail');
-        $product_price = $product->get_price();
-        $product_total = $product_price * $quantity;
+        $price_data = universal_get_checkout_cart_item_price_data($cart_item);
+        $product_price = $price_data['discounted_unit_price'];
+        $product_total = $price_data['discounted_line_total'];
         $is_gift = !empty($cart_item['jetlagz_is_gift']);
-        $price_formatted = wc_price($product_price);
-        $total_formatted = wc_price($product_total);
+        $discount_percentage = universal_get_discount_percentage(
+          $price_data['base_unit_price'],
+          $price_data['discounted_unit_price']
+        );
+        $price_formatted = universal_render_checkout_price_html(
+          $price_data['base_unit_price'],
+          $price_data['discounted_unit_price'],
+          $price_data['has_discount'],
+          'checkout-item-unit-price'
+        );
+        $total_formatted = universal_render_checkout_price_html(
+          $price_data['base_line_total'],
+          $price_data['discounted_line_total'],
+          $price_data['has_discount'],
+          'checkout-item-total-price'
+        );
       ?>
         <div class="universal-checkout-item" data-cart-key="<?php echo esc_attr($cart_item_key); ?>">
           <!-- Lewa część: Miniaturka + Nazwa + Cena jednostkowa -->
           <div class="checkout-item-left">
-            <div class="checkout-item-thumbnail">
-              <?php echo $product_image; ?>
+            <div class="checkout-item-thumbnail relative">
+              <div class="cart-item-image">
+                <?php if ($discount_percentage > 0) : ?>
+                  <span class="cart-item-discount-badge absolute right-1 top-1">-<?php echo esc_html($discount_percentage); ?>%</span>
+                <?php endif; ?>
+                <?php echo $product_image; ?>
+              </div>
               <button type="button" class="checkout-item-remove-btn" data-cart-key="<?php echo esc_attr($cart_item_key); ?>" title="<?php echo __('Usuń z koszyka', 'universal-theme'); ?>">×</button>
             </div>
             <div class="checkout-item-details">

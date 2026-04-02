@@ -129,6 +129,18 @@
 	max-width: 85%;
 }
 
+@media (max-width: 639px) {
+	.single-product-title,
+	.single-product-subtitle {
+		max-width: none;
+		width: 100%;
+	}
+
+	.single-product .newsletter-discount-section {
+		display: none !important;
+	}
+}
+
 /* ========================================
    BENEFITS SECTION (AFTER TITLE)
    ======================================== */
@@ -214,6 +226,81 @@
 
 .summary .price ins {
 	text-decoration: none;
+}
+
+.jetlagz-available-coupon-notice {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	margin-top: 12px;
+	margin-bottom: 0;
+	font-size: 13px;
+	line-height: 1.4;
+	color: #185b63;
+}
+
+.jetlagz-available-coupon-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.jetlagz-available-coupon-label {
+	font-weight: 600;
+}
+
+.jetlagz-available-coupon-codes {
+	color: white;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	background-color: #dc2626;
+	font-size: 10px;
+	padding: 2px 4px;
+}
+
+.jetlagz-available-coupon-disclaimer,
+.jetlagz-available-coupon-price {
+	color: #185b63;
+}
+
+.jetlagz-available-coupon-price {
+	font-weight: 600;
+	padding-top: 5px;
+}
+
+.jetlagz-apply-coupon-button {
+	margin-top: 10px;
+	padding: 10px 18px;
+	border: 1px solid #185b63;
+	background: transparent;
+	color: #185b63;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	transition:
+		background-color 0.2s ease,
+		color 0.2s ease,
+		border-color 0.2s ease,
+		opacity 0.2s ease;
+	cursor: pointer;
+}
+
+.jetlagz-apply-coupon-button:hover {
+	background: #185b63;
+	color: #fff;
+}
+
+.jetlagz-apply-coupon-button.is-loading {
+	opacity: 0.6;
+	cursor: wait;
+}
+
+.jetlagz-apply-coupon-button.is-applied {
+	background: #1f8f47;
+	border-color: #1f8f47;
+	color: #fff;
 }
 
 /* ========================================
@@ -824,6 +911,7 @@
 	font-weight: 500;
 	color: #111;
 	text-decoration: none;
+	letter-spacing: -0.05em;
 	margin-bottom: 0.25rem;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -897,10 +985,6 @@
 /* ==== PRODUCT DESCRIPTION ACCORDION ==== */
 .product-description-section {
 	margin-top: 2rem;
-}
-
-.product-main-wrapper .payment-icons {
-	justify-content: flex-start;
 }
 
 .product-description-title {
@@ -1668,7 +1752,6 @@ html {
 	margin-left: 0.25rem;
 	display: flex;
 	flex-wrap: nowrap;
-	width: 100px;
 	align-items: flex-end;
 }
 
@@ -1679,6 +1762,8 @@ html {
 	text-align: left;
 	display: flex;
 	align-items: flex-end;
+	padding-bottom: 5px;
+	padding-left: 5px;
 }
 
 /* Rating Breakdown */
@@ -2577,4 +2662,38 @@ table.variations.has-required-message,
 	50% {
 		transform: translateY(-3px);
 	}
+}
+
+/* ========================================
+   SALE & DISCOUNT BADGES (single product)
+   ======================================== */
+
+/* Ensure gallery is positioned so badges can be anchored */
+.woocommerce-product-gallery {
+	position: relative;
+}
+
+/* Base style for the WooCommerce sale flash badge */
+.single-product .woocommerce-product-gallery .onsale {
+	position: absolute;
+	top: 0.5rem;
+	left: 0.5rem;
+	right: auto;
+	margin: 0;
+	background-color: #dc2626;
+	color: #fff;
+	padding: 0.25rem 0.5rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	border-radius: 0;
+	min-height: auto;
+	line-height: 1.4;
+	z-index: 10;
+}
+
+/* Discount percentage badge — sits directly below the SALE badge */
+.single-product .woocommerce-product-gallery .onsale.discount-badge {
+	top: calc(0.5rem + 1.4em + 0.5rem + 2px);
+	background-color: #000;
 }

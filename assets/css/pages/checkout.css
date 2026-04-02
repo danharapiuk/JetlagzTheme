@@ -366,7 +366,7 @@ form.checkout.woocommerce-checkout.woocommerce-checkout {
 #order_review {
 	padding: 16px;
 	border-radius: 18px;
-	background-color: rgba(234, 234, 234, 0.7);
+	background-color: rgba(234, 234, 234, 1);
 }
 
 .universal-checkout-review-wrapper,
@@ -442,6 +442,61 @@ h4.coupon-title {
 	display: flex;
 	gap: 10px;
 	align-items: center;
+}
+
+.universal-applied-coupons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 0;
+	padding: 0 20px 20px;
+	background-color: #f9f9f9;
+}
+
+.universal-applied-coupon-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border: 1px solid rgba(0, 0, 0, 0.12);
+	border-radius: 999px;
+	background: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.universal-applied-coupon-code {
+	line-height: 1;
+}
+
+.universal-applied-coupon-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: #111;
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+	opacity: 0.75;
+	transition: opacity 0.2s ease;
+}
+
+.universal-applied-coupon-remove:hover,
+.universal-applied-coupon-remove:focus-visible {
+	opacity: 1;
+}
+
+.universal-applied-coupon-remove.is-loading,
+.universal-applied-coupon-remove:disabled {
+	opacity: 0.35;
+	cursor: wait;
 }
 
 .coupon-input-wrapper {
@@ -562,6 +617,17 @@ table.woocommerce-table--totals {
 	padding-left: 42px !important;
 }
 
+@media (max-width: 639px) {
+	.universal-coupon-form {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.universal-coupon-apply-btn {
+		width: 100%;
+	}
+}
+
 textarea#order_comments textarea::placeholder {
 	display: none;
 }
@@ -618,6 +684,25 @@ ul#shipping_method li label {
 	font-size: 14px;
 }
 
+.checkout-price-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	line-height: 1.2;
+}
+
+.checkout-price-original {
+	font-size: 12px;
+	font-weight: 400;
+	color: #7a7a7a;
+	text-decoration: line-through;
+}
+
+.checkout-price-discounted {
+	font-weight: 700;
+	color: inherit;
+}
+
 /* Product links in checkout */
 .checkout-item-name a {
 	color: inherit;
@@ -630,8 +715,43 @@ ul#shipping_method li label {
 	text-decoration: underline;
 }
 
+.checkout-item-thumbnail {
+	position: relative;
+}
+
+.checkout-item-thumbnail .cart-item-image {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	border-radius: inherit;
+}
+
+.checkout-item-thumbnail .cart-item-discount-badge {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 46px;
+	height: 24px;
+	padding: 0 8px;
+	border-radius: 999px;
+	background: #c62828;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+	box-shadow: 0 6px 14px rgba(198, 40, 40, 0.22);
+	pointer-events: none;
+}
+
 .checkout-item-thumbnail a {
 	display: block;
+	width: 100%;
+	height: 100%;
 	transition: opacity 0.2s ease;
 }
 
@@ -641,6 +761,52 @@ ul#shipping_method li label {
 
 .checkout-item-left button:hover {
 	color: white;
+}
+
+.checkout-item-remove-btn {
+	position: absolute;
+	top: -8px;
+	right: -8px;
+	background: #dc3545;
+	color: #fff;
+	border: none;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	font-size: 16px;
+	font-weight: 700;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	line-height: 1;
+	opacity: 0;
+	visibility: hidden;
+	transform: scale(0.72);
+	transition:
+		opacity 0.2s ease,
+		visibility 0.2s ease,
+		transform 0.2s ease,
+		background 0.2s ease;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	z-index: 3;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.universal-checkout-item:hover .checkout-item-remove-btn,
+	.checkout-item-thumbnail:hover .checkout-item-remove-btn,
+	.checkout-item-thumbnail:focus-within .checkout-item-remove-btn {
+		opacity: 1;
+		visibility: visible;
+		transform: scale(1);
+	}
+}
+
+.checkout-item-remove-btn:hover,
+.checkout-item-remove-btn:focus-visible {
+	background: #c82333;
+	transform: scale(1.08);
 }
 
 #payment .place-order .button {

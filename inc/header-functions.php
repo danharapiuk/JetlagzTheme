@@ -50,6 +50,61 @@ function universal_theme_topbar()
 <?php
 }
 
+function universal_theme_render_search_control($context = 'header')
+{
+    if (!class_exists('WooCommerce')) {
+        return;
+    }
+
+    $context = $context === 'mobile-bar' ? 'mobile-bar' : 'header';
+    $wrapper_classes = array('universal-header-search');
+
+    if ($context === 'mobile-bar') {
+        $wrapper_classes[] = 'mobile-bar-item';
+        $wrapper_classes[] = 'mobile-bar-item--button';
+        $wrapper_classes[] = 'mobile-bar-search';
+    }
+?>
+    <div class="<?php echo esc_attr(implode(' ', $wrapper_classes)); ?>" data-search-context="<?php echo esc_attr($context); ?>">
+        <button class="search-toggle" aria-label="<?php echo esc_attr__('Szukaj', 'universal-theme'); ?>" aria-expanded="false" type="button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M21 21L16.514 16.506M19 10.5C19 15.194 15.194 19 10.5 19S2 15.194 2 10.5 5.806 2 10.5 2 19 5.806 19 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+        </button>
+        <form role="search" method="get" class="universal-search-form" action="<?php echo esc_url(home_url('/')); ?>">
+            <input type="search" class="search-field" placeholder="<?php echo esc_attr__('Szukaj produktów...', 'universal-theme'); ?>" value="<?php echo get_search_query(); ?>" name="s">
+            <input type="hidden" name="post_type" value="product">
+            <button type="submit" class="search-submit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 21L16.514 16.506M19 10.5C19 15.194 15.194 19 10.5 19S2 15.194 2 10.5 5.806 2 10.5 2 19 5.806 19 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </button>
+        </form>
+    </div>
+<?php
+}
+
+function universal_theme_render_mobile_menu_toggle($context = 'header')
+{
+    $context = $context === 'mobile-bar' ? 'mobile-bar' : 'header';
+    $wrapper_classes = array('universal-header-mobile-toggle');
+
+    if ($context === 'mobile-bar') {
+        $wrapper_classes[] = 'mobile-bar-item';
+        $wrapper_classes[] = 'mobile-bar-item--button';
+        $wrapper_classes[] = 'mobile-bar-menu';
+    }
+?>
+    <div class="<?php echo esc_attr(implode(' ', $wrapper_classes)); ?>" data-toggle-context="<?php echo esc_attr($context); ?>">
+        <button class="universal-mobile-menu-toggle" aria-label="<?php esc_attr_e('Toggle navigation', 'universal-theme'); ?>" aria-expanded="false" type="button">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+<?php
+}
+
 /**
  * Custom header content - wszystkie elementy w jednym rzędzie
  */
@@ -82,24 +137,7 @@ function universal_theme_custom_header_content()
             </div>
 
             <!-- Search -->
-            <div class="universal-header-search">
-                <?php if (class_exists('WooCommerce')) : ?>
-                    <button class="search-toggle" aria-label="<?php echo esc_attr__('Szukaj', 'universal-theme'); ?>">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M21 21L16.514 16.506M19 10.5C19 15.194 15.194 19 10.5 19S2 15.194 2 10.5 5.806 2 10.5 2 19 5.806 19 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                    </button>
-                    <form role="search" method="get" class="universal-search-form" action="<?php echo esc_url(home_url('/')); ?>">
-                        <input type="search" class="search-field" placeholder="<?php echo esc_attr__('Szukaj produktów...', 'universal-theme'); ?>" value="<?php echo get_search_query(); ?>" name="s">
-                        <input type="hidden" name="post_type" value="product">
-                        <button type="submit" class="search-submit">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                <path d="M21 21L16.514 16.506M19 10.5C19 15.194 15.194 19 10.5 19S2 15.194 2 10.5 5.806 2 10.5 2 19 5.806 19 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                        </button>
-                    </form>
-                <?php endif; ?>
-            </div>
+            <?php universal_theme_render_search_control(); ?>
 
             <!-- My Account -->
             <div class="universal-header-account">
@@ -124,13 +162,7 @@ function universal_theme_custom_header_content()
             </div>
 
             <!-- Mobile Menu Toggle -->
-            <div class="universal-header-mobile-toggle">
-                <button class="universal-mobile-menu-toggle" aria-label="<?php esc_attr_e('Toggle navigation', 'universal-theme'); ?>">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-            </div>
+            <?php universal_theme_render_mobile_menu_toggle(); ?>
 
         </div>
     </div>
@@ -184,7 +216,6 @@ function universal_theme_responsive_container_styles()
         /* Checkout strona specjalne ustawienia */
         .woocommerce-checkout .col-full,
         .woocommerce-page .col-full {
-            max-width: 100% !important;
             overflow-x: hidden;
         }
 
@@ -241,43 +272,154 @@ function universal_theme_header_scripts()
 ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const mobileToggle = document.querySelector('.universal-mobile-menu-toggle');
-            const navigation = document.querySelector('.universal-header-navigation');
+            const desktopNavigation = document.querySelector('#site-header .universal-header-navigation');
+            const mobileDrawer = document.getElementById('mobile-bottom-nav-drawer');
+            const mobileDrawerClose = mobileDrawer ? mobileDrawer.querySelector('.mobile-bottom-nav-drawer__close') : null;
+            const menuToggles = Array.from(document.querySelectorAll('.universal-mobile-menu-toggle'));
+            const searchWrappers = Array.from(document.querySelectorAll('.universal-header-search'));
+            const strictMobileQuery = window.matchMedia('(max-width: 640px)');
 
-            if (mobileToggle && navigation) {
-                mobileToggle.addEventListener('click', function() {
-                    navigation.classList.toggle('active');
-                    this.classList.toggle('active');
+            function closeAllSearchForms(exceptWrapper) {
+                searchWrappers.forEach(function(wrapper) {
+                    if (exceptWrapper && wrapper === exceptWrapper) {
+                        return;
+                    }
+
+                    const form = wrapper.querySelector('.universal-search-form');
+                    const toggle = wrapper.querySelector('.search-toggle');
+
+                    if (form) {
+                        form.classList.remove('active');
+                    }
+
+                    if (toggle) {
+                        toggle.setAttribute('aria-expanded', 'false');
+                    }
                 });
             }
 
-            // Search toggle functionality
-            const searchToggle = document.querySelector('.search-toggle');
-            const searchForm = document.querySelector('.universal-search-form');
-            const searchField = document.querySelector('.universal-search-form .search-field');
+            function syncMenuToggleState(isActive) {
+                menuToggles.forEach(function(toggle) {
+                    toggle.classList.toggle('active', isActive);
+                    toggle.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+                });
+            }
 
-            if (searchToggle && searchForm && searchField) {
-                searchToggle.addEventListener('click', function(e) {
+            function closeMobileNavigation() {
+                if (mobileDrawer) {
+                    mobileDrawer.classList.remove('active');
+                    mobileDrawer.setAttribute('aria-hidden', 'true');
+                }
+
+                document.body.classList.remove('mobile-bottom-drawer-open');
+                syncMenuToggleState(false);
+            }
+
+            function toggleNavigation() {
+                if (strictMobileQuery.matches && mobileDrawer) {
+                    const isActive = !mobileDrawer.classList.contains('active');
+                    closeAllSearchForms();
+                    mobileDrawer.classList.toggle('active', isActive);
+                    mobileDrawer.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+                    document.body.classList.toggle('mobile-bottom-drawer-open', isActive);
+                    syncMenuToggleState(isActive);
+                    return;
+                }
+
+                if (!desktopNavigation) {
+                    return;
+                }
+
+                const isActive = !desktopNavigation.classList.contains('active');
+                desktopNavigation.classList.toggle('active', isActive);
+                syncMenuToggleState(isActive);
+            }
+
+            menuToggles.forEach(function(toggle) {
+                toggle.addEventListener('click', function(e) {
                     e.preventDefault();
-                    searchForm.classList.toggle('active');
+                    e.stopPropagation();
+                    toggleNavigation();
+                });
+            });
 
-                    if (searchForm.classList.contains('active')) {
-                        setTimeout(() => searchField.focus(), 300);
+            if (mobileDrawerClose) {
+                mobileDrawerClose.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeMobileNavigation();
+                });
+            }
+
+            searchWrappers.forEach(function(wrapper) {
+                const toggle = wrapper.querySelector('.search-toggle');
+                const form = wrapper.querySelector('.universal-search-form');
+                const field = wrapper.querySelector('.universal-search-form .search-field');
+
+                if (!toggle || !form || !field) {
+                    return;
+                }
+
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const isActive = !form.classList.contains('active');
+                    closeAllSearchForms(wrapper);
+                    closeMobileNavigation();
+
+                    form.classList.toggle('active', isActive);
+                    toggle.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+
+                    if (isActive) {
+                        setTimeout(function() {
+                            field.focus();
+                        }, 150);
                     }
                 });
 
-                // Close search when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!e.target.closest('.universal-header-search')) {
-                        searchForm.classList.remove('active');
-                    }
-                });
-
-                // Prevent closing when clicking inside the search
-                searchForm.addEventListener('click', function(e) {
+                form.addEventListener('click', function(e) {
                     e.stopPropagation();
                 });
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.universal-header-search')) {
+                    closeAllSearchForms();
+                }
+
+                if (strictMobileQuery.matches && mobileDrawer && mobileDrawer.classList.contains('active')) {
+                    const clickedToggle = e.target.closest('.universal-mobile-menu-toggle');
+                    const clickedDrawer = e.target.closest('#mobile-bottom-nav-drawer');
+
+                    if (!clickedToggle && !clickedDrawer) {
+                        closeMobileNavigation();
+                    }
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeAllSearchForms();
+                    closeMobileNavigation();
+                }
+            });
+
+            if (mobileDrawer) {
+                mobileDrawer.querySelectorAll('a').forEach(function(link) {
+                    link.addEventListener('click', function() {
+                        closeMobileNavigation();
+                    });
+                });
             }
+
+            strictMobileQuery.addEventListener('change', function(e) {
+                closeAllSearchForms();
+
+                if (!e.matches) {
+                    closeMobileNavigation();
+                }
+            });
 
             // Update cart count via AJAX
             if (typeof wc_cart_fragments_params !== 'undefined') {
@@ -552,6 +694,8 @@ function jetlagz_mobile_bottom_bar()
             <?php endif; ?>
         </a>
 
+        <?php universal_theme_render_search_control('mobile-bar'); ?>
+
         <a href="<?php echo esc_url($wishlist_url); ?>" class="mobile-bar-item mobile-bar-wishlist" data-has-items="<?php echo $wishlist_count > 0 ? 'true' : 'false'; ?>">
             <span class="bar-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="<?php echo $wishlist_count > 0 ? '#e11d48' : 'none'; ?>" stroke="<?php echo $wishlist_count > 0 ? '#e11d48' : 'currentColor'; ?>" stroke-width="1.5">
@@ -559,17 +703,6 @@ function jetlagz_mobile_bottom_bar()
                 </svg>
             </span>
             <span class="bar-count wishlist-count" data-count="<?php echo esc_attr($wishlist_count); ?>"><?php echo esc_html($wishlist_count); ?></span>
-        </a>
-
-        <a href="<?php echo esc_url($cart_url); ?>" class="mobile-bar-item mobile-bar-cart">
-            <span class="bar-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <path d="M16 10a4 4 0 0 1-8 0" />
-                </svg>
-            </span>
-            <span class="bar-count cart-count" data-count="<?php echo esc_attr($cart_count); ?>"><?php echo esc_html($cart_count); ?></span>
         </a>
 
         <a href="<?php echo esc_url($myaccount_url); ?>" class="mobile-bar-item mobile-bar-account">
@@ -580,7 +713,28 @@ function jetlagz_mobile_bottom_bar()
                 </svg>
             </span>
         </a>
+
+        <?php universal_theme_render_mobile_menu_toggle('mobile-bar'); ?>
     </nav>
+
+    <div class="mobile-bottom-nav-drawer" id="mobile-bottom-nav-drawer" aria-hidden="true">
+        <div class="mobile-bottom-nav-drawer__panel">
+            <button type="button" class="mobile-bottom-nav-drawer__close" aria-label="<?php esc_attr_e('Zamknij menu', 'universal-theme'); ?>">
+                <img src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets/images/chevron-right.svg'); ?>" alt="" aria-hidden="true">
+            </button>
+            <?php
+            if (has_nav_menu('primary')) {
+                wp_nav_menu(array(
+                    'theme_location' => 'primary',
+                    'container' => false,
+                    'menu_class' => 'mobile-bottom-nav-menu',
+                    'fallback_cb' => false,
+                    'depth' => 4,
+                ));
+            }
+            ?>
+        </div>
+    </div>
 <?php
 }
 add_action('wp_footer', 'jetlagz_mobile_bottom_bar', 5);

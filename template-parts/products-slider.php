@@ -51,11 +51,7 @@ if (!$products_query || !$products_query->have_posts()) {
                                         src="<?php echo esc_url($secondary_image_url); ?>"
                                         alt="<?php echo esc_attr(get_the_title()); ?>">
                                 <?php endif; ?>
-                                <?php if ($product->is_on_sale()) : ?>
-                                    <span class="sale-badge">
-                                        Sale
-                                    </span>
-                                <?php endif; ?>
+                                <?php jetlagz_render_product_card_badges($product); ?>
                                 <?php
                                 $rating_count = $product->get_rating_count();
                                 $average_rating = $product->get_average_rating();

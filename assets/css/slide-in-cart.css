@@ -222,9 +222,27 @@ body.slide-in-cart-has-items:not(.slide-in-cart-is-open) .slide-in-cart-floating
 
 .cart-item-image {
 	width: 80px;
-	height: 80px;
 	overflow: hidden;
-	border-radius: 8px;
+	position: relative;
+}
+
+.cart-item-discount-badge {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 24px;
+	padding: 0 8px;
+	background: #c62828;
+	color: #fff;
+	font-size: 8px;
+	font-weight: 500;
+	line-height: 1;
+	box-shadow: 0 6px 14px rgba(198, 40, 40, 0.22);
+	pointer-events: none;
 }
 
 .cart-item-image img {
@@ -263,6 +281,30 @@ span.cart-item-name:hover {
 .cart-item-price {
 	color: #6b7280;
 	font-size: 14px;
+	min-height: 34px;
+}
+
+.slide-cart-price-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	align-items: flex-start;
+}
+
+.slide-cart-price-stack--discounted .slide-cart-price-original {
+	display: block;
+	font-size: 12px;
+	line-height: 1.2;
+	color: #9ca3af;
+	text-decoration: line-through;
+}
+
+.slide-cart-price-current {
+	display: block;
+	font-size: 14px;
+	line-height: 1.25;
+	color: #111827;
+	font-weight: 700;
 }
 
 .cart-item-quantity {
@@ -298,16 +340,25 @@ span.cart-item-name:hover {
 }
 
 .cart-item-total {
-	font-weight: 700;
+	font-weight: 400;
 	color: #111827;
 	font-size: 16px;
 	align-self: start;
+	text-align: right;
+}
+
+.cart-item-total .slide-cart-price-stack {
+	align-items: flex-end;
+}
+
+.cart-item-total .slide-cart-price-current {
+	font-size: 14px;
 }
 
 .cart-item-remove {
 	position: absolute;
-	top: 0;
-	right: 0;
+	top: 2px;
+	right: 2px;
 	background: none;
 	border: none;
 	font-size: 24px;
@@ -331,15 +382,103 @@ span.cart-item-name:hover {
 	border-radius: 8px;
 }
 
+.slide-in-cart-applied-coupons {
+	margin: -0.5rem 0 1.5rem;
+	padding: 0 0.25rem;
+}
+
+.slide-in-cart-applied-coupons-label {
+	display: block;
+	margin-bottom: 0.75rem;
+	font-size: 13px;
+	font-weight: 600;
+	color: #374151;
+}
+
+.slide-in-cart-applied-coupons-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.slide-in-cart-coupon-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border: 1px solid rgba(0, 0, 0, 0.12);
+	border-radius: 999px;
+	background: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.slide-in-cart-coupon-code {
+	line-height: 1;
+}
+
+.slide-in-cart-coupon-remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: #111827;
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+	opacity: 0.75;
+	transition: opacity 0.2s ease;
+}
+
+.slide-in-cart-coupon-remove:hover,
+.slide-in-cart-coupon-remove:focus-visible {
+	opacity: 1;
+}
+
+.slide-in-cart-coupon-remove:disabled {
+	opacity: 0.35;
+	cursor: wait;
+}
+
 .cart-total-row {
 	display: flex;
 	justify-content: space-between;
 	font-size: 16px;
 }
 
+.cart-total-row + .cart-total-row {
+	margin-top: 10px;
+}
+
+.cart-total-row--discounts span,
+.cart-total-row--discounts strong {
+	font-size: 14px;
+	color: #185b63;
+}
+
+.slide-cart-coupon-total-amount {
+	display: inline-block;
+	font-weight: 700;
+	color: #185b63;
+}
+
 .cart-total-row strong {
 	font-size: 18px;
 	color: #111827;
+}
+
+.cart-total-row .slide-cart-total-stack {
+	align-items: flex-end;
+}
+
+.cart-total-row .slide-cart-total-stack .slide-cart-price-current {
+	font-size: 18px;
 }
 
 .slide-in-cart-free-shipping {
@@ -411,7 +550,7 @@ span.cart-item-name:hover {
 .slide-in-cart-shipping-info {
 	text-align: center;
 	color: #6b7280;
-	font-size: 14px;
+	font-size: 10px;
 	margin-bottom: 1rem;
 }
 
@@ -433,6 +572,15 @@ span.cart-item-name:hover {
 		max-width: 100%;
 	}
 
+	.cart-item-discount-badge {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: auto;
+		height: auto;
+		padding: 4px 6px;
+	}
+
 	.slide-in-cart-floating-toggle {
 		top: 48px;
 		right: 12px;
@@ -447,7 +595,6 @@ span.cart-item-name:hover {
 
 	.cart-item-image {
 		width: 60px;
-		height: 60px;
 	}
 }
 
@@ -455,7 +602,7 @@ span.cart-item-name:hover {
 .slide-in-cart-item.is-gift-item {
 	background: linear-gradient(135deg, #fdfaf3 0%, #fef9ee 100%);
 	border: 1px solid #e8d5a8;
-	border-radius: 8px;
+	border-radius: 4px;
 	padding: 0.75rem;
 }
 
